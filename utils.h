@@ -22,12 +22,6 @@
 using namespace boost;
 using namespace ndn;
 
-typedef enum{
-    STOPED = -1,
-    READY = 0,
-    STARTED = 1,
-
-}status;
 
 class FaceProcessor;
 
@@ -57,7 +51,7 @@ public:
 	static void performOnBackgroundThread(boost::function<void(void)> dispatchBlock,
 										   boost::function<void(void)> onCompletion = boost::function<void(void)>());
 
-	static void createLibFace(/*const new_api::GeneralParams& params*/);
+    static void createLibFace(const std::string host, const int port/*const new_api::GeneralParams& params*/);
 	static boost::shared_ptr<FaceProcessor> getLibFace();
 	static void destroyLibFace();
 

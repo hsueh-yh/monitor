@@ -191,18 +191,18 @@ void NdnRtcUtils::performOnBackgroundThread(boost::function<void(void)> dispatch
     }
 }
 
-void NdnRtcUtils::createLibFace(/*const new_api::GeneralParams& generalParams*/)
+void NdnRtcUtils::createLibFace(const std::string host, const int port/*const new_api::GeneralParams& generalParams*/)
 {
-	std::cout<<"creating libFace..." << std::endl;
+    //std::cout<<"creating libFace..." << std::endl;
     if (!LibraryFace.get() ||
         (LibraryFace.get() && LibraryFace->getTransport()->getIsConnected() == false))
     {
         //LogInfo(LIB_LOG) << "Creating library Face..." << std::endl;
 
-        LibraryFace = FaceProcessor::createFaceProcessor("localhost",6363,DefaultKeyChain);
+        LibraryFace = FaceProcessor::createFaceProcessor(host,port,DefaultKeyChain);
         		//(generalParams.host_, generalParams.portNum_, NdnRtcNamespace::defaultKeyChain());
 
-        std::cout<<"starting libFace..." << std::endl;
+        //std::cout<<"starting libFace..." << std::endl;
         LibraryFace->startProcessing(10);
         
         //LogInfo(LIB_LOG) << "Library Face created" << std::endl;

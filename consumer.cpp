@@ -2,62 +2,64 @@
 #include <unistd.h>
 
 
-static boost::asio::io_service libIoService;
+//static boost::asio::io_service libIoService;
 
-Consumer::Consumer (const char* uri) :
+Consumer::Consumer (const char* uri, boost::shared_ptr<FaceWrapper> faceWrapper) :
     callbackCount_ ( 0 ),
-    status(STOPED),
-    name(new Name(uri))
-{
-	/*
-	pf = fopen ( "consumer.264", "wb+" );
-	if ( pf == NULL )
-	{
-		cout << "open consumer.264 error" << endl;
-		return;
-	}
-	*/
-}
+    status_(STOPED),
+    name(new Name(uri)),
+    faceWrapper_(faceWrapper)
+{}
+
 
 Consumer::~Consumer ()
 {
-	//while ( 0 != pthread_mutex_destroy ( &recv_buf_mutex ));
-	//fclose ( pf );
+    cout << "Consumer dtor" << endl;
 }
 
 
-void Consumer::init()
+void
+Consumer::init()
 {
-    std::cout << "new consumer " << endl;
-    NdnRtcUtils::setIoService(libIoService);
+//    std::cout << "new consumer " << endl;
+//    NdnRtcUtils::setIoService(libIoService);
 
-    //NdnRtcUtils::performOnBackgroundThread([=]()->void{
-            NdnRtcUtils::createLibFace();
-    //});
-    NdnRtcUtils::startBackgroundThread();
+//    //NdnRtcUtils::performOnBackgroundThread([=]()->void{
+//            NdnRtcUtils::createLibFace("localhost",6363);
+//    //});
+//    NdnRtcUtils::startBackgroundThread();
 
-    // Counter holds data used by the callbacks.
-    //Consumer consumer(NdnRtcUtils::getLibFace()->getFaceWrapper());
-    faceWrapper_ = NdnRtcUtils::getLibFace()->getFaceWrapper();
+//    // Counter holds data used by the callbacks.
+//    //Consumer consumer(NdnRtcUtils::getLibFace()->getFaceWrapper());
+//    faceWrapper_ = NdnRtcUtils::getLibFace()->getFaceWrapper();
 
     frameBuffer_.reset(new FrameBuffer());
     //frameBuffer_->init();
-    pipeliner_.reset(new Pipeliner(frameBuffer_, faceWrapper_));
 
-    std::cout << "init consumer " << endl;
-    status = READY;
+    pipeliner_.reset(new Pipeliner());
+    pipeliner_->init(frameBuffer_,faceWrapper_);
+
+    player_.reset( new Player() );
+    player_->init(frameBuffer_);
+
+    status_ = READY;
+    //cout << "Consumer init" << endl;
 }
 
 
-void Consumer::start()
+void
+Consumer::start()
 {
-    if(status != READY)
+    cout << "Consumer start" << endl;
+    if(status_ != READY)
+    {
+        //cout << "Consumer start init" << endl;
         init();
+    }
 
-    status = STARTED;
+    status_ = STARTED;
 
-	std::cout << "start consumer " << endl;
-
+    //cout <<"<Pipeliner> count:"<< pipeliner_.use_count() << endl;
     pipeliner_->startFeching();
 
     /*
@@ -106,8 +108,17 @@ void Consumer::start()
 }
 
 
-void Consumer::stop()
+void
+Consumer::stop()
 {
+    frameBuffer_.reset();
+    pipeliner_.reset();
+    player_.reset();
 
+    pipeliner_->stop();
+    pipeliner_.reset();
+
+    if( faceWrapper_.use_count() <= 1 )
+        faceWrapper_.reset();
 }
 

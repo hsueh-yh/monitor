@@ -196,10 +196,10 @@ FaceProcessor::createFaceProcessor(const std::string host, const int port,
     shared_ptr<ndn::Transport> transport;
     shared_ptr<FaceProcessor> fp;
     
-    std::cout << "setup Face And Transport..." << std::endl;
+    //std::cout << "setup Face And Transport..." << std::endl;
     FaceProcessor::setupFaceAndTransport(host, port, face, transport);
     
-    std::cout << "setup keyChain..." << std::endl;
+    //std::cout << "setup keyChain..." << std::endl;
     if (keyChain.get())
     {
         if (certificateName.get())
@@ -207,17 +207,17 @@ FaceProcessor::createFaceProcessor(const std::string host, const int port,
         else
             face->setCommandSigningInfo(*keyChain, keyChain->getDefaultCertificateName());
     }
-    std::cout << face.use_count() << std::endl;
+    //std::cout << face.use_count() << std::endl;
     NdnRtcComponent *cp = new NdnRtcComponent();
-    std::cout << "NdnRtcComponent" << std::endl;
+    //std::cout << "NdnRtcComponent" << std::endl;
 //    std::cout << "new FaceProcessor..." << std::endl;
     FaceProcessor* f = new FaceProcessor(face);
-    std::cout << "reset FaceProcessor..." << std::endl;
+    //std::cout << "reset FaceProcessor..." << std::endl;
     fp.reset(f);
     //fp.reset(new FaceProcessor(face));
-    std::cout << "set Transport..." << std::endl;
+    //std::cout << "set Transport..." << std::endl;
     fp->setTransport(transport);
-    std::cout << "create FaceProcessor done." << std::endl;
+    //std::cout << "create FaceProcessor done." << std::endl;
     
     return fp;
 }
@@ -229,7 +229,7 @@ FaceProcessor::FaceProcessor(const boost::shared_ptr<FaceWrapper>& faceWrapper):
 							usecInterval_(100),
 							faceWrapper_(faceWrapper)
 {
-	std::cout << "new FaceProcessor2..." << std::endl;
+    //std::cout << "new FaceProcessor..." << std::endl;
 }
 
 FaceProcessor::~FaceProcessor()
@@ -238,7 +238,7 @@ FaceProcessor::~FaceProcessor()
     faceWrapper_->shutdown();
     transport_.reset();
     
-    std::cout << /*description_ <<*/ "...face processor dtor" << std::endl;
+    std::cout << /*description_ <<*/ "Face processor dtor" << std::endl;
 }
 
 //******************************************************************************

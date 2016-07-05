@@ -18,18 +18,20 @@
 class Controler
 {
 public:
-    Controler():
-        consumerNum_(0)
-    {}
+    Controler();
 
     ~Controler()
     {}
 
     int addConsumer();
-    int startConsumer(int id);
-    int stopConsumer(int id);
 
-    bool addFace( int port );
+    int startConsumer(int consumerId);
+
+    int stopConsumer(int consumerId);
+
+    Consumer* getConsumer(const int consumerId );
+
+    void newFace(const std::string host, const int port);
 
 
 //private:
@@ -37,6 +39,11 @@ public:
     int faceNumber_;
     map<int,Consumer*> consumersMap_;
     vector<Consumer*> consumersVec_;
+
+    //map<int,std::thread*> consumerThreads_;
+
+    boost::shared_ptr<FaceWrapper> FaceWrapper_;
+
 //    Consumer* consumer;
 //    Player* player_;
 

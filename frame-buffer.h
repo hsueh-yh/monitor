@@ -178,12 +178,15 @@ public:
 	{}
 
 
-	~FrameBuffer(){}
+    ~FrameBuffer()
+    {
+        cout << "FrameBuffer dtor" << endl;
+    }
 
     void
     init()
 	{
-		//status_ = STARTED;
+        //status_ = STARTED;
 	}
 
     void
@@ -260,8 +263,9 @@ public:
 */
 
     typedef boost::shared_ptr<Slot> SlotPtr;
-	typedef
-    priority_queue< SlotPtr, vector<SlotPtr>, Slot::Comparator/*greater<Slot::Comparator>*/ >
+
+    typedef
+        priority_queue< SlotPtr, vector<SlotPtr>, Slot::Comparator/*greater<Slot::Comparator>*/ >
     PlaybackQueue;
 
 	int count_;

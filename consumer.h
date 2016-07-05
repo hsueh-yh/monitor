@@ -17,7 +17,7 @@
 #include "face-wrapper.h"
 #include "frame-buffer.h"
 #include "pipeliner.h"
-//#include "player.h"
+#include "player.h"
 
 using namespace std;
 using namespace ndn;
@@ -28,19 +28,18 @@ using namespace ndn::func_lib;
 #define HEIGHT 480
 
 
-//struct frame_buf
-//{
-//	size_t size;
-//	uint8_t p_In_Frame[WIDTH * HEIGHT * 3 / 2];
-//};
-
-class Pipeliner;
-
-
 class Consumer
 {
 public:
-    Consumer (const char *uri);
+
+    typedef enum{
+        STOPED = -1,
+        READY = 0,
+        STARTED = 1,
+
+    }Status;
+
+    Consumer (const char *uri,boost::shared_ptr<FaceWrapper> faceWrapper);
 
 	~Consumer ();
 
@@ -50,25 +49,18 @@ public:
 
     void stop();
 
-
-
 	boost::shared_ptr<FaceWrapper> faceWrapper_;
 	boost::shared_ptr<FrameBuffer> frameBuffer_;
 	boost::shared_ptr<Pipeliner> pipeliner_;
-//    boost::shared_ptr<Player> player_;
+    boost::shared_ptr<Player> player_;
 
-	//FILE *pf;
 private:
 
     Name *name;
     int callbackCount_;
 
-    int status;
+    Status status_;
 
-
-
-	//CirQueue<frame_buf> *recv_buf;
-	//pthread_mutex_t recv_buf_mutex;
 };
 
 #endif //CONSUMER_H_

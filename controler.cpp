@@ -1,44 +1,93 @@
 #include "controler.h"
 
-int Controler::addConsumer()
+static boost::asio::io_service libIoService;
+
+
+Controler::Controler():
+    consumerNumber_(0)
 {
-    int consumerId = consumerNum_;
-    consumerNumber_++;
+    newFace("localhost", 6363);
+}
 
-    std::cout << "start" << endl;
 
-    Consumer *consumer = new Consumer("/vide1/01");
-    consumersVec_.push_back(consumer);
-    player_ = new Player();
+int
+Controler::addConsumer()
+{
+    int consumerId = ++consumerNumber_;
 
-    //consumers.insert(pair <int, Consumer*> (consumerId,consumer));
-    //consumers.push_back(consumer);
-//    QLabel *label = new QLabel();
-//    labels.insert(pair<int,QLabel*>(consumerId,label));
+    Consumer *consumer = new Consumer("/video", FaceWrapper_);
+    consumersMap_.insert(pair<int,Consumer*>(consumerId,consumer));
 
-    //consumer->start();
-//    std::thread consumerThread([&]
-//        {
-//            consumer->start();
-//        });
-//        consumerThread.detach();
+    std::cout << "Add Consumer " << consumerId << std::endl;
 
     return consumerId;
 }
 
 
-int Controler::startConsumer(int id)
+Consumer*
+Controler::getConsumer( const int consumerId )
 {
-    consumer->init();
-    std::thread consumerThread([&]
-                    {
-                        consumer->start();
-                    });
-    consumerThread.detach();
-    cout << "consumer thread started" << endl;
+    map<int,Consumer*>::iterator iter;
+
+    iter = consumersMap_.find(consumerId);
+
+    if( iter == consumersMap_.end() )
+    {
+        return NULL;
+    }
+
+    return iter->second;
 }
 
-int Controler::stopConsumer(int id)
-{
 
+int
+Controler::startConsumer( int consumerId )
+{
+    std::cout << "Start Consumer " << consumerId << std::endl;
+    Consumer *consumer = getConsumer(consumerId);
+    if( consumer == NULL )
+    {
+        std::cout << "Can not start Consumer " << consumerId << std::endl;
+        return -1;
+    }
+
+    consumer->init();
+
+    std::thread *consumerThread =
+            new std::thread(bind(&Consumer::start,consumer));
+//            new std::thread([&]
+//                {
+//                    consumer->start();
+//                });
+
+    consumerThread->detach();
+    return 1;
+}
+
+
+int Controler::stopConsumer(int consumerId)
+{
+    std::cout << endl << "Stop Consumer " << consumerId << std::endl;
+    Consumer *consumer = getConsumer(consumerId);
+    if( consumer == NULL )
+        return -1;
+
+    consumer->stop();
+    return 1;
+}
+
+
+void
+Controler::newFace(const std::string host, const int port)
+{
+    NdnRtcUtils::setIoService(libIoService);
+
+    //NdnRtcUtils::performOnBackgroundThread([=]()->void{
+            NdnRtcUtils::createLibFace(host, port);
+    //});
+    NdnRtcUtils::startBackgroundThread();
+
+    // Counter holds data used by the callbacks.
+    //Consumer consumer(NdnRtcUtils::getLibFace()->getFaceWrapper());
+    FaceWrapper_ = NdnRtcUtils::getLibFace()->getFaceWrapper();
 }

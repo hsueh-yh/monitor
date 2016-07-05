@@ -64,17 +64,30 @@ class Pipeliner
 {
 public:
 
-    Pipeliner(boost::shared_ptr<FrameBuffer> frameBuffer, boost::shared_ptr<FaceWrapper> faceWrapper );
-	~Pipeliner();
+    typedef enum{
+        Stoped = -1,
+        Ready = 0,
+        Bootstrap = 1,
+        Fetching = 2
+    }State;
+
+    Pipeliner();
+
+    ~Pipeliner();
 
     //******************************************************************************
 
-    void express(Interest& interest);
+    void init(boost::shared_ptr<FrameBuffer> frameBuffer, boost::shared_ptr<FaceWrapper> faceWrapper);
+
     void express(Name& name);
+
+    void express(Interest& interest);
 
     void requestFrame(PacketNumber& frameNo);
 
     void startFeching();
+
+    void stop();
 
     boost::shared_ptr<Interest>
     getDefaultInterest(const Name& prefix, int64_t timeoutMs = 0);
@@ -83,15 +96,7 @@ public:
 	void onData(const ptr_lib::shared_ptr<const Interest>& interest, const ptr_lib::shared_ptr<Data>& data);
 
 	void onTimeout(const ptr_lib::shared_ptr<const Interest>& interest);
-/*
-	OnData
-	getOnDataHandler()
-	{ return bind(&Pipeliner::onData, boost::dynamic_pointer_cast<Pipeliner>(shared_from_this()), _1, _2); }
 
-	OnTimeout
-	getOnTimeoutHandler()
-	{ return bind(&Pipeliner::onTimeout, boost::dynamic_pointer_cast<Pipeliner>(shared_from_this()), _1); }
-*/
 
 private:
 
@@ -104,6 +109,7 @@ private:
     FILE *pipelinerFIle_;
 
     int count_;
+    State state_;
 };
 
 

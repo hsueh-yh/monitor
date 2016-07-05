@@ -39,6 +39,7 @@ PipelinerWindow::init(unsigned int windowSize/*, const FrameBuffer* frameBuffer*
     framePool_.clear();
     dw_ = windowSize;
     w_ = (int)windowSize;
+    cout << "Pipeliner init " << w_ << endl;
 }
 
 
@@ -68,8 +69,8 @@ bool
 PipelinerWindow::canAskForData(PacketNumber packetNo)
 {
     boost::lock_guard<boost::mutex> scopedLock(mutex_);
-    bool added = false;
 
+    bool added = false;
     if (w_ > 0)
     {
         w_--;
@@ -77,7 +78,6 @@ PipelinerWindow::canAskForData(PacketNumber packetNo)
         lastAddedToPool_ = packetNo;
         added = true;
     }
-
     return added;
 }
 
@@ -127,25 +127,36 @@ PipelinerWindow::changeWindow(int delta)
 ///     Pipeliner
 /////////////////////////////////////////////////////////////////////////////////
 
-Pipeliner::Pipeliner(boost::shared_ptr<FrameBuffer> frameBuffer , boost::shared_ptr<FaceWrapper> faceWrapper):
-    frameBuffer_(frameBuffer),
-    faceWrapper_(faceWrapper),
+Pipeliner::Pipeliner():
     basePrefix_("/video"),
-    count_(0)
+    count_(0),
+    state_(Stoped)
 {
-    window_.init(100/*,frameBuffer_*/);
+
 	pipelinerFIle_ = fopen ( "pipelinerFIle_.264", "wb+" );
 	if ( pipelinerFIle_ == NULL )
 	{
 		std::cout << "open consumer.yuv error" << std::endl;
 		return;
 	}
+
 }
 
 
 Pipeliner::~Pipeliner()
 {
+    cout << "Pipeliner dtor" << endl;
 	fclose(pipelinerFIle_);
+}
+
+
+void
+Pipeliner::init(boost::shared_ptr<FrameBuffer> frameBuffer, boost::shared_ptr<FaceWrapper> faceWrapper)
+{
+    frameBuffer_ = frameBuffer;
+    faceWrapper_ = faceWrapper;
+    window_.init(100/*,frameBuffer_*/);
+    state_ = Ready;
 }
 
 
@@ -156,6 +167,7 @@ Pipeliner::express(Interest& interest/*, int64_t priority*/)
             interest,
             bind(&Pipeliner::onData, this, _1, _2),
             bind(&Pipeliner::onTimeout, this, _1));
+    cout << "Express : " << interest.getName().toUri() << endl;
 }
 
 
@@ -166,14 +178,14 @@ Pipeliner::express(Name& name/*, int64_t priority*/)
             name,
             bind(&Pipeliner::onData, this, _1, _2),
             bind(&Pipeliner::onTimeout, this, _1));
-    cout << "Express Interest: " << name.toUri() << endl;
+    cout << "Express : " << name.toUri() << endl;
 }
 
 
 void
 Pipeliner::requestFrame(PacketNumber& frameNo)
 {
-    while( !window_.canAskForData(frameNo) )
+    if( !window_.canAskForData(frameNo) )
     {
         //cout << "Windown: " << window_.getCurrentWindowSize() << endl;
         usleep(100000);
@@ -215,9 +227,20 @@ Pipeliner::startFeching()
     int frameNo = 0;
     while(1)
     {
+        if(state_ == Stoped)
+            break;
         requestFrame(frameNo);
         frameNo++;
     }
+}
+
+
+void
+Pipeliner::stop()
+{
+    if(state_ != Stoped)
+        state_ != Stoped;
+    return;
 }
 
 
@@ -245,7 +268,7 @@ Pipeliner::onData(const ptr_lib::shared_ptr<const Interest>& interest,
 //	if ( data->getContent ().buf () == NULL )
 //			cout << "content is null !" << endl;
 //    cout << "Pipeliner:" << (int)getpid() << "-" << std::this_thread::get_id() << " ";
-    cout << "Got data "<<frameNo << " "<< data->getName().toUri()
+    cout << "Got Data: "<<frameNo// << " "<< data->getName().toUri()
          << " size: " << data->getContent ().size () << endl;
 
 //    FrameData gotFrame;

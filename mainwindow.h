@@ -33,14 +33,17 @@ public:
 private slots:
 
     //  on button
-    void on_start_btn_clicked();
-    void on_stop_btn_clicked();
+    void on_start_btn();
+    void on_stop_btn();
     //  on menu
-    void on_actionAdd_Face_clicked();
-    void on_actionAdd_Stream_clicked();
+//    void on_actionAdd_Face_clicked();
+//    void on_actionAdd_Stream_clicked();
 
 
 private:
+
+    void showTable(int id);
+
     Ui::MainWindow *ui;
     //Controler* controler;
     //vector<QPainter*> painters;
