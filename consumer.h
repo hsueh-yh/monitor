@@ -39,7 +39,7 @@ public:
 
     }Status;
 
-    Consumer (const char *uri,boost::shared_ptr<FaceWrapper> faceWrapper);
+    Consumer (string uri, boost::shared_ptr<FaceWrapper> faceWrapper);
 
 	~Consumer ();
 
@@ -56,7 +56,8 @@ public:
 
 private:
 
-    Name *name;
+    //Name *name;
+    std::string prefix_;
     int callbackCount_;
 
     Status status_;

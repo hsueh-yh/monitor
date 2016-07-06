@@ -6,16 +6,16 @@ static boost::asio::io_service libIoService;
 Controler::Controler():
     consumerNumber_(0)
 {
-    newFace("localhost", 6363);
+    newFace("10.103.240.101", 6363);
 }
 
 
 int
-Controler::addConsumer()
+Controler::addConsumer( std::string prefix, int face )
 {
     int consumerId = ++consumerNumber_;
 
-    Consumer *consumer = new Consumer("/video", FaceWrapper_);
+    Consumer *consumer = new Consumer(prefix.c_str(), FaceWrapper_);
     consumersMap_.insert(pair<int,Consumer*>(consumerId,consumer));
 
     std::cout << "Add Consumer " << consumerId << std::endl;

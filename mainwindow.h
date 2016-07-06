@@ -3,14 +3,19 @@
 
 #include <QMainWindow>
 #include <vector>
+#include <map>
 #include <iostream>
 
 #include <QtGui>
+#include <QLayout>
+
+#include "addstreamdialog.h"
 
 #include "controler.h"
 //#include "consumer.h"
 
 using namespace std;
+
 
 namespace Ui {
 class MainWindow;
@@ -33,16 +38,19 @@ public:
 private slots:
 
     //  on button
-    void on_start_btn();
-    void on_stop_btn();
+    void on_start_btn_clicked();
+    void on_stop_btn_clicked();
+    void on_add_btn_clicked();
     //  on menu
 //    void on_actionAdd_Face_clicked();
 //    void on_actionAdd_Stream_clicked();
 
+    void addStream(QString stream);
 
 private:
 
-    void showTable(int id);
+    void showStream(int id);
+
 
     Ui::MainWindow *ui;
     //Controler* controler;
@@ -51,7 +59,12 @@ private:
     QPainter *painters;
 
     QPixmap pixmap;
-    QImage *image;
+    vector<QImage*> imageVec;
+    map<int,QLabel*> labelMap;
+    QVBoxLayout *layout = new QVBoxLayout( this );
+    int space_;
+
+    AddStreamDialog *addStreamDialog;
 };
 
 #endif // MAINWINDOW_H

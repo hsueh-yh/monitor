@@ -4,10 +4,11 @@
 
 //static boost::asio::io_service libIoService;
 
-Consumer::Consumer (const char* uri, boost::shared_ptr<FaceWrapper> faceWrapper) :
+Consumer::Consumer (std::string uri, boost::shared_ptr<FaceWrapper> faceWrapper) :
     callbackCount_ ( 0 ),
     status_(STOPED),
-    name(new Name(uri)),
+    prefix_(uri),
+    //name(new Name(uri)),
     faceWrapper_(faceWrapper)
 {}
 
@@ -36,7 +37,7 @@ Consumer::init()
     frameBuffer_.reset(new FrameBuffer());
     //frameBuffer_->init();
 
-    pipeliner_.reset(new Pipeliner());
+    pipeliner_.reset(new Pipeliner(this->prefix_));
     pipeliner_->init(frameBuffer_,faceWrapper_);
 
     player_.reset( new Player() );

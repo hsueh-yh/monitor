@@ -23,7 +23,7 @@ public:
     ~Controler()
     {}
 
-    int addConsumer();
+    int addConsumer( std::string prefix, int face );
 
     int startConsumer(int consumerId);
 

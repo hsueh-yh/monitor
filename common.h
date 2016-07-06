@@ -7,4 +7,5 @@ typedef PacketNumber FrameNumber;
 
 typedef unsigned char* EncodedImage;
 
+
 #endif // COMMON_H

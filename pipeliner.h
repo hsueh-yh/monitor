@@ -71,7 +71,7 @@ public:
         Fetching = 2
     }State;
 
-    Pipeliner();
+    Pipeliner( std::string prefix);
 
     ~Pipeliner();
 

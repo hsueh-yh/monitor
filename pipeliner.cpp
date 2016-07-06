@@ -127,8 +127,8 @@ PipelinerWindow::changeWindow(int delta)
 ///     Pipeliner
 /////////////////////////////////////////////////////////////////////////////////
 
-Pipeliner::Pipeliner():
-    basePrefix_("/video"),
+Pipeliner::Pipeliner(std::string prefix):
+    basePrefix_(prefix.c_str()),
     count_(0),
     state_(Stoped)
 {
@@ -167,7 +167,10 @@ Pipeliner::express(Interest& interest/*, int64_t priority*/)
             interest,
             bind(&Pipeliner::onData, this, _1, _2),
             bind(&Pipeliner::onTimeout, this, _1));
+
+#ifdef __SHOW_CONSOLE_
     cout << "Express : " << interest.getName().toUri() << endl;
+#endif
 }
 
 
@@ -178,7 +181,10 @@ Pipeliner::express(Name& name/*, int64_t priority*/)
             name,
             bind(&Pipeliner::onData, this, _1, _2),
             bind(&Pipeliner::onTimeout, this, _1));
+
+#ifdef __SHOW_CONSOLE_
     cout << "Express : " << name.toUri() << endl;
+#endif
 }
 
 
@@ -268,8 +274,11 @@ Pipeliner::onData(const ptr_lib::shared_ptr<const Interest>& interest,
 //	if ( data->getContent ().buf () == NULL )
 //			cout << "content is null !" << endl;
 //    cout << "Pipeliner:" << (int)getpid() << "-" << std::this_thread::get_id() << " ";
+
+#ifdef __SHOW_CONSOLE_
     cout << "Got Data: "<<frameNo// << " "<< data->getName().toUri()
          << " size: " << data->getContent ().size () << endl;
+#endif
 
 //    FrameData gotFrame;
 //    memcpy(gotFrame, data->getContent().buf(), sizeof(FrameData));  //copy frame header

@@ -234,8 +234,12 @@ bool Player::refresh()
     while ( slot== NULL )
     {
         slot = frameBuffer_->popSlot();
+        usleep(30*1000);
         //return false;
     }
+
+//        if ( slot == NULL )
+//            return false;
 
     //unsigned char *p_Out_Frame = new unsigned char[640 * 480 * 3 / 2];
     unsigned char *p_In_Frame = slot->getDataPtr();
@@ -255,9 +259,11 @@ bool Player::refresh()
 
     if ( outlen > 0 )
     {
+#ifdef __SHOW_CONSOLE_
         cout << "Play Frm: "
              << slot->getNumber() << " "
              << slot->getPayloadSize() << " "<<endl;
+#endif
 
         unsigned char* yuv[3] = {yuv_frameBuf_,yuv_frameBuf_+ 640*480, yuv_frameBuf_ +640*480*5/4};
 
