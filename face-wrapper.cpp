@@ -29,14 +29,12 @@
 using namespace boost;
 
 //******************************************************************************
-#pragma mark - construction/destruction
 FaceWrapper::FaceWrapper(shared_ptr<Face> &face):
 face_(face)
 {
 }
 
 //******************************************************************************
-#pragma mark - public
 uint64_t FaceWrapper::expressInterest(const Interest &interest,
                                       const OnData &onData,
                                       const OnTimeout& onTimeout,
@@ -96,12 +94,10 @@ void FaceWrapper::shutdown()
 }
 
 //******************************************************************************
-#pragma mark - private
 
 
 //******************************************************************************
 //******************************************************************************
-#pragma mark - static
 static std::string getUnixSocketFilePathForLocalhost()
 {
     std::string filePath = "/var/run/nfd.sock";
@@ -208,7 +204,7 @@ FaceProcessor::createFaceProcessor(const std::string host, const int port,
             face->setCommandSigningInfo(*keyChain, keyChain->getDefaultCertificateName());
     }
     //std::cout << face.use_count() << std::endl;
-    NdnRtcComponent *cp = new NdnRtcComponent();
+    //NdnRtcComponent *cp = new NdnRtcComponent();
     //std::cout << "NdnRtcComponent" << std::endl;
 //    std::cout << "new FaceProcessor..." << std::endl;
     FaceProcessor* f = new FaceProcessor(face);
@@ -223,7 +219,6 @@ FaceProcessor::createFaceProcessor(const std::string host, const int port,
 }
 
 //******************************************************************************
-#pragma mark - construction/destruction
 FaceProcessor::FaceProcessor(const boost::shared_ptr<FaceWrapper>& faceWrapper):
 							isProcessing_(false),
 							usecInterval_(100),
@@ -242,7 +237,6 @@ FaceProcessor::~FaceProcessor()
 }
 
 //******************************************************************************
-#pragma mark - public
 int
 FaceProcessor::startProcessing(unsigned int usecInterval)
 {

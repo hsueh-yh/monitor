@@ -61,7 +61,6 @@ private:
     QPixmap pixmap;
     vector<QImage*> imageVec;
     map<int,QLabel*> labelMap;
-    QVBoxLayout *layout = new QVBoxLayout( this );
     int space_;
 
     AddStreamDialog *addStreamDialog;

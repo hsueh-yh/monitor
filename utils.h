@@ -11,6 +11,8 @@
 #ifndef __ndnrtc__ndnrtc_utils__
 #define __ndnrtc__ndnrtc_utils__
 
+#define __SHOW_CONSOLE_
+
 #include <boost/function.hpp>
 #include <boost/asio.hpp>
 #include <boost/asio/steady_timer.hpp>

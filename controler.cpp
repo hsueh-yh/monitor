@@ -6,12 +6,15 @@ static boost::asio::io_service libIoService;
 Controler::Controler():
     consumerNumber_(0)
 {
-    newFace("10.103.240.101", 6363);
+    consumersMap_.clear();
+    consumersVec_.clear();
+    hostSet_.clear();
+    createFace("10.103.240.100",6363);
 }
 
 
 int
-Controler::addConsumer( std::string prefix, int face )
+Controler::addConsumer( std::string prefix )
 {
     int consumerId = ++consumerNumber_;
 
@@ -78,8 +81,29 @@ int Controler::stopConsumer(int consumerId)
 
 
 void
-Controler::newFace(const std::string host, const int port)
+Controler::createFace(const std::string host, const int port)
 {
+    /*
+    // if the uri did not specify a port
+    if(std::string::npos == uri.find(":"))
+        uri.append(":6363");
+
+    //check ip format (not useful)
+
+
+    set<std::string>::iterator iter;
+    iter = hostSet_.find(uri);
+    // the face already exists
+    if(iter != hostSet_.end())
+        return;
+
+    hostSet_.insert(uri);
+    */
+
+#ifdef __SHOW_CONSOLE_
+    std::cout << "Create Face: " << host<< ":"<<port << endl;
+#endif
+
     NdnRtcUtils::setIoService(libIoService);
 
     //NdnRtcUtils::performOnBackgroundThread([=]()->void{

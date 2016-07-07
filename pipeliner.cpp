@@ -297,7 +297,11 @@ Pipeliner::onData(const ptr_lib::shared_ptr<const Interest>& interest,
 void
 Pipeliner::onTimeout(const ptr_lib::shared_ptr<const Interest>& interest)
 {
-	cout << "Pipeliner timeout" << endl;
+
+#ifdef __SHOW_CONSOLE_
+    cout << "Pipeliner timeout: " << interest->getName().to_uri()<< endl;
+#endif
+
 }
 
 

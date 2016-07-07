@@ -23,7 +23,7 @@ public:
     ~Controler()
     {}
 
-    int addConsumer( std::string prefix, int face );
+    int addConsumer(std::string prefix);
 
     int startConsumer(int consumerId);
 
@@ -31,7 +31,7 @@ public:
 
     Consumer* getConsumer(const int consumerId );
 
-    void newFace(const std::string host, const int port);
+    void createFace(const string host, const int port);
 
 
 //private:
@@ -39,6 +39,8 @@ public:
     int faceNumber_;
     map<int,Consumer*> consumersMap_;
     vector<Consumer*> consumersVec_;
+
+    set<std::string> hostSet_;
 
     //map<int,std::thread*> consumerThreads_;
 

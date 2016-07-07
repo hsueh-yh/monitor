@@ -116,7 +116,7 @@ MainWindow::showStream( int id )
 void
 MainWindow::on_start_btn_clicked()
 {
-    addStream("/video:6363");
+    addStream("/video:10.103.240.100:6363");
 }
 
 
@@ -147,15 +147,23 @@ MainWindow::addStream( QString stream )
 {
     QStringList list = stream.split(":");
 
+    if (list.size() < 2)
+    {
+        return ;
+    }
     QString prefix = list[0].simplified();
-    int face = list[1].toInt();
+    QString host = list[1].simplified();
+    int port = (list.size() > 2) ? list[2].toInt() : 6363;
 
     std::cout << "Prefix: " << prefix.toStdString() << std::endl
-            << "Face :" << face << std::endl;
+              << "Face  : " << host.toStdString()
+              << ":" << port << std::endl;
 
     int consumerId = 1;
 
-    consumerId = controler->addConsumer( prefix.toStdString(), face );
+    //controler->createFace(host,port);
+
+    consumerId = controler->addConsumer( prefix.toStdString() );
 
     controler->startConsumer(consumerId);
 
