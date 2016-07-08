@@ -116,7 +116,8 @@ MainWindow::showStream( int id )
 void
 MainWindow::on_start_btn_clicked()
 {
-    addStream("/video:10.103.240.100:6363");
+    //addStream("/video:10.103.240.100:6363");
+    addStream("/video:localhost:6363");
 }
 
 
