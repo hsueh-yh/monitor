@@ -4,6 +4,9 @@
 #include <thread>
 #include <math.h>
 
+#define WIDTH 1080
+#define HEIGHT 720
+
 MainWindow::MainWindow(QWidget *parent) :
     QMainWindow(parent),
     ui(new Ui::MainWindow),
@@ -11,13 +14,13 @@ MainWindow::MainWindow(QWidget *parent) :
     space_(5)
 {
     ui->setupUi(this);
-   // ui->txlabel->resize(640,480);
+   // ui->txlabel->resize(WIDTH,HEIGHT);
     //layout = new QVBoxLayout( this );
     //ui->centralWidget->setLayout(layout);
 
-    pixmap = QPixmap(640,480);
+    pixmap = QPixmap(WIDTH,HEIGHT);
     bFit = true;
-    //ui->txlabel->resize(640,480);
+    //ui->txlabel->resize(WIDTH,HEIGHT);
 
 //    connect(ui->start_btn,SIGNAL(clicked()),this,SLOT(on_start_btn()));
 //    connect(ui->stop_btn,SIGNAL(clicked()),this,SLOT(on_stop_btn()));
@@ -44,7 +47,7 @@ MainWindow::showStream( int id )
 
     unsigned char *tmp = consumer->player_->bmp_frameBuf_;
 
-    QImage *image = new QImage(tmp,640,480,QImage::Format_RGB888);
+    QImage *image = new QImage(tmp,WIDTH,HEIGHT,QImage::Format_RGB888);
     map<int,QLabel*>::iterator iter = labelMap.find(id);
     QLabel *label = NULL;
     if(iter==labelMap.end())
@@ -63,7 +66,7 @@ MainWindow::showStream( int id )
     while( ++i  /*<= 202*/ )
     {
         //unsigned char *tmp = controler->getConsumer(id)->player_->bmp_frameBuf_;
-        //image = new QImage(tmp,640,480,QImage::Format_RGB888);
+        //image = new QImage(tmp,WIDTH,HEIGHT,QImage::Format_RGB888);
         if( tmp == NULL || label == NULL )
         {
             label->setText("Waiting ...");
@@ -71,7 +74,7 @@ MainWindow::showStream( int id )
         else
         {
             //setPixmap(tmp);
-            //image = new QImage(tmp,640,480,QImage::Format_RGB888);
+            //image = new QImage(tmp,WIDTH,HEIGHT,QImage::Format_RGB888);
             controler->getConsumer(id)->player_->refresh();
 
             int num, width, height, x, y;
@@ -106,7 +109,7 @@ MainWindow::showStream( int id )
             //delete(image);
         }
 
-        usleep(30 * 1000);
+        usleep(40 * 1000);
     }
     //cout << "show end------------------------------------------" << endl;
     //while(1);

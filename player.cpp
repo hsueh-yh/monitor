@@ -121,8 +121,8 @@ YUV420p_to_RGB24(unsigned char *yuv420[3], unsigned char *rgb24, int width, int 
 
 Player::Player():
     decoder_(new Decoder()),
-    yuv_frameBuf_(new unsigned char[640 * 480 * 3 / 2]),
-    bmp_frameBuf_(new unsigned char[640 * 480 * 3/*1536000+54*/])
+    yuv_frameBuf_(new unsigned char[WIDTH * HEIGHT * 3 / 2]),
+    bmp_frameBuf_(new unsigned char[WIDTH * HEIGHT * 3/*1536000+54*/])
 
 {
     pFile_ = fopen ( "playerout.yuv", "wb+" );
@@ -159,7 +159,7 @@ Player::init (boost::shared_ptr<FrameBuffer> frameBuffer)
 //         << std::this_thread::get_id() << " ";
     frameBuffer_ = frameBuffer;
 
-    if (!decoder_->InitDeocder(640, 480))
+    if (!decoder_->InitDeocder(WIDTH, HEIGHT))
 	{
 		return false;
     }
@@ -189,7 +189,7 @@ Player::writeFile ()
 		while ( slot== NULL )
             slot = frameBuffer_->popSlot();
 
-		unsigned char *p_Out_Frame = new unsigned char[640 * 480 * 3 / 2];
+        unsigned char *p_Out_Frame = new unsigned char[WIDTH * HEIGHT * 3 / 2];
 		unsigned char *p_In_Frame = slot->getDataPtr();
 		int outlen, inlen;
         inlen = slot->getPayloadSize();
@@ -241,7 +241,7 @@ bool Player::refresh()
 //        if ( slot == NULL )
 //            return false;
 
-    //unsigned char *p_Out_Frame = new unsigned char[640 * 480 * 3 / 2];
+    //unsigned char *p_Out_Frame = new unsigned char[WIDTH * HEIGHT * 3 / 2];
     unsigned char *p_In_Frame = slot->getDataPtr();
     int outlen, inlen;
     inlen = slot->getPayloadSize();
@@ -265,10 +265,10 @@ bool Player::refresh()
              << slot->getPayloadSize() << " "<<endl;
 #endif
 
-        unsigned char* yuv[3] = {yuv_frameBuf_,yuv_frameBuf_+ 640*480, yuv_frameBuf_ +640*480*5/4};
+        unsigned char* yuv[3] = {yuv_frameBuf_,yuv_frameBuf_+ WIDTH*HEIGHT, yuv_frameBuf_ +WIDTH*HEIGHT*5/4};
 
-        YUV420p_to_RGB24(yuv,bmp_frameBuf_,640,480);
-        //fwrite ( bmp_frameBuf_, 640*480*3/*outlen+54*/, 1, pFile_ );
+        YUV420p_to_RGB24(yuv,bmp_frameBuf_,WIDTH,HEIGHT);
+        //fwrite ( bmp_frameBuf_, WIDTH*HEIGHT*3/*outlen+54*/, 1, pFile_ );
 
         //return bmp_frameBuf_;
         //pixmap->loadFromData(image_buf, 800*480*4+54, "bmp", NULL);

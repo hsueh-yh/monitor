@@ -15,6 +15,8 @@
 #include "decoder.h"
 #include "frame-buffer.h"
 
+#define WIDTH 1080
+#define HEIGHT 720
 
 
 class Player

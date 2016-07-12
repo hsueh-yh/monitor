@@ -9,8 +9,8 @@ Controler::Controler():
     consumersMap_.clear();
     consumersVec_.clear();
     hostSet_.clear();
-    createFace("10.103.240.100",5363);
-    //createFace("localhost",6363);
+    //createFace("10.103.240.100",6363);
+    createFace("localhost",6363);
 }
 
 
