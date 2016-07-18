@@ -1,11 +1,14 @@
 #include "mainwindow.h"
 #include "ui_mainwindow.h"
+#include "simulator.h"
 
 #include <thread>
 #include <math.h>
 
-#define WIDTH 1080
-#define HEIGHT 720
+//#define WIDTH 1080
+//#define HEIGHT 720
+#define WIDTH 640
+#define HEIGHT 480
 
 MainWindow::MainWindow(QWidget *parent) :
     QMainWindow(parent),
@@ -20,6 +23,7 @@ MainWindow::MainWindow(QWidget *parent) :
 
     pixmap = QPixmap(WIDTH,HEIGHT);
     bFit = true;
+
     //ui->txlabel->resize(WIDTH,HEIGHT);
 
 //    connect(ui->start_btn,SIGNAL(clicked()),this,SLOT(on_start_btn()));
@@ -52,7 +56,7 @@ MainWindow::showStream( int id )
     QLabel *label = NULL;
     if(iter==labelMap.end())
     {
-        return;
+//        return;
     }
     else
     {
@@ -76,6 +80,7 @@ MainWindow::showStream( int id )
             //setPixmap(tmp);
             //image = new QImage(tmp,WIDTH,HEIGHT,QImage::Format_RGB888);
             controler->getConsumer(id)->player_->refresh();
+            //return;
 
             int num, width, height, x, y;
 
@@ -140,15 +145,85 @@ MainWindow::on_add_btn_clicked()
     addStreamDialog->show();
 }
 
-//void MainWindow::on_actionAdd_Stream_clicked()
-//{
 
-//}
+void
+MainWindow::simulatorWork(int index, double duration/*, const boost::system::error_code& e*/ )
+{
+    int idx = index;
+    if(counter >= p_quantity)
+    {
+        cout << "ended" << endl;
+        return;
+    }
+    if(counter%2 != 0)
+        idx = -1;
+    std::string jobstr("/video");
+    int consumerId;
+
+    std::cout << "Do job: " << counter + 1 << " Dest:"<< idx << " time(s):" << (int)(duration) << std::endl;
+    if( idx >= 0 )
+    {
+        //jobstr.append(std::to_string(idx));
+        jobstr.append(":10.103.240.100:6363");
+        cout << jobstr << endl;
+        //consumerId = controler->addStream(jobstr);
+        addStream(jobstr);
+    }
+    else
+    {
+        cout << "stop" << endl << endl;
+        //controler->stopConsumer(consumerId);
+        //mainwindow_->sto(jobstr);
+    }
+    timer->expires_from_now(std::chrono::microseconds((int)(duration*1000*1000)));
+    timer->async_wait(bind(&MainWindow::simulatorWork, this, jobs[counter], durations[counter]));
+    ++counter;
+}
 
 
 void
-MainWindow::addStream( QString stream )
+MainWindow::on_simulate_btn_clicked()
+{/*
+    int count, min, max;
+    double *random_pareto = pareto((double)1/3, 5.0, count, min, max);
+    double *random_zipf = zipf(0.6, 100);
+
+    for ( int i = 0; i < count; i++ )
+    */
+
+
+    //std::thread simulatorThread(&Simulator::start,simulator);
+    std::thread simulatorThread([&]
+    {
+        boost::asio::io_service io;
+        timer= new boost::asio::steady_timer(io);
+        durations = pareto(p_alpha, p_x_min, p_quantity, p_min, p_max);
+        jobs = zipf(z_alpha, z_quantity );
+
+        simulatorWork(jobs[counter], durations[counter]);
+
+//        boost::asio::io_service io;
+//        Simulator *simulator = new Simulator(this,io);
+//        simulator->start();
+//        io.run();
+//        cout << "Simulator ended" << endl;
+    });
+
+    simulatorThread.detach();
+}
+
+
+//void
+//MainWindow::startStream(string stream)
+//{
+//    addStream(stream);
+//}
+
+void
+MainWindow::addStream( std::string stream_/*QString stream*/ )
 {
+    cout << "Added Stream"<<endl;
+    QString stream = QString::fromStdString(stream_);
     QStringList list = stream.split(":");
 
     if (list.size() < 2)
@@ -167,12 +242,14 @@ MainWindow::addStream( QString stream )
 
     //controler->createFace(host,port);
 
-    consumerId = controler->addConsumer( prefix.toStdString() );
+//    consumerId = controler->addConsumer( prefix.toStdString() );
 
-    controler->startConsumer(consumerId);
+//    controler->startConsumer(consumerId);
+
+    consumerId = controler->addStream(prefix.toStdString());
 
     int num = controler->consumerNumber_;
-    QLabel *label = new QLabel(ui->labelWidget);
+    QLabel *label = new QLabel(this->ui->labelWidget);
     labelMap.insert(pair<int,QLabel*>(consumerId,label));//.push_back(label);
 
     std::thread playerThread(&MainWindow::showStream,this,consumerId);

@@ -38,7 +38,8 @@ HEADERS  += mainwindow.h \
     player.h \
     tdll.h \
     utils.h \
-    addstreamdialog.h
+    addstreamdialog.h \
+    simulator.h
 
 
 CONFIG += C++11

@@ -18,7 +18,7 @@ public:
     ~AddStreamDialog();
 
 signals:
-    void addedStream(QString stream);
+    void addedStream(std::string stream);
 
 private:
     Ui::AddStreamDialog *ui;

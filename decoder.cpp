@@ -100,9 +100,9 @@ bool Decoder::InitDeocder(int width, int height)
     pdecContext = avcodec_alloc_context3(pdecoder);
 	pdecFrame = av_frame_alloc();
 
-	pdecContext->width = width;
-	pdecContext->height = height;
-	pdecContext->pix_fmt = AV_PIX_FMT_YUV420P;
+    //pdecContext->width = width;
+    //pdecContext->height = height;
+    //pdecContext->pix_fmt = AV_PIX_FMT_YUV420P;
 	
 	/* open it */
     //debug//cout << "avcodec_open2" << endl;
@@ -168,8 +168,23 @@ bool Decoder::decode( unsigned char * inbuf, const int & inlen, unsigned char * 
 //		printf("%X ", pdecContext->extradata[i]);
 //	cout <<endl<<endl<<endl;
 
+
+
 	len = avcodec_decode_video2(pdecContext, pdecFrame, &got_frame, &avpkt);
-	if (len < 0)
+/*
+    cout    << endl
+            << "width " << pdecContext->width << endl
+            << "height: " << pdecContext->height << endl
+            << "bit_rate " << pdecContext->bit_rate  << endl
+            << "framerate " << pdecContext->framerate.num<< "/"<<pdecContext->framerate.den << endl
+            << "frame_bits " << pdecContext->frame_bits << endl
+            << "frame_number " << pdecContext->frame_number << endl
+            << "frame_size " << pdecContext->frame_size << endl
+            << "gop_size " << pdecContext->gop_size << endl
+            << "has_b_frames " << pdecContext->has_b_frames << endl
+            << endl;
+*/
+    if (len < 0)
 	{
         //debug//cout << "decode error ";
 		return false;

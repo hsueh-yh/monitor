@@ -37,7 +37,7 @@ AddStreamDialog::on_buttonBox_clicked(QAbstractButton *button)
 
             //std::cout << stream->toStdString() <<std::endl;
 
-            emit addedStream(*stream);
+            emit addedStream(stream->toStdString());
         }
     }
     else

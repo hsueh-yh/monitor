@@ -1,4 +1,5 @@
 #include "controler.h"
+#include <iostream>
 
 static boost::asio::io_service libIoService;
 
@@ -10,13 +11,24 @@ Controler::Controler():
     consumersVec_.clear();
     hostSet_.clear();
     //createFace("10.103.240.100",6363);
-    createFace("localhost",6363);
+    addFace("localhost",6363);
+}
+
+
+int
+Controler::addStream( std::string prefix)
+{
+    std::cout << "Controler::addStream: " << prefix <<endl;
+    int consumerId = addConsumer( prefix );
+    startConsumer(consumerId);
+    return consumerId;
 }
 
 
 int
 Controler::addConsumer( std::string prefix )
 {
+    std::cout << "Controler::addConsumer :" << consumerNumber_ << std::endl;
     int consumerId = ++consumerNumber_;
 
     Consumer *consumer = new Consumer(prefix.c_str(), FaceWrapper_);
@@ -69,7 +81,8 @@ Controler::startConsumer( int consumerId )
 }
 
 
-int Controler::stopConsumer(int consumerId)
+int
+Controler::stopConsumer(int consumerId)
 {
     std::cout << endl << "Stop Consumer " << consumerId << std::endl;
     Consumer *consumer = getConsumer(consumerId);
@@ -82,7 +95,7 @@ int Controler::stopConsumer(int consumerId)
 
 
 void
-Controler::createFace(const std::string host, const int port)
+Controler::addFace(const std::string host, const int port)
 {
     /*
     // if the uri did not specify a port

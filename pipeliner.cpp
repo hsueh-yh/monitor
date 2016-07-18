@@ -156,7 +156,7 @@ Pipeliner::init(boost::shared_ptr<FrameBuffer> frameBuffer, boost::shared_ptr<Fa
     frameBuffer_ = frameBuffer;
     faceWrapper_ = faceWrapper;
     window_.init(100/*,frameBuffer_*/);
-    state_ = Ready;
+    changetoState(Pipeliner::State::Ready);
 }
 
 
@@ -233,10 +233,14 @@ Pipeliner::startFeching()
     int frameNo = 0;
     while(1)
     {
-        if(state_ == Stoped)
+        if(getState() == Stoped)
+        {
             break;
+        }
         requestFrame(frameNo);
         frameNo++;
+
+        usleep(40*1000);
     }
 }
 
@@ -244,8 +248,13 @@ Pipeliner::startFeching()
 void
 Pipeliner::stop()
 {
-    if(state_ != Stoped)
-        state_ != Stoped;
+    cout << "stop0 " << stat << "******************************************************************************";
+    while(getState() != Stoped)
+    {
+        cout << "stop1 " << stat << "******************************************************************************";
+        changetoState(Stoped);
+        cout << "stop2 " << stat << "******************************************************************************";
+    }
     return;
 }
 
@@ -260,6 +269,14 @@ Pipeliner::getDefaultInterest(const ndn::Name &prefix, int64_t timeoutMs)
 }
 
 
+void
+Pipeliner::changetoState(Pipeliner::State stat)
+{
+    lock();
+    cout << "change to " << stat << "******************************************************************************";
+    state_ = stat;
+    unlock();
+}
 
 //******************************************************************************
 //******************************************************************************
@@ -299,7 +316,7 @@ Pipeliner::onTimeout(const ptr_lib::shared_ptr<const Interest>& interest)
 {
 
 #ifdef __SHOW_CONSOLE_
-    cout << "Pipeliner timeout: " << interest->getName().to_uri()<< endl;
+    cout << "Pipeliner timeout: " << interest->getName().toUri()<< endl;
 #endif
 
 }

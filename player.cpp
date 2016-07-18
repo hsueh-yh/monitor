@@ -148,6 +148,7 @@ Player::~Player()
 	fclose(pFile1_);
 	decoder_->StopDecoder();
 	decoder_->ReleaseConnection();
+    frameBuffer_.reset();
     cout << "Player dtor" << endl;
 }
 
@@ -169,15 +170,24 @@ Player::init (boost::shared_ptr<FrameBuffer> frameBuffer)
 
 
 void
+Player::start()
+{
+    while(1)
+    {
+        cout << "1111111111111111111111";
+        refresh();
+        cout << "2222222222222222222222";
+        usleep(40*1000);
+    }
+}
+
+
+void
 Player::writeFile ()
 {
-    //init();
-	//sleep(3);
-	std::cout<< std::endl<< std::endl << " Write start " << std::endl<< std::endl;
-	//cout << endl << "start write" << endl<< endl<< endl;
+    std::cout<< std::endl<< std::endl << " Write start " << std::endl<< std::endl;
 	int i=0;
-	std::cout << i <<std::endl;
-	//for ( int i = 0; i < 200; i++ )
+    std::cout << i <<std::endl;
 	while( ++i <= 202)
 	{
 
@@ -220,13 +230,6 @@ Player::writeFile ()
 
 bool Player::refresh()
 {
-    //init();
-    //sleep(3);
-
-    int i=0;
-
-    //std::cout<< std::endl<< std::endl << "...... Get frame start ...... " << std::endl;
-
     boost::shared_ptr<FrameBuffer::Slot> slot;
 
     slot = frameBuffer_->popSlot();
@@ -234,14 +237,10 @@ bool Player::refresh()
     while ( slot== NULL )
     {
         slot = frameBuffer_->popSlot();
-        usleep(30*1000);
+        usleep(40*1000);
         //return false;
     }
 
-//        if ( slot == NULL )
-//            return false;
-
-    //unsigned char *p_Out_Frame = new unsigned char[WIDTH * HEIGHT * 3 / 2];
     unsigned char *p_In_Frame = slot->getDataPtr();
     int outlen, inlen;
     inlen = slot->getPayloadSize();
@@ -259,6 +258,7 @@ bool Player::refresh()
 
     if ( outlen > 0 )
     {
+
 #ifdef __SHOW_CONSOLE_
         cout << "Play Frm: "
              << slot->getNumber() << " "

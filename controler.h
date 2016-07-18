@@ -23,6 +23,8 @@ public:
     ~Controler()
     {}
 
+    int addStream(std::string prefix);
+
     int addConsumer(std::string prefix);
 
     int startConsumer(int consumerId);
@@ -31,7 +33,7 @@ public:
 
     Consumer* getConsumer(const int consumerId );
 
-    void createFace(const string host, const int port);
+    void addFace(const string host, const int port);
 
 
 //private:

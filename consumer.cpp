@@ -112,14 +112,20 @@ Consumer::start()
 void
 Consumer::stop()
 {
-    frameBuffer_.reset();
-    pipeliner_.reset();
+    pipeliner_->stop();
+    /*
+    player_->~Player();
     player_.reset();
 
     pipeliner_->stop();
+    pipeliner_->~Pipeliner();
     pipeliner_.reset();
 
-    if( faceWrapper_.use_count() <= 1 )
-        faceWrapper_.reset();
+    frameBuffer_->~FrameBuffer();
+    */
+    //frameBuffer_.reset();
+
+//    if( faceWrapper_.use_count() <= 1 )
+//        faceWrapper_.reset();
 }
 

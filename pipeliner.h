@@ -89,6 +89,11 @@ public:
 
     void stop();
 
+    void changetoState(Pipeliner::State stat);
+
+    Pipeliner::State getState()
+    { lock(); Pipeliner::State stat = state_; unlock();return stat;  }
+
     boost::shared_ptr<Interest>
     getDefaultInterest(const Name& prefix, int64_t timeoutMs = 0);
 
@@ -97,6 +102,12 @@ public:
 
 	void onTimeout(const ptr_lib::shared_ptr<const Interest>& interest);
 
+
+    void
+    lock()  { syncMutex_.lock(); }
+
+    void
+    unlock() { syncMutex_.unlock(); }
 
 private:
 
@@ -110,6 +121,7 @@ private:
 
     int count_;
     State state_;
+    std::recursive_mutex syncMutex_;
 };
 
 

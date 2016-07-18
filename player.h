@@ -15,8 +15,10 @@
 #include "decoder.h"
 #include "frame-buffer.h"
 
-#define WIDTH 1080
-#define HEIGHT 720
+//#define WIDTH 1080
+//#define HEIGHT 720
+#define WIDTH 640
+#define HEIGHT 480
 
 
 class Player
@@ -27,6 +29,8 @@ public:
 	~Player();
 
     bool init (boost::shared_ptr<FrameBuffer> frameBuffer);
+
+    void start();
 
 	void writeFile ();
 
