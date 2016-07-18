@@ -97,6 +97,9 @@ static int *zipf( double alpha, int n )
 }
 
 
+static int simulatorCounter = 0;
+
+
 class Simulator
 {
 public:
@@ -107,9 +110,26 @@ public:
         z_alpha(0.6), z_quantity(100), z_min(0), z_max(100),  // zipf parameters
         counter(0),
         timer(io)
-    {}
+    {
+        durations = pareto(p_alpha, p_x_min, p_quantity, p_min, p_max);
+        jobs = zipf(z_alpha, z_quantity );
+    }
 
     ~Simulator();
+
+
+//    long getTimer()
+//    {
+//        return ;
+//    }
+
+
+    std::string getNextURI()
+    {
+        std::string destURI("/video");
+        destURI.append("localhost:6363");
+        return destURI;
+    }
 
     void start()
     {
