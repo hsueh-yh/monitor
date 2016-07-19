@@ -122,34 +122,28 @@ YUV420p_to_RGB24(unsigned char *yuv420[3], unsigned char *rgb24, int width, int 
 Player::Player():
     decoder_(new Decoder()),
     yuv_frameBuf_(new unsigned char[WIDTH * HEIGHT * 3 / 2]),
-    bmp_frameBuf_(new unsigned char[WIDTH * HEIGHT * 3/*1536000+54*/])
+    bmp_frameBuf_(new unsigned char[WIDTH * HEIGHT * 3/*1536000+54*/]),
+    state_(Ready)
 
 {
-    pFile_ = fopen ( "playerout.yuv", "wb+" );
-	if ( pFile_ == NULL )
-	{
-		std::cout << "open consumer.yuv error" << std::endl;
-		return;
-	}
-
-	pFile1_ = fopen ( "testPlayer.264", "wb+" );
-	if ( pFile1_ == NULL )
-	{
-		std::cout << "open consumer.yuv error" << std::endl;
-		return;
-	}
-
+//    pFile_ = fopen ( "playerout.yuv", "wb+" );
+//    if ( pFile_ == NULL )
+//    {
+//        std::cout << "open consumer.yuv error" << std::endl;
+//        return;
+//    }
 }
 
 
 Player::~Player()
 {
-	fclose(pFile_);
-	fclose(pFile1_);
-	decoder_->StopDecoder();
-	decoder_->ReleaseConnection();
-    frameBuffer_.reset();
-    cout << "Player dtor" << endl;
+    //fclose(pFile_);
+    //decoder_->StopDecoder();
+    //decoder_->ReleaseConnection();
+    //frameBuffer_.reset();
+#ifdef __SHOW_CONSOLE_
+    cout << "[Player] dtor" << endl;
+#endif
 }
 
 
@@ -165,6 +159,7 @@ Player::init (boost::shared_ptr<FrameBuffer> frameBuffer)
 		return false;
     }
 
+    changetoState(Started);
 	return true;
 }
 
@@ -172,13 +167,39 @@ Player::init (boost::shared_ptr<FrameBuffer> frameBuffer)
 void
 Player::start()
 {
+    changetoState(Started);
     while(1)
     {
-        cout << "1111111111111111111111";
         refresh();
-        cout << "2222222222222222222222";
         usleep(40*1000);
     }
+}
+
+
+void
+Player::stop()
+{
+    lock();
+    //decoder_->StopDecoder();
+    //decoder_->ReleaseConnection();
+    while(getState() != Stoped)
+    {
+        changetoState(Stoped);
+    }
+    unlock();
+#ifdef __SHOW_CONSOLE_
+    cout << "[Player] Stoping" << endl;
+#endif
+    return;
+}
+
+
+void
+Player::changetoState(Player::State stat)
+{
+    //lock();
+    state_ = stat;
+    //unlock();
 }
 
 
@@ -228,8 +249,11 @@ Player::writeFile ()
 }
 
 
-bool Player::refresh()
+bool
+Player::refresh()
 {
+    if( getState() == Stoped)
+        return false;
     boost::shared_ptr<FrameBuffer::Slot> slot;
 
     slot = frameBuffer_->popSlot();
@@ -237,7 +261,7 @@ bool Player::refresh()
     while ( slot== NULL )
     {
         slot = frameBuffer_->popSlot();
-        usleep(40*1000);
+        usleep(1000);
         //return false;
     }
 
@@ -260,7 +284,7 @@ bool Player::refresh()
     {
 
 #ifdef __SHOW_CONSOLE_
-        cout << "Play Frm: "
+        cout << "[Play]  : "
              << slot->getNumber() << " "
              << slot->getPayloadSize() << " "<<endl;
 #endif
@@ -274,7 +298,7 @@ bool Player::refresh()
         //pixmap->loadFromData(image_buf, 800*480*4+54, "bmp", NULL);
         return true;
     }
-    cout << endl << slot->getNumber() << " " << slot->getPayloadSize() << endl << endl;
+    //cout << endl << slot->getNumber() << " " << slot->getPayloadSize() << endl << endl;
 
     return false;
 }

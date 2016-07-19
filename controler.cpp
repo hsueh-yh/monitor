@@ -5,7 +5,8 @@ static boost::asio::io_service libIoService;
 
 
 Controler::Controler():
-    consumerNumber_(0)
+    consumerNumber_(0),
+    consumerIdx_(0)
 {
     consumersMap_.clear();
     consumersVec_.clear();
@@ -18,7 +19,9 @@ Controler::Controler():
 int
 Controler::addStream( std::string prefix)
 {
-    std::cout << "Controler::addStream: " << prefix <<endl;
+#ifdef __SHOW_CONSOLE_
+    std::cout << "[Controler] Add Stream: " << prefix <<endl;
+#endif
     int consumerId = addConsumer( prefix );
     startConsumer(consumerId);
     return consumerId;
@@ -28,13 +31,15 @@ Controler::addStream( std::string prefix)
 int
 Controler::addConsumer( std::string prefix )
 {
-    std::cout << "Controler::addConsumer :" << consumerNumber_ << std::endl;
     int consumerId = ++consumerNumber_;
+    //int consumerId = ++consumerIdx_;
+    //consumerNumber_++;
+#ifdef __SHOW_CONSOLE_
+    std::cout << "[Controler] Add Consumer :" << consumerId << std::endl;
+#endif
 
     Consumer *consumer = new Consumer(prefix.c_str(), FaceWrapper_);
     consumersMap_.insert(pair<int,Consumer*>(consumerId,consumer));
-
-    std::cout << "Add Consumer " << consumerId << std::endl;
 
     return consumerId;
 }
@@ -59,7 +64,9 @@ Controler::getConsumer( const int consumerId )
 int
 Controler::startConsumer( int consumerId )
 {
-    std::cout << "Start Consumer " << consumerId << std::endl;
+#ifdef __SHOW_CONSOLE_
+    std::cout << "[Controler] Start Consumer " << consumerId << std::endl;
+#endif
     Consumer *consumer = getConsumer(consumerId);
     if( consumer == NULL )
     {
@@ -71,12 +78,9 @@ Controler::startConsumer( int consumerId )
 
     std::thread *consumerThread =
             new std::thread(bind(&Consumer::start,consumer));
-//            new std::thread([&]
-//                {
-//                    consumer->start();
-//                });
 
     consumerThread->detach();
+
     return 1;
 }
 
@@ -84,12 +88,33 @@ Controler::startConsumer( int consumerId )
 int
 Controler::stopConsumer(int consumerId)
 {
-    std::cout << endl << "Stop Consumer " << consumerId << std::endl;
+    if(consumerId<=0) return -1;
+    lock();
+#ifdef __SHOW_CONSOLE_
+    std::cout << endl << "[Controler] Stop Consumer " << consumerId << std::endl;
+#endif
+    if(consumerNumber_ > 0)
+        consumerNumber_--;
+    else
+        return -1;
     Consumer *consumer = getConsumer(consumerId);
+
     if( consumer == NULL )
         return -1;
 
+    map<int,Consumer*>::iterator iter;
+
+    iter = consumersMap_.find(consumerId);
+
+    if( iter != consumersMap_.end() )
+    {
+        consumersMap_.erase(iter);
+    }
+
+
     consumer->stop();
+    //delete consumer;
+    unlock();
     return 1;
 }
 

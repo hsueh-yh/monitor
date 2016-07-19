@@ -13,6 +13,7 @@
 
 #include "controler.h"
 //#include "consumer.h"
+#include "simulator.h"
 
 using namespace std;
 
@@ -44,18 +45,19 @@ private slots:
     void on_stop_btn_clicked();
     void on_add_btn_clicked();
     void on_simulate_btn_clicked();
+    void on_simulate_wait();
     //  on menu
 //    void on_actionAdd_Face_clicked();
 //    void on_actionAdd_Stream_clicked();
 
+
 public slots:
-    void addStream(string stream_);
+    int addStream(string stream_);
+    int stopStream(int id);
 
-//private:
-public:
-    void simulatorWork(int index, double duration/*, const boost::system::error_code& e*/ );
+private:
     void showStream(int id);
-
+    void work();
 
     Ui::MainWindow *ui;
     //Controler* controler;
@@ -70,24 +72,11 @@ public:
 
     AddStreamDialog *addStreamDialog;
 
-    boost::asio::steady_timer *timer;
 
-    double *durations;
-    int *jobs;
-    int counter = 0;
-
-    // pareto parameters
-    double  p_alpha = 0.6,
-            p_x_min = 5.0,
-            p_min = 5.0,
-            p_max = 10.0;
-    int     p_quantity = 10;
-
-    // zipf parameters
-    double  z_alpha = 0.6,
-            z_min = 0,
-            z_max = 100;
-    int     z_quantity = 100;
+    //Simulator
+    Simulator *simulator;
+    QTimer *timer;
+    int consumerSmltId;
 
 };
 

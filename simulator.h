@@ -2,14 +2,10 @@
 #include <stdlib.h>
 #include <math.h>
 #include <time.h>
-#include <boost/asio.hpp>
-#include <boost/asio/steady_timer.hpp>
-#include <boost/date_time/posix_time/posix_time.hpp>
 #include <iostream>
-#include "controler.h"
-#include "mainwindow.h"
 
-
+#ifndef _SIMULATOR_H_
+#define _SIMULATOR_H_
 #define _SIMULATOR_ACCURACY_ 1000000
 
 /*
@@ -97,19 +93,17 @@ static int *zipf( double alpha, int n )
 }
 
 
-static int simulatorCounter = 0;
+static int durationCounter = -1;
+static int jobCounter = -1;
 
 
 class Simulator
 {
 public:
-    Simulator(MainWindow* mainwindow, boost::asio::io_service& io):
-        mainwindow_(mainwindow),
-        controler(new Controler),
-        p_alpha(0.6), p_x_min(5.0), p_quantity(10), p_min(5.0), p_max(10.0),  // pareto parameters
+    Simulator():
+        p_alpha(0.6), p_x_min(5.0), p_quantity(10000), p_min(5.0), p_max(10.0),  // pareto parameters
         z_alpha(0.6), z_quantity(100), z_min(0), z_max(100),  // zipf parameters
-        counter(0),
-        timer(io)
+        counter(0)
     {
         durations = pareto(p_alpha, p_x_min, p_quantity, p_min, p_max);
         jobs = zipf(z_alpha, z_quantity );
@@ -118,59 +112,26 @@ public:
     ~Simulator();
 
 
-//    long getTimer()
-//    {
-//        return ;
-//    }
+    long getTimer()
+    {
+        //cout << simulatorCounter+1<<endl;
+        return 1000*durations[++durationCounter];
+    }
 
 
     std::string getNextURI()
     {
+        stringstream ss;
+        string str;
+        ss<<jobs[++jobCounter];
+        ss>>str;
         std::string destURI("/video");
-        destURI.append("localhost:6363");
+        destURI.append("/");
+        destURI.append(str);
+        destURI.append(":localhost:6363");
         return destURI;
     }
 
-    void start()
-    {
-        durations = pareto(p_alpha, p_x_min, p_quantity, p_min, p_max);
-        jobs = zipf(z_alpha, z_quantity );
-
-        work(jobs[counter], durations[counter]);
-    }
-
-    void work(int index, double duration/*, const boost::system::error_code& e*/ )
-    {
-        int idx = index;
-        if(counter >= p_quantity)
-        {
-            cout << "ended" << endl;
-            return;
-        }
-        if(counter%2 != 0)
-            idx = -1;
-        std::string jobstr("/video");
-        int consumerId;
-
-        std::cout << "Do job: " << counter + 1 << " Dest:"<< idx << " time(s):" << (int)(duration) << std::endl;
-        if( idx >= 0 )
-        {
-            //jobstr.append(std::to_string(idx));
-            jobstr.append(":10.103.240.100:6363");
-            cout << jobstr << endl;
-            //consumerId = controler->addStream(jobstr);
-            mainwindow_->addStream(jobstr);
-        }
-        else
-        {
-            cout << "stop" << endl << endl;
-            //controler->stopConsumer(consumerId);
-            //mainwindow_->sto(jobstr);
-        }
-        timer.expires_from_now(std::chrono::microseconds((int)(duration*1000*1000)));
-        timer.async_wait(bind(&Simulator::work, this, jobs[counter], durations[counter]));
-        ++counter;
-    }
 
 private:
     double *durations;
@@ -190,9 +151,6 @@ private:
             z_max;
     int     z_quantity;
 
-    boost::asio::steady_timer timer;
-
-    Controler *controler;
-    MainWindow* mainwindow_;
-
 };
+
+#endif //_SIMULATOR_H_

@@ -31,6 +31,12 @@ class FrameBuffer
 {
 public:
 
+    typedef enum{
+        Stoped = -1,
+        Ready = 0,
+        Started = 1
+    }State;
+
 	class Slot
     {
     public:
@@ -173,21 +179,28 @@ public:
 
 	FrameBuffer():
         count_(0),
-        activeSlots_count_(0)
-		//status_(STOPED)
+        activeSlots_count_(0),
+        stat_(Started)
 	{}
 
 
     ~FrameBuffer()
     {
-        cout << "FrameBuffer dtor" << endl;
+#ifdef __SHOW_CONSOLE_
+        cout << "[FrameBuffer] dtor" << endl;
+#endif
     }
 
     void
     init()
 	{
-        //status_ = STARTED;
+        //stat_ = Ready;
 	}
+
+    void stop()
+    {
+        stat_ = Stoped;
+    }
 
     void
     lock()  { syncMutex_.lock(); }
@@ -269,6 +282,8 @@ public:
     PlaybackQueue;
 
 	int count_;
+
+    State stat_;
 
     //PriorityQueue priorityQueue_;
 	std::recursive_mutex syncMutex_;

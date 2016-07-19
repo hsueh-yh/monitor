@@ -35,18 +35,27 @@ public:
 
     void addFace(const string host, const int port);
 
+    void
+    lock()  { syncMutex_.lock(); }
+
+    void
+    unlock() { syncMutex_.unlock(); }
+
 
 //private:
-    int consumerNumber_;
+    int consumerNumber_,consumerIdx_;
     int faceNumber_;
     map<int,Consumer*> consumersMap_;
     vector<Consumer*> consumersVec_;
+    map<int,pthread_t> playerId_;
 
     set<std::string> hostSet_;
 
     //map<int,std::thread*> consumerThreads_;
 
     boost::shared_ptr<FaceWrapper> FaceWrapper_;
+
+    std::mutex/*recursive_mutex*/ syncMutex_;
 
 //    Consumer* consumer;
 //    Player* player_;

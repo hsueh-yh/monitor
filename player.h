@@ -24,6 +24,13 @@
 class Player
 {
 public:
+
+    typedef enum{
+        Stoped = -1,
+        Ready = 0,
+        Started = 1
+    }State;
+
     Player();
 
 	~Player();
@@ -32,19 +39,35 @@ public:
 
     void start();
 
+    void stop();
+
+    void changetoState(Player::State stat);
+
 	void writeFile ();
 
     bool refresh();
+
+    void
+    lock()  { syncMutex_.lock(); }
+
+    void
+    unlock() { syncMutex_.unlock(); }
+
+    State getState()
+    { lock(); Player::State stat = state_; unlock();return stat;  }
+
 
     unsigned char* imageProcess(const void* p,unsigned char* dst);
 
     unsigned char* bmp_frameBuf_;
 
+    State state_;
+    std::recursive_mutex syncMutex_;
 
 private:
     boost::shared_ptr<FrameBuffer> frameBuffer_;
 
-	FILE *pFile_, *pFile1_;
+    FILE *pFile_;
 	Decoder *decoder_;
 
     unsigned char * yuv_frameBuf_/**, bmp_frameBuf_*/;

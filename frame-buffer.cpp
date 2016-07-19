@@ -296,7 +296,8 @@ FrameBuffer::pushSlot(boost::shared_ptr<Slot> slot)
 void
 FrameBuffer::dataArrived(const ndn::ptr_lib::shared_ptr<Data>& data)
 {
-    FrameNumber frameNo = std::atoi(data->getName().get(1).toEscapedString().c_str());
+    int componentCount = data->getName().getComponentCount();
+    FrameNumber frameNo = std::atoi(data->getName().get(componentCount-1).toEscapedString().c_str());
     map<int, boost::shared_ptr<Slot> >::iterator iter;
     iter = activeSlots_.find(frameNo);
 

@@ -4,6 +4,7 @@
 
 #include <thread>
 #include <math.h>
+#include <time.h>
 
 //#define WIDTH 1080
 //#define HEIGHT 720
@@ -14,20 +15,15 @@ MainWindow::MainWindow(QWidget *parent) :
     QMainWindow(parent),
     ui(new Ui::MainWindow),
     controler(new Controler),
-    space_(5)
+    space_(5),
+    simulator(new Simulator),
+    timer(new QTimer(this)),
+    consumerSmltId(0)
 {
     ui->setupUi(this);
-   // ui->txlabel->resize(WIDTH,HEIGHT);
-    //layout = new QVBoxLayout( this );
-    //ui->centralWidget->setLayout(layout);
 
     pixmap = QPixmap(WIDTH,HEIGHT);
     bFit = true;
-
-    //ui->txlabel->resize(WIDTH,HEIGHT);
-
-//    connect(ui->start_btn,SIGNAL(clicked()),this,SLOT(on_start_btn()));
-//    connect(ui->stop_btn,SIGNAL(clicked()),this,SLOT(on_stop_btn()));
 }
 
 MainWindow::~MainWindow()
@@ -39,53 +35,71 @@ MainWindow::~MainWindow()
 void
 MainWindow::showStream( int id )
 {
-    cout << "Start Player " << id << endl;
+#ifdef __SHOW_CONSOLE_
+    cout << "[Player] Start " << id << endl;
+#endif
 
+    controler->lock();
     Consumer *consumer = controler->getConsumer(id);
 
     if(consumer == NULL)
     {
+        controler->unlock();
         cout << "Consumer "<< id << " not started" << endl;
         return ;
     }
-
+    while( consumer->getstatus() == Consumer::Status::STOPED)
+        usleep(1000);
     unsigned char *tmp = consumer->player_->bmp_frameBuf_;
 
+    controler->unlock();
     QImage *image = new QImage(tmp,WIDTH,HEIGHT,QImage::Format_RGB888);
     map<int,QLabel*>::iterator iter = labelMap.find(id);
     QLabel *label = NULL;
+
     if(iter==labelMap.end())
     {
-//        return;
+        return;
     }
     else
     {
         label = iter->second;
     }
 
-    //layout->addWidget(label);
-    int i = 0;
-    //label->move((id-1)*width,(id-1)*height);
-    //label->move(0,0);
-    while( ++i  /*<= 202*/ )
+    while(  1 /*++i<= 202*/ )
     {
-        //unsigned char *tmp = controler->getConsumer(id)->player_->bmp_frameBuf_;
-        //image = new QImage(tmp,WIDTH,HEIGHT,QImage::Format_RGB888);
+        controler->lock();
+        if( NULL == controler->getConsumer(id))
+        {
+            controler->unlock();
+            break;
+        }
+        if( consumer->getstatus() != Consumer::Status::STARTED)
+        {
+            controler->unlock();
+            break;
+        }
         if( tmp == NULL || label == NULL )
         {
+            controler->unlock();
             label->setText("Waiting ...");
         }
         else
         {
-            //setPixmap(tmp);
-            //image = new QImage(tmp,WIDTH,HEIGHT,QImage::Format_RGB888);
+            if( NULL == controler->getConsumer(id)) break;
+            if( consumer->getstatus() != Consumer::Status::STARTED) break;
+            controler->getConsumer(id)->player_->lock();
             controler->getConsumer(id)->player_->refresh();
+            controler->getConsumer(id)->player_->unlock();
             //return;
 
             int num, width, height, x, y;
 
             num = controler->consumerNumber_;
+            //num = consumerSmltId;
+
             int base_ = ceil(sqrt(num));
+            if (base_ == 0) break;
 
             width = (ui->labelWidget->width())/base_;
             height = ( ui->labelWidget->height() )/base_;
@@ -110,14 +124,11 @@ MainWindow::showStream( int id )
 //                    << endl << endl;
 
             label->show();
-            //std::cout << width << "*" << height << std::endl;
-            //delete(image);
         }
-
+        controler->unlock();
         usleep(40 * 1000);
     }
-    //cout << "show end------------------------------------------" << endl;
-    //while(1);
+    label->close();
 }
 
 
@@ -132,7 +143,7 @@ MainWindow::on_start_btn_clicked()
 void
 MainWindow::on_stop_btn_clicked()
 {
-    controler->stopConsumer(1);
+    controler->stopConsumer(controler->consumerNumber_);
 }
 
 
@@ -147,96 +158,81 @@ MainWindow::on_add_btn_clicked()
 
 
 void
-MainWindow::simulatorWork(int index, double duration/*, const boost::system::error_code& e*/ )
+MainWindow::on_simulate_wait()
 {
-    int idx = index;
-    if(counter >= p_quantity)
-    {
-        cout << "ended" << endl;
-        return;
-    }
-    if(counter%2 != 0)
-        idx = -1;
-    std::string jobstr("/video");
-    int consumerId;
+    stopStream(consumerSmltId);
 
-    std::cout << "Do job: " << counter + 1 << " Dest:"<< idx << " time(s):" << (int)(duration) << std::endl;
-    if( idx >= 0 )
-    {
-        //jobstr.append(std::to_string(idx));
-        jobstr.append(":10.103.240.100:6363");
-        cout << jobstr << endl;
-        //consumerId = controler->addStream(jobstr);
-        addStream(jobstr);
-    }
-    else
-    {
-        cout << "stop" << endl << endl;
-        //controler->stopConsumer(consumerId);
-        //mainwindow_->sto(jobstr);
-    }
-    timer->expires_from_now(std::chrono::microseconds((int)(duration*1000*1000)));
-    timer->async_wait(bind(&MainWindow::simulatorWork, this, jobs[counter], durations[counter]));
-    ++counter;
+    long duration = simulator->getTimer();
+
+    clock_t start, finish;
+    start = clock();
+
+    finish = start + duration;
+
+    //controler->stopConsumer(consumerSmltId);
+
+    cout << endl
+         << "[Simulator] Waiting "
+         << duration << "ms"
+         << endl;
+
+   // usleep(1000);
+
+
+    timer->disconnect();
+    //cout << "disconnect fetch"<<endl;
+    connect(timer,SIGNAL(timeout()),this,SLOT(on_simulate_btn_clicked()));
+
+    timer->start(duration);
 }
 
 
 void
 MainWindow::on_simulate_btn_clicked()
-{/*
-    int count, min, max;
-    double *random_pareto = pareto((double)1/3, 5.0, count, min, max);
-    double *random_zipf = zipf(0.6, 100);
+{
+    std::string nextURI;
+    long duration;
 
-    for ( int i = 0; i < count; i++ )
-    */
+    nextURI = simulator->getNextURI();
+    duration = simulator->getTimer();
 
+    clock_t start, finish;
+    start = clock();
 
-    //std::thread simulatorThread(&Simulator::start,simulator);
-    std::thread simulatorThread([&]
-    {
-        boost::asio::io_service io;
-        timer= new boost::asio::steady_timer(io);
-        durations = pareto(p_alpha, p_x_min, p_quantity, p_min, p_max);
-        jobs = zipf(z_alpha, z_quantity );
+    finish = start + duration;
 
-        simulatorWork(jobs[counter], durations[counter]);
+    cout << endl
+         << "[Simulator] Fetching " << nextURI<< " "
+         << duration << "ms"
+         << endl;
+    consumerSmltId = addStream(nextURI);
 
-//        boost::asio::io_service io;
-//        Simulator *simulator = new Simulator(this,io);
-//        simulator->start();
-//        io.run();
-//        cout << "Simulator ended" << endl;
-    });
+    timer->disconnect();
+    //cout << "disconnect wait"<<endl;
+    connect(timer,SIGNAL(timeout()),this,SLOT(on_simulate_wait()));
 
-    simulatorThread.detach();
+    timer->start(duration);
 }
 
 
-//void
-//MainWindow::startStream(string stream)
-//{
-//    addStream(stream);
-//}
-
-void
+int
 MainWindow::addStream( std::string stream_/*QString stream*/ )
 {
-    cout << "Added Stream"<<endl;
+    //cout << "Added Stream"<<endl;
     QString stream = QString::fromStdString(stream_);
     QStringList list = stream.split(":");
 
     if (list.size() < 2)
     {
-        return ;
+        return -1;
     }
     QString prefix = list[0].simplified();
     QString host = list[1].simplified();
     int port = (list.size() > 2) ? list[2].toInt() : 6363;
 
-    std::cout << "Prefix: " << prefix.toStdString() << std::endl
-              << "Face  : " << host.toStdString()
-              << ":" << port << std::endl;
+//    std::cout << "Prefix: " << prefix.toStdString() << std::endl
+//              << "Face  : " << host.toStdString()
+//              << ":" << port << std::endl;
 
     int consumerId = 1;
 
@@ -256,5 +252,26 @@ MainWindow::addStream( std::string stream_/*QString stream*/ )
 
     playerThread.detach();
 
+    controler->playerId_.insert(pair<int,pthread_t>(consumerId,playerThread.native_handle()));
     //controler->consumer->start();
+    return consumerId;
+}
+
+
+int
+MainWindow::stopStream(int id)
+{
+//    map<int,pthread_t>::iterator iter;
+
+//    iter = controler->playerId_.find(id);
+
+//    if( iter != controler->playerId_.end() )
+//    {
+//        pthread_kill(iter->second,SIGTERM);
+//        cout<<"Kill player" << endl;
+//        controler->playerId_.erase(iter);
+//    }
+
+    if ( -1 == controler->stopConsumer(id))
+        cout << "Stop Consumer failed! " << endl;
 }

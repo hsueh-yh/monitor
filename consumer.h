@@ -49,6 +49,9 @@ public:
 
     void stop();
 
+    Status getstatus()
+    { return status_;}
+
 	boost::shared_ptr<FaceWrapper> faceWrapper_;
 	boost::shared_ptr<FrameBuffer> frameBuffer_;
 	boost::shared_ptr<Pipeliner> pipeliner_;

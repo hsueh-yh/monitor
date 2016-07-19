@@ -39,7 +39,6 @@ PipelinerWindow::init(unsigned int windowSize/*, const FrameBuffer* frameBuffer*
     framePool_.clear();
     dw_ = windowSize;
     w_ = (int)windowSize;
-    cout << "Pipeliner init " << w_ << endl;
 }
 
 
@@ -133,20 +132,24 @@ Pipeliner::Pipeliner(std::string prefix):
     state_(Stoped)
 {
 
-	pipelinerFIle_ = fopen ( "pipelinerFIle_.264", "wb+" );
-	if ( pipelinerFIle_ == NULL )
-	{
-		std::cout << "open consumer.yuv error" << std::endl;
-		return;
-	}
+//	pipelinerFIle_ = fopen ( "pipelinerFIle_.264", "wb+" );
+//	if ( pipelinerFIle_ == NULL )
+//	{
+//		std::cout << "open consumer.yuv error" << std::endl;
+//		return;
+//	}
 
 }
 
 
 Pipeliner::~Pipeliner()
 {
-    cout << "Pipeliner dtor" << endl;
-	fclose(pipelinerFIle_);
+//    frameBuffer_.reset();
+//    faceWrapper_.reset();
+#ifdef __SHOW_CONSOLE_
+    cout << "[Pipeliner] dtor" << endl;
+#endif
+    //fclose(pipelinerFIle_);
 }
 
 
@@ -169,7 +172,9 @@ Pipeliner::express(Interest& interest/*, int64_t priority*/)
             bind(&Pipeliner::onTimeout, this, _1));
 
 #ifdef __SHOW_CONSOLE_
-    cout << "Express : " << interest.getName().toUri() << endl;
+    int componentCount = interest.getName().getComponentCount();
+    cout << "Express : " << interest.getName().get(componentCount-1).toEscapedString()
+         << " " << interest.getName().toUri() << endl;
 #endif
 }
 
@@ -183,7 +188,9 @@ Pipeliner::express(Name& name/*, int64_t priority*/)
             bind(&Pipeliner::onTimeout, this, _1));
 
 #ifdef __SHOW_CONSOLE_
-    cout << "Express : " << name.toUri() << endl;
+    int componentCount = name.getComponentCount();
+    cout << "Express : " << name.get(componentCount-1).toEscapedString()
+         << " " << name.toUri() << endl;
 #endif
 }
 
@@ -194,7 +201,7 @@ Pipeliner::requestFrame(PacketNumber& frameNo)
     if( !window_.canAskForData(frameNo) )
     {
         //cout << "Windown: " << window_.getCurrentWindowSize() << endl;
-        usleep(100000);
+        usleep(10*1000);
     }
 
     Name packetPrefix(basePrefix_);
@@ -211,9 +218,10 @@ Pipeliner::requestFrame(PacketNumber& frameNo)
     slot->interestIssued();
 
     //frameBuffer_->lock();
+
     while( !frameBuffer_->pushSlot(slot))
     {
-        usleep(100000);
+        usleep(1000);
         //cout << ".";
     }
 
@@ -228,34 +236,31 @@ Pipeliner::requestFrame(PacketNumber& frameNo)
 
 
 void
-Pipeliner::startFeching()
+Pipeliner::startFetching()
 {
     int frameNo = 0;
-    while(1)
+    while( getState() != Stoped )
     {
-        if(getState() == Stoped)
-        {
-            break;
-        }
         requestFrame(frameNo);
         frameNo++;
 
-        usleep(40*1000);
+        usleep(10*1000);
     }
+    //cout << "[Pipeliner] stop fetching" << endl;
 }
 
 
 void
 Pipeliner::stop()
 {
-    cout << "stop0 " << stat << "******************************************************************************";
+#ifdef __SHOW_CONSOLE_
+    cout << "[Pipeliner] Stoping" << endl;
+#endif
+    window_.reset();
     while(getState() != Stoped)
     {
-        cout << "stop1 " << stat << "******************************************************************************";
         changetoState(Stoped);
-        cout << "stop2 " << stat << "******************************************************************************";
     }
-    return;
 }
 
 
@@ -273,7 +278,6 @@ void
 Pipeliner::changetoState(Pipeliner::State stat)
 {
     lock();
-    cout << "change to " << stat << "******************************************************************************";
     state_ = stat;
     unlock();
 }
@@ -285,7 +289,10 @@ void
 Pipeliner::onData(const ptr_lib::shared_ptr<const Interest>& interest,
 		const ptr_lib::shared_ptr<Data>& data)
 {
-    FrameNumber frameNo = std::atoi(data->getName().get(1).toEscapedString().c_str());
+    if (getState() == Stoped)
+        return;
+    int componentCount = data->getName().getComponentCount();
+    FrameNumber frameNo = std::atoi(data->getName().get(componentCount-1).toEscapedString().c_str());
 	//std::cout<<"Pipeliner onData:"<<std::endl;
 
 //	if ( data->getContent ().buf () == NULL )
@@ -304,7 +311,15 @@ Pipeliner::onData(const ptr_lib::shared_ptr<const Interest>& interest,
 //    memcpy( gotFrame.buf_, data->getContent().buf()+sizeof(FrameData), gotFrame.header_.length_);   //copy frame data
 
     window_.dataArrived(frameNo);
+
+    if (getState() == Stoped)
+        return;
+
     frameBuffer_->lock();
+
+    if( frameBuffer_->stat_ == FrameBuffer::State::Stoped)
+        return;
+
     frameBuffer_->dataArrived(data);
     frameBuffer_->unlock();
 

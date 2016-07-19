@@ -1,7 +1,7 @@
 #ifndef COMMON_H
 #define COMMON_H
 
-#define __SHOW_CONSOLE_
+//#define __SHOW_CONSOLE_
 
 //#define WIDTH 1080
 //#define HEIGHT 720

@@ -16,6 +16,7 @@ Decoder::Decoder(void)
 
 Decoder::~Decoder(void)
 {
+    StopDecoder();
 }
 
 bool Decoder::LoadDllFun()
@@ -89,8 +90,8 @@ bool Decoder::InitDeocder(int width, int height)
     //debug//cout << "av_init_packet..." << endl;
 	av_init_packet(&avpkt);
 
-	m_width = width;
-	m_height = height;
+    m_width = width;
+    m_height = height;
     //debug//cout << "avcodec_find_decoder..." << endl;
     pdecoder = avcodec_find_decoder(AV_CODEC_ID_H264);
 	
@@ -155,7 +156,7 @@ bool Decoder::decode( unsigned char * inbuf, const int & inlen, unsigned char * 
 	int len;
 	avpkt.size = inlen;
 	avpkt.data = inbuf;
-	///cout << "avpkt:" << inlen << " " << strlen((char*)avpkt.data) << endl;
+//  cout << "avpkt:" << inlen << " " << strlen((char*)avpkt.data) << endl;
 
 //	cout << endl;
 //	for( int i = 0; i <20; i++ )
@@ -276,11 +277,23 @@ void Decoder::ClosePostproc()
 		pp_free_context(pp_context_);
 		pp_context_ = 0;
 	}
-	if (prodll) {
-		delete prodll;
-		prodll = 0;
+    if (avcdll) {
+        delete avcdll;
+        avcdll = 0;
 	}
-	//*/
+    if (utildll) {
+        delete utildll;
+        utildll = 0;
+    }
+    if (prodll) {
+        delete prodll;
+        prodll = 0;
+    }
+    if (swsdll) {
+        delete swsdll;
+        swsdll = 0;
+    }
+    //*/
 }
 
 void Decoder::ReleaseConnection()

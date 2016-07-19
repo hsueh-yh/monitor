@@ -15,7 +15,19 @@ Consumer::Consumer (std::string uri, boost::shared_ptr<FaceWrapper> faceWrapper)
 
 Consumer::~Consumer ()
 {
-    cout << "Consumer dtor" << endl;
+//    if(player_.use_count() > 0)
+//        delete player_.get();
+//    if(pipeliner_.use_count() > 0)
+//        delete pipeliner_.get();
+//    if(frameBuffer_.use_count() > 0)
+//        delete frameBuffer_.get();
+
+//    player_.reset();
+//    pipeliner_.reset();
+//    frameBuffer_.reset();
+#ifdef __SHOW_CONSOLE_
+    cout << "[Consumer] dtor" << endl;
+#endif
 }
 
 
@@ -34,24 +46,25 @@ Consumer::init()
 //    //Consumer consumer(NdnRtcUtils::getLibFace()->getFaceWrapper());
 //    faceWrapper_ = NdnRtcUtils::getLibFace()->getFaceWrapper();
 
+    //frameBuffer_.reset();
     frameBuffer_.reset(new FrameBuffer());
     //frameBuffer_->init();
 
+    //pipeliner_.reset();
     pipeliner_.reset(new Pipeliner(this->prefix_));
     pipeliner_->init(frameBuffer_,faceWrapper_);
 
+    //player_.reset();
     player_.reset( new Player() );
     player_->init(frameBuffer_);
 
     status_ = READY;
-    //cout << "Consumer init" << endl;
 }
 
 
 void
 Consumer::start()
 {
-    cout << "Consumer start" << endl;
     if(status_ != READY)
     {
         //cout << "Consumer start init" << endl;
@@ -61,58 +74,20 @@ Consumer::start()
     status_ = STARTED;
 
     //cout <<"<Pipeliner> count:"<< pipeliner_.use_count() << endl;
-    pipeliner_->startFeching();
+    pipeliner_->startFetching();
 
-    /*
-	try {
-            char tmp[20]="/vide1/01";
-
-            int i = 0;
-
-//            cout << "Consumer: " << (int)getpid() << "-"
-//                 << std::this_thread::get_id() << " ";
-            //while(i <= 202)
-            while (status)
-            {
-
-				//Name name("/video/");
-
-				tmp[8]=i+'0';
-                name->set(tmp);
-
-				time_t rawtime;
-				time(&rawtime);
-                name->appendTimestamp(rawtime);
-
-                cout << "Express Interest: " << ++i << " " << name->toUri() << endl;
-				// Use bind to pass the counter object to the callbacks.
-				faceWrapper_->expressInterest(
-                        *name,
-						bind(&Pipeliner::onData, pipeliner_.get(), _1, _2),
-						bind(&Pipeliner::onTimeout, pipeliner_.get(), _1));
-
-                //if (i>=202)break;
-                usleep(50000);
-
-			}
-
-
-			//ioservice thread is running
-            //while(1);
-			//sleep(5);
-
-		}
-		catch (std::exception& e) {
-            cout << endl << "Consumer exception: " << e.what() << endl;
-		}
-        */
 }
 
 
 void
 Consumer::stop()
 {
+    status_ = STOPED;
+    player_->stop();
     pipeliner_->stop();
+    frameBuffer_->stop();
+    //faceWrapper_->shutdown();
+
     /*
     player_->~Player();
     player_.reset();

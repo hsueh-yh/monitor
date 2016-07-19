@@ -85,14 +85,14 @@ public:
 
     void requestFrame(PacketNumber& frameNo);
 
-    void startFeching();
+    void startFetching();
 
     void stop();
 
     void changetoState(Pipeliner::State stat);
 
     Pipeliner::State getState()
-    { lock(); Pipeliner::State stat = state_; unlock();return stat;  }
+    { lock(); Pipeliner::State stat = state_; unlock(); return stat;  }
 
     boost::shared_ptr<Interest>
     getDefaultInterest(const Name& prefix, int64_t timeoutMs = 0);
@@ -117,7 +117,7 @@ private:
     boost::shared_ptr<FrameBuffer> frameBuffer_;
     PipelinerWindow window_;
 
-    FILE *pipelinerFIle_;
+    //FILE *pipelinerFIle_;
 
     int count_;
     State state_;
