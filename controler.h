@@ -43,7 +43,7 @@ public:
 
 
 //private:
-    int consumerNumber_,consumerIdx_;
+    int consumerNumber_,maxId_;
     int faceNumber_;
     map<int,Consumer*> consumersMap_;
     vector<Consumer*> consumersVec_;

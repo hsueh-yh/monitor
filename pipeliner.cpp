@@ -188,6 +188,9 @@ Pipeliner::express(Name& name/*, int64_t priority*/)
             bind(&Pipeliner::onTimeout, this, _1));
 
 #ifdef __SHOW_CONSOLE_
+    time_t t = time(NULL);
+    cout << "time " << t << endl;
+
     int componentCount = name.getComponentCount();
     cout << "Express : " << name.get(componentCount-1).toEscapedString()
          << " " << name.toUri() << endl;
@@ -300,6 +303,10 @@ Pipeliner::onData(const ptr_lib::shared_ptr<const Interest>& interest,
 //    cout << "Pipeliner:" << (int)getpid() << "-" << std::this_thread::get_id() << " ";
 
 #ifdef __SHOW_CONSOLE_
+    //time_t t = time(NULL);
+
+    //cout << "time " << t << endl;
+
     cout << "Got Data: "<<frameNo// << " "<< data->getName().toUri()
          << " size: " << data->getContent ().size () << endl;
 #endif
