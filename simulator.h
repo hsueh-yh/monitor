@@ -56,7 +56,7 @@ static double *pareto( double alpha, int n, double min, double max )
  */
 static int *zipf( double alpha, int n )
 {
-    double c, x;
+    double c=0.0, x=0.0;
 
     for ( int i = 1; i <= n; i++ )
     {
@@ -121,7 +121,8 @@ public:
         if(durationCounter >= p_quantity || durationCounter < 0 )
         {
             if(durationCounter >= p_quantity)
-                delete[] durations;
+                //delete[] durations;
+                free(durations);
             durations = pareto(p_alpha, p_quantity, p_min, p_max);
             durationCounter = 0;
 #ifdef __SHOW_CONSOLE_
@@ -139,7 +140,8 @@ public:
         if ( jobCounter >= z_quantity || jobCounter < 0 )
         {
             if (jobCounter >= z_quantity )
-                delete[] jobs;
+                //delete[] jobs;
+                free(jobs);
             jobs = zipf(z_alpha, z_quantity );
             jobCounter = 0;
 #ifdef __SHOW_CONSOLE_
