@@ -131,7 +131,7 @@ MainWindow::showStream( int id )
             pixmap = QPixmap::fromImage(image->scaled(width, height, Qt::KeepAspectRatio));
 
             label->setPixmap(pixmap);
-            label->setText(QString::number(id));
+            //label->setText(QString::number(id));
             label->resize(width,height);
             label->move(x,y);
 
