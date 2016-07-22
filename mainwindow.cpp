@@ -1,6 +1,7 @@
 #include "mainwindow.h"
 #include "ui_mainwindow.h"
 #include "simulator.h"
+#include "myTimer.h"
 
 #include <thread>
 #include <math.h>
@@ -16,9 +17,9 @@ MainWindow::MainWindow(QWidget *parent) :
     ui(new Ui::MainWindow),
     controler(new Controler),
     space_(5),
-    simulator(new Simulator),
-    timer(new QTimer(this)),
-    consumerSmltId(0)
+    simulator(new Simulator)/*,
+    timer(new QTimer(this))*/,
+    mytimer_(NULL)
 {
     ui->setupUi(this);
 
@@ -39,12 +40,12 @@ MainWindow::showStream( int id )
     cout << "[Player] Start " << id << endl;
 #endif
 
-    controler->lock();
+    //controler->lock();
     Consumer *consumer = controler->getConsumer(id);
 
     if(consumer == NULL)
     {
-        controler->unlock();
+        //controler->unlock();
         cout << "Consumer "<< id << " not started" << endl;
         return ;
     }
@@ -52,7 +53,7 @@ MainWindow::showStream( int id )
         usleep(1000);
     unsigned char *tmp = consumer->player_->bmp_frameBuf_;
 
-    controler->unlock();
+    //controler->unlock();
     QImage *image = new QImage(tmp,WIDTH,HEIGHT,QImage::Format_RGB888);
     map<int,QLabel*>::iterator iter = labelMap.find(id);
     QLabel *label = NULL;
@@ -68,6 +69,10 @@ MainWindow::showStream( int id )
 
     while(  1 /*++i<= 202*/ )
     {
+        //time_t t1 = time(NULL);
+        //struct timeval t_start;
+        //gettimeofday(&t_start, NULL);
+
         controler->lock();
         if( NULL == controler->getConsumer(id))
         {
@@ -104,17 +109,29 @@ MainWindow::showStream( int id )
             width = (ui->labelWidget->width())/base_;
             height = ( ui->labelWidget->height() )/base_;
 
-            x = ( (id-1) % base_ ) * width;
-            y = ( (id-1) / base_ ) * height;
+            int i = 0, labelId = 0;
+            map<int,Consumer*>::iterator iter;
+            for ( iter = controler->consumersMap_.begin(); iter != controler->consumersMap_.end(); iter++ )
+            {
+                if( iter->first == id )
+                    break;
+                i++;
+            }
+            labelId = i;
+            x = ( (labelId) % base_ ) * width;
+            y = ( (labelId) / base_ ) * height;
 
-//            cout    << width << "*" << height << endl
+//            cout    << endl
+//                    << width << "*" << height << endl
 //                    << x << "*" << y << endl
 //                    << ( (id%base_) -1 ) << "*" << ( (id-1) / base_ ) << endl
-//                    << id << "*"  << base_;
+//                    << id << "*"  << base_
+//                    << endl;
 
             pixmap = QPixmap::fromImage(image->scaled(width, height, Qt::KeepAspectRatio));
 
             label->setPixmap(pixmap);
+            //label->setText(QString::number(id));
             label->resize(width,height);
             label->move(x,y);
 
@@ -126,7 +143,18 @@ MainWindow::showStream( int id )
             label->show();
         }
         controler->unlock();
-        usleep(40 * 1000);
+        //time_t t2 = time(NULL);
+        //struct timeval t_end1;
+        //gettimeofday(&t_end1, NULL);
+
+        usleep(30 * 1000);
+        //time_t t3 = time(NULL);
+//        struct timeval t_end2;
+//        gettimeofday(&t_end2, NULL);
+//        long start = ((long)t_start.tv_sec)*1000+(long)t_start.tv_usec/1000;
+//        long end1 = ((long)t_end1.tv_sec)*1000+(long)t_end1.tv_usec/1000;
+//        long end2 = ((long)t_end2.tv_sec)*1000+(long)t_end2.tv_usec/1000;
+//        cout << "time1 " << end1-start << " time2 " << end2 - end1 << endl;
     }
     label->close();
 }
@@ -158,9 +186,15 @@ MainWindow::on_add_btn_clicked()
 
 
 void
-MainWindow::on_simulate_wait()
+MainWindow::on_simulate_wait( int simuId )
 {
-    stopStream(consumerSmltId);
+    //if(mytimer_ != NULL) delete mytimer_;
+//    gettimeofday(&t_1, NULL);
+//    lt_1 = ((long)t_1.tv_sec)*1000+(long)t_1.tv_usec/1000;
+//    cout <<endl<< "Fetching time: " << lt_1 - lt_2 << endl;
+
+
+    stopStream(simuId);
 
     long duration = simulator->getTimer();
 
@@ -172,47 +206,86 @@ MainWindow::on_simulate_wait()
     //controler->stopConsumer(consumerSmltId);
 
     cout << endl
-         << "[Simulator] Waiting "
-         << duration << "ms"
+         << "***********************************************************" << endl
+         << "[Simulator] " << simuId <<"-Stoped "<< controler->consumerNumber_ << "-activited" <<endl
+         << "Waiting " << duration << "ms" << endl
+         << "***********************************************************"
          << endl;
 
    // usleep(1000);
 
 
-    timer->disconnect();
+    //timer->disconnect();
     //cout << "disconnect fetch"<<endl;
-    connect(timer,SIGNAL(timeout()),this,SLOT(on_simulate_btn_clicked()));
+    //connect(timer,SIGNAL(timeout()),this,SLOT(on_simulate_btn_clicked()));
 
-    timer->start(duration);
+    //timer->start(duration);
+
+    mytimer_ = new MyTimer();
+    mytimer_->disconnect();
+    connect(mytimer_,&MyTimer::myTimeout,this,&MainWindow::on_simulate_start);
+//    gettimeofday(&t_1, NULL);
+//    lt_1 = ((long)t_1.tv_sec)*1000+(long)t_1.tv_usec/1000;
+    mytimer_->startMyTimer(duration, simuId);
 }
 
 static int simucounter=0;
 void
-MainWindow::on_simulate_btn_clicked()
+MainWindow::on_simulate_start( int id )
 {
+    //if(mytimer_ != NULL) delete mytimer_;
+//    gettimeofday(&t_2, NULL);
+//    lt_2 = ((long)t_2.tv_sec)*1000+(long)t_2.tv_usec/1000;
+//    cout <<endl<<"Waiting time: " << lt_2-lt_1 << endl;
+
+
     std::string nextURI;
     long duration;
 
-    nextURI = simulator->getNextURI();
     duration = simulator->getTimer();
+    nextURI = simulator->getNextURI();
 
     clock_t start, finish;
     start = clock();
 
     finish = start + duration;
 
+    int simuId = addStream(nextURI);
+
     cout << endl
+<<<<<<< HEAD
          << ++simucounter<<endl
          << "[Simulator] Fetching " << nextURI<< " "
          << duration << "ms"
+=======
+         << "###########################################################"<< endl
+         << "[Simulator] " << simuId << "-Started (after " << id << " stoped) " << controler->consumerNumber_ << "-activited" <<endl
+         << "Fetching: " << nextURI << endl
+         << "Time    : " << duration << "ms" << endl
+         << "###########################################################"
+>>>>>>> master
          << endl;
-    consumerSmltId = addStream(nextURI);
 
-    timer->disconnect();
+    //timer->disconnect();
     //cout << "disconnect wait"<<endl;
-    connect(timer,SIGNAL(timeout()),this,SLOT(on_simulate_wait()));
+    //connect(timer,SIGNAL(timeout()),this,SLOT(on_simulate_wait()));
 
-    timer->start(duration);
+    //mytimer = new MyTimer(this);
+    mytimer_ = new MyTimer();
+    mytimer_->disconnect();
+    connect(mytimer_,&MyTimer::myTimeout,this,&MainWindow::on_simulate_wait);
+//    gettimeofday(&t_2, NULL);
+//    lt_2 = ((long)t_2.tv_sec)*1000+(long)t_2.tv_usec/1000;
+    mytimer_->startMyTimer(duration, simuId);
+
+    //timer->start(duration);
+}
+
+
+void
+MainWindow::on_simulate_btn_clicked()
+{
+    on_simulate_start(0);
 }
 
 

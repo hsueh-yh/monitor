@@ -23,7 +23,8 @@ SOURCES += main.cpp\
     pipeliner.cpp \
     player.cpp \
     utils.cpp \
-    addstreamdialog.cpp
+    addstreamdialog.cpp \
+    myTimer.cpp
 
 HEADERS  += mainwindow.h \
     common.h \
@@ -39,7 +40,8 @@ HEADERS  += mainwindow.h \
     tdll.h \
     utils.h \
     addstreamdialog.h \
-    simulator.h
+    simulator.h \
+    myTimer.h
 
 
 CONFIG += C++11

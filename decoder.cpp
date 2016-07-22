@@ -11,8 +11,7 @@ Decoder::Decoder(void)
 	, prodll(NULL)
 	, utildll(NULL)
     , swsdll(NULL)
-{
-}
+{}
 
 Decoder::~Decoder(void)
 {

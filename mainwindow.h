@@ -14,6 +14,7 @@
 #include "controler.h"
 //#include "consumer.h"
 #include "simulator.h"
+#include "myTimer.h"
 
 using namespace std;
 
@@ -45,7 +46,8 @@ private slots:
     void on_stop_btn_clicked();
     void on_add_btn_clicked();
     void on_simulate_btn_clicked();
-    void on_simulate_wait();
+    void on_simulate_wait(int simuId);
+    void on_simulate_start(int id);
     //  on menu
 //    void on_actionAdd_Face_clicked();
 //    void on_actionAdd_Stream_clicked();
@@ -75,8 +77,12 @@ private:
 
     //Simulator
     Simulator *simulator;
-    QTimer *timer;
-    int consumerSmltId;
+    //QTimer *timer;
+
+    MyTimer *mytimer_;
+
+    struct timeval t_1, t_2;
+    long lt_1,lt_2;
 
 };
 

@@ -6,13 +6,14 @@ static boost::asio::io_service libIoService;
 
 Controler::Controler():
     consumerNumber_(0),
-    consumerIdx_(0)
+    maxId_(0)
 {
     consumersMap_.clear();
     consumersVec_.clear();
     hostSet_.clear();
-    //createFace("10.103.240.100",6363);
     addFace("localhost",6363);
+    //addFace("10.103.242.213",6363);
+    //addFace("10.103.243.176",6363);
 }
 
 
@@ -31,9 +32,9 @@ Controler::addStream( std::string prefix)
 int
 Controler::addConsumer( std::string prefix )
 {
-    int consumerId = ++consumerNumber_;
+    int consumerId = ++maxId_;
     //int consumerId = ++consumerIdx_;
-    //consumerNumber_++;
+    consumerNumber_++;
 #ifdef __SHOW_CONSOLE_
     std::cout << "[Controler] Add Consumer :" << consumerId << std::endl;
 #endif
@@ -88,7 +89,11 @@ Controler::startConsumer( int consumerId )
 int
 Controler::stopConsumer(int consumerId)
 {
-    if(consumerId<=0) return -1;
+    if(consumerId<=0)
+    {
+        cout << "stop " << consumerId << "fail" << endl;
+        return -1;
+    }
     lock();
 #ifdef __SHOW_CONSOLE_
     std::cout << endl << "[Controler] Stop Consumer " << consumerId << std::endl;
@@ -96,11 +101,17 @@ Controler::stopConsumer(int consumerId)
     if(consumerNumber_ > 0)
         consumerNumber_--;
     else
+    {
+        cout << "stop " << consumerId << "fail (consumerNumber_ <= 0)" << endl;
         return -1;
+    }
     Consumer *consumer = getConsumer(consumerId);
 
     if( consumer == NULL )
+    {
+        cout << "stop " << consumerId << "fail (not found consumer)" << endl;
         return -1;
+    }
 
     map<int,Consumer*>::iterator iter;
 
