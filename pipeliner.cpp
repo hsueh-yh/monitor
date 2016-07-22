@@ -334,6 +334,10 @@ Pipeliner::onTimeout(const ptr_lib::shared_ptr<const Interest>& interest)
     cout << "Pipeliner timeout: " << interest->getName().toUri()<< endl;
 #endif
 
+    int componentCount = data->getName().getComponentCount();
+    FrameNumber frameNo = std::atoi(interest->getName().get(componentCount-1).toEscapedString().c_str());
+
+    requestFrame(frameNo);
 }
 
 

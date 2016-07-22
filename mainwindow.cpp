@@ -186,7 +186,7 @@ MainWindow::on_simulate_wait()
     timer->start(duration);
 }
 
-
+static int simucounter=0;
 void
 MainWindow::on_simulate_btn_clicked()
 {
@@ -202,6 +202,7 @@ MainWindow::on_simulate_btn_clicked()
     finish = start + duration;
 
     cout << endl
+         << ++simucounter<<endl
          << "[Simulator] Fetching " << nextURI<< " "
          << duration << "ms"
          << endl;
