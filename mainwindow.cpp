@@ -253,17 +253,14 @@ MainWindow::on_simulate_start( int id )
     int simuId = addStream(nextURI);
 
     cout << endl
-<<<<<<< HEAD
          << ++simucounter<<endl
          << "[Simulator] Fetching " << nextURI<< " "
          << duration << "ms"
-=======
          << "###########################################################"<< endl
          << "[Simulator] " << simuId << "-Started (after " << id << " stoped) " << controler->consumerNumber_ << "-activited" <<endl
          << "Fetching: " << nextURI << endl
          << "Time    : " << duration << "ms" << endl
          << "###########################################################"
->>>>>>> master
          << endl;
 
     //timer->disconnect();
