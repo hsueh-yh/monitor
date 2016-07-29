@@ -3,6 +3,10 @@
  *
  *  Created on: Jun 15, 2016
  *      Author: xyh
+ *
+ *  Pipeliner 收发数据包
+ *
+ *  PipelinerWindow 发送窗口，控制网络中Interest（未收到Data）的数量
  */
 
 #ifndef PIPELINER_H_

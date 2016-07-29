@@ -1,0 +1,16 @@
+1.发送速率：
+    mainwindow.cpp->line:15,  #define _FRAME_RATE_
+
+2.请求/暂停时长：
+    simulator.h->line:105, Simulator::Simulator() -> p_min p_max p_quantity   //时间的最小值,最大值,产生随机数个数
+    line:133, Simulator::getTimer() -> return 1000*durations[durationCounter++];  //*1000,毫秒to秒
+
+3.查看产生的随机数:
+    simulator.h->line:148, Simulator::getNextURI(); 中的viewZipf();  注释掉 #ifdef __SHOW_CONSOLE_ #endif, 或者(转到5)
+    simulator.h->line:129, Simulator::getTimer() 中的viewPareto();  注释掉 #ifdef __SHOW_CONSOLE_ #endif, 或者(转到5)
+
+4.修改face地址:
+    controler.cpp->line:4, #define HOST
+
+5.终端打印调试信息: (打印Pareto,zipf随机数, 查看发送的Interest和收到的Data, 显示的帧)
+    common.h->line:4, #define  __SHOW_CONSOLE_

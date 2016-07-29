@@ -1,6 +1,11 @@
 #include "controler.h"
 #include <iostream>
 
+#define HOST "localhost"
+//#define HOST "10.103.242.213"
+//#define HOST "10.103.243.176"
+#define PORT 6363
+
 static boost::asio::io_service libIoService;
 
 
@@ -11,9 +16,7 @@ Controler::Controler():
     consumersMap_.clear();
     consumersVec_.clear();
     hostSet_.clear();
-    addFace("localhost",6363);
-    //addFace("10.103.242.213",6363);
-    //addFace("10.103.243.176",6363);
+    addFace(HOST,PORT);
 }
 
 

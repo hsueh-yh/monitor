@@ -1,13 +1,10 @@
 //
 //  face-wrapper.h
-//  ndnrtc
-//
-//  Created by Peter Gusev on 2/11/14.
-//  Copyright 2013-2015 Regents of the University of California
+//  Thread-safe wrapper for NDN face
 //
 
-#ifndef __ndnrtc__face_wrapper__
-#define __ndnrtc__face_wrapper__
+#ifndef __face_wrapper__
+#define __face_wrapper__
 
 #include <boost/thread/mutex.hpp>
 #include <boost/thread.hpp>
@@ -144,4 +141,4 @@ private:
 };
 //}
 
-#endif /* defined(__ndnrtc__face_wrapper__) */
+#endif /* defined(__face_wrapper__) */

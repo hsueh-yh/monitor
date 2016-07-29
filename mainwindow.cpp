@@ -12,6 +12,8 @@
 #define WIDTH 640
 #define HEIGHT 480
 
+#define _FRAME_RATE_ 30*1000    //30ms
+
 MainWindow::MainWindow(QWidget *parent) :
     QMainWindow(parent),
     ui(new Ui::MainWindow),
@@ -147,7 +149,7 @@ MainWindow::showStream( int id )
         //struct timeval t_end1;
         //gettimeofday(&t_end1, NULL);
 
-        usleep(30 * 1000);
+        usleep(_FRAME_RATE_);
         //time_t t3 = time(NULL);
 //        struct timeval t_end2;
 //        gettimeofday(&t_end2, NULL);
@@ -186,7 +188,7 @@ MainWindow::on_add_btn_clicked()
 
 
 void
-MainWindow::on_simulate_wait( int simuId )
+MainWindow::on_simulate_waiting( int simuId )
 {
     //if(mytimer_ != NULL) delete mytimer_;
 //    gettimeofday(&t_1, NULL);
@@ -205,10 +207,16 @@ MainWindow::on_simulate_wait( int simuId )
 
     //controler->stopConsumer(consumerSmltId);
 
+    struct timeval t_1;
+    long lt_1;
+    gettimeofday(&t_1, NULL);
+    lt_1 = ((long)t_1.tv_sec)*1000+(long)t_1.tv_usec/1000;
+
     cout << endl
          << "***********************************************************" << endl
-         << "[Simulator] " << simuId <<"-Stoped "<< controler->consumerNumber_ << "-activited" <<endl
-         << "Waiting " << duration << "ms" << endl
+         << "[Simulator] " << simuId <<"-Stoped "<< controler->consumerNumber_ << "-activating" <<endl
+         << "Waiting:   " << duration << "ms" << endl
+         << "TimeStamp: " << lt_1 << endl
          << "***********************************************************"
          << endl;
 
@@ -223,15 +231,17 @@ MainWindow::on_simulate_wait( int simuId )
 
     mytimer_ = new MyTimer();
     mytimer_->disconnect();
-    connect(mytimer_,&MyTimer::myTimeout,this,&MainWindow::on_simulate_start);
+    connect(mytimer_,&MyTimer::myTimeout,this,&MainWindow::on_simulate_fetching);
 //    gettimeofday(&t_1, NULL);
 //    lt_1 = ((long)t_1.tv_sec)*1000+(long)t_1.tv_usec/1000;
     mytimer_->startMyTimer(duration, simuId);
 }
 
 static int simucounter=0;
+
+
 void
-MainWindow::on_simulate_start( int id )
+MainWindow::on_simulate_fetching( int id )
 {
     //if(mytimer_ != NULL) delete mytimer_;
 //    gettimeofday(&t_2, NULL);
@@ -252,14 +262,18 @@ MainWindow::on_simulate_start( int id )
 
     int simuId = addStream(nextURI);
 
+    struct timeval t_1;
+    long lt_1;
+    gettimeofday(&t_1, NULL);
+    lt_1 = ((long)t_1.tv_sec)*1000+(long)t_1.tv_usec/1000;
+
     cout << endl
-         << ++simucounter<<endl
-         << "[Simulator] Fetching " << nextURI<< " "
-         << duration << "ms"
          << "###########################################################"<< endl
-         << "[Simulator] " << simuId << "-Started (after " << id << " stoped) " << controler->consumerNumber_ << "-activited" <<endl
-         << "Fetching: " << nextURI << endl
-         << "Time    : " << duration << "ms" << endl
+         << ++simucounter << endl
+         << "[Simulator] " << simuId << "-Started (after " << id << " stoped) " << controler->consumerNumber_ << "-activating" <<endl
+         << "Fetching : " << nextURI << endl
+         << "Time     : " << duration << "ms" << endl
+         << "TimeStamp: " << lt_1 << endl
          << "###########################################################"
          << endl;
 
@@ -270,7 +284,7 @@ MainWindow::on_simulate_start( int id )
     //mytimer = new MyTimer(this);
     mytimer_ = new MyTimer();
     mytimer_->disconnect();
-    connect(mytimer_,&MyTimer::myTimeout,this,&MainWindow::on_simulate_wait);
+    connect(mytimer_,&MyTimer::myTimeout,this,&MainWindow::on_simulate_waiting);
 //    gettimeofday(&t_2, NULL);
 //    lt_2 = ((long)t_2.tv_sec)*1000+(long)t_2.tv_usec/1000;
     mytimer_->startMyTimer(duration, simuId);
@@ -282,7 +296,7 @@ MainWindow::on_simulate_start( int id )
 void
 MainWindow::on_simulate_btn_clicked()
 {
-    on_simulate_start(0);
+    on_simulate_fetching(0);
 }
 
 

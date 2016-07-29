@@ -11,8 +11,8 @@
 
 #define BOOST_THREAD_USE_LIB
 
-#ifndef __ndnrtc__ndnrtc_object__
-#define __ndnrtc__ndnrtc_object__
+#ifndef _object__
+#define _object__
 
 #include <boost/thread.hpp>
 #include <boost/asio/steady_timer.hpp>
@@ -79,4 +79,4 @@ private:
     boost::asio::steady_timer watchdogTimer_;
 };
 
-#endif /* defined(__ndnrtc__ndnrtc_object__) */
+#endif /* defined(_object__) */

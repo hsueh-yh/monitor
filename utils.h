@@ -8,8 +8,8 @@
 //  Author:  Peter Gusev
 //
 
-#ifndef __ndnrtc__ndnrtc_utils__
-#define __ndnrtc__ndnrtc_utils__
+#ifndef _utils_
+#define _utils_
 
 
 #include <boost/function.hpp>
@@ -118,4 +118,4 @@ public:
 
 };
 
-#endif /* defined(__ndnrtc__ndnrtc_utils__) */
+#endif /* defined(_utils_) */

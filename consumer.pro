@@ -89,3 +89,6 @@ else:win32:!win32-g++:CONFIG(debug, debug|release): PRE_TARGETDEPS += $$PWD/ffmp
 else:unix: PRE_TARGETDEPS += $$PWD/ffmpeg/lib/libpostproc.a
 
 LIBS += -lboost_thread -lboost_system -lboost_chrono -lboost_regex -lndn-cpp -lpthread -lprotobuf -lsqlite3 -lcrypto -ldl
+
+OTHER_FILES += \
+    README
