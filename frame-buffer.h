@@ -41,14 +41,179 @@ public:
     {
     public:
 
-        typedef enum{
+        class Segment
+        {
+        public:
+            enum State {
+                StateFetched = 1<<0,   // segment has been fetched already
+                StatePending = 1<<1,   // segment awaits it's interest to
+                                        // be answered
+                StateMissing = 1<<2,   // segment was timed out or
+                                        // interests has not been issued yet
+                StateNotUsed = 1<<3    // segment is no used in frame
+                                        // assembling
+            };
+
+            Segment();
+            ~Segment();
+
+            /**
+             * Discards segment by swithcing it to NotUsed state and
+             * reseting all the attributes
+             */
+            void discard();
+
+            /**
+             * Moves segment into Pending state and updaets following
+             * attributes:
+             * - requestTimeUsec
+             * - interestName
+             * - interestNonce
+             * - reqCounter
+             */
+            void interestIssued(const uint32_t& nonceValue);
+
+            /**
+             * Moves segment into Missing state if it was in Pending
+             * state before
+             */
+            void markMissed();
+
+            /**
+             * Moves segment into Fetched state and updates following
+             * attributes:
+             * - dataName
+             * - dataNonce
+             * - generationDelay
+             * - arrivalTimeUsec
+             */
+            void
+            dataArrived(const SegmentData::SegmentMetaInfo& segmentMeta);
+
+            /**
+             * Returns true if the interest issued for a segment was
+             * answered by a producer
+             */
+            bool
+            isOriginal();
+
+            void
+            setPayloadSize(unsigned int payloadSize)
+            { payloadSize_ = payloadSize; }
+
+            unsigned int
+            getPayloadSize() const { return payloadSize_; }
+
+            void
+            setDataPtr(const unsigned char* dataPtr)
+            { dataPtr_ = const_cast<unsigned char*>(dataPtr); }
+
+            unsigned char*
+            getDataPtr() const { return dataPtr_; }
+
+            void
+            setNumber(SegmentNumber number) { segmentNumber_ = number; }
+
+            SegmentNumber
+            getNumber() const { return segmentNumber_; }
+
+            SegmentData::SegmentMetaInfo getMetadata() const;
+
+            State
+            getState() const { return state_; };
+
+            int64_t
+            getRequestTimeUsec()
+            { return requestTimeUsec_; }
+
+            int64_t
+            getArrivalTimeUsec()
+            { return arrivalTimeUsec_; }
+
+            int64_t
+            getRoundTripDelayUsec()
+            {
+                if (arrivalTimeUsec_ <= 0 || requestTimeUsec_ <= 0)
+                    return -1;
+                return (arrivalTimeUsec_-requestTimeUsec_);
+            }
+
+            void
+            setPrefix(const Name& prefix)
+            { prefix_ = prefix; }
+
+            const Name&
+            getPrefix() { return prefix_; }
+
+            void
+            setIsParity(bool isParity)
+            { isParity_ = isParity; }
+
+            bool
+            isParity()
+            { return isParity_; }
+
+            static std::string
+            stateToString(State s)
+            {
+                switch (s)
+                {
+                    case StateFetched: return "Fetched"; break;
+                    case StateMissing: return "Missing"; break;
+                    case StatePending: return "Pending"; break;
+                    case StateNotUsed: return "Not used"; break;
+                    default: return "Unknown"; break;
+                }
+            }
+
+        protected:
+
+            SegmentNumber segmentNumber_;
+            Name prefix_;
+            unsigned int payloadSize_;  // size of actual data payload
+                                        // (without segment header)
+            unsigned char* dataPtr_;    // pointer to the payload data
+            State state_;
+
+            int64_t requestTimeUsec_, // local timestamp when the interest
+                                      // for this segment was issued
+            arrivalTimeUsec_, // local timestamp when data for this
+                              // segment has arrived
+            consumeTimeMs_;   // remote timestamp (milliseconds)
+                              // when the interest, issued for
+                              // this segment, has been consumed
+                              // by a producer. could be 0 if
+                              // interest was not answered by
+                              // producer directly (cached on
+                              // the network)
+            int reqCounter_; // indicates, how many times segment was
+                             // requested
+            uint32_t dataNonce_; // nonce value provided with the
+                                 // segment's meta data
+            uint32_t interestNonce_; // nonce used with issuing interest
+                                     // for this segment. if dataNonce_
+                                     // and interestNonce_ coincides,
+                                     // this means that the interest was
+                                     // answered by a producer
+            int32_t generationDelayMs_;  // in case if segment arrived
+                                         // straight from producer, it
+                                         // puts a delay between receiving
+                                         // an interest and answering it
+                                         // into the segment's meta data
+                                         // header, otherwise - 0
+            bool isParity_;
+
+            void resetData();
+        };
+
+        enum State{
             StateFetched = 1<<0,    // frame has been fetched already
             StatePending = 1<<1,    // frame awaits it's interest to
                                     // be answered
             StateMissing = 1<<2,    // frame was timed out or
                                     // interests has not been issued yet
             StateNotUsed = 1<<3     // frame is no used
-        }State;
+        };
 
 		class Comparator
 		{

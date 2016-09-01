@@ -11,6 +11,96 @@
 #include "frame-buffer.h"
 
 
+FrameBuffer::Slot::Segment::Segment()
+{
+    resetData();
+}
+
+FrameBuffer::Slot::Segment::~Segment()
+{
+
+}
+
+
+//******************************************************************************
+
+void
+FrameBuffer::Slot::Segment::discard()
+{
+    resetData();
+}
+
+void
+FrameBuffer::Slot::Segment::interestIssued
+(const uint32_t& nonceValue)
+{
+    assert(nonceValue != 0);
+
+    state_ = StatePending;
+
+    if (requestTimeUsec_ <= 0)
+        requestTimeUsec_ = NdnRtcUtils::microsecondTimestamp();
+
+    interestNonce_ = nonceValue;
+    reqCounter_++;
+}
+
+void
+FrameBuffer::Slot::Segment::markMissed()
+{
+    state_ = StateMissing;
+}
+
+void
+FrameBuffer::Slot::Segment::dataArrived
+(const SegmentData::SegmentMetaInfo& segmentMeta)
+{
+    state_ = StateFetched;
+    arrivalTimeUsec_ = NdnRtcUtils::microsecondTimestamp();
+    consumeTimeMs_ = segmentMeta.interestArrivalMs_;
+    dataNonce_ = segmentMeta.interestNonce_;
+    generationDelayMs_ = segmentMeta.generationDelayMs_;
+}
+
+bool
+FrameBuffer::Slot::Segment::isOriginal()
+{
+    return (interestNonce_ != 0 && dataNonce_ == interestNonce_);
+}
+
+SegmentData::SegmentMetaInfo
+FrameBuffer::Slot::Segment::getMetadata() const
+{
+    SegmentData::SegmentMetaInfo meta;
+    meta.generationDelayMs_ = generationDelayMs_;
+    meta.interestNonce_ = interestNonce_;
+    meta.interestArrivalMs_ = consumeTimeMs_;
+
+    return meta;
+}
+
+//******************************************************************************
+
+void
+FrameBuffer::Slot::Segment::resetData()
+{
+    state_ = FrameBuffer::Slot::Segment::StateNotUsed;
+    requestTimeUsec_ = -1;
+    arrivalTimeUsec_ = -1;
+    reqCounter_ = 0;
+    dataNonce_ = 0;
+    interestNonce_ = -1;
+    generationDelayMs_ = -1;
+    segmentNumber_ = -1;
+    payloadSize_ = -1;
+    consumeTimeMs_ = -1;
+    prefix_ = Name();
+    isParity_ = false;
+}
+
+
+
+
 ////////////////////////////////////////////////////////////////
 ///     FrameBuffer::Slot
 ////////////////////////////////////////////////////////////////
