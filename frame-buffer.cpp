@@ -386,6 +386,9 @@ FrameBuffer::pushSlot(boost::shared_ptr<Slot> slot)
 void
 FrameBuffer::dataArrived(const ndn::ptr_lib::shared_ptr<Data>& data)
 {
+    lock_guard<recursive_mutex> scopedLock(syncMutex_);
+
+    Name name = data->getName();
     int componentCount = data->getName().getComponentCount();
     FrameNumber frameNo = std::atoi(data->getName().get(componentCount-1).toEscapedString().c_str());
     map<int, boost::shared_ptr<Slot> >::iterator iter;
@@ -404,7 +407,7 @@ FrameBuffer::dataArrived(const ndn::ptr_lib::shared_ptr<Data>& data)
 void
 FrameBuffer::setSlot(const ndn::ptr_lib::shared_ptr<Data>& data, boost::shared_ptr<FrameBuffer::Slot> slot)
 {
-    FrameDataSt gotFrame;
+    FrameData gotFrame;
     memcpy(&gotFrame, data->getContent().buf(), sizeof(FrameDataSt));  //copy frame header
 
     gotFrame.buf_ = (unsigned char*) malloc (gotFrame.header_.length_);

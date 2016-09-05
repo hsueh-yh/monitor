@@ -29,6 +29,21 @@ class FaceProcessor;
 class NdnRtcUtils {
 
 public:
+
+    //*****************************************************
+    //  interest
+    //*****************************************************
+
+    static Name getBasePrefix() { return Name("/com/monitor/"); }
+
+    static Name prefixfromFrameNo( int frameNo )
+    {
+        Name tmp = getBasePrefix();
+        tmp.append(frameNo);
+        return tmp;
+    }
+
+
 //	static unsigned int getSegmentsNumber(unsigned int segmentSize, unsigned int dataSize);
 
 	static double timestamp() {

@@ -10,7 +10,7 @@
 
 #include <iostream>
 #include <functional>
-//#include <boost/thread/mutex.hpp>
+#include <boost/thread/mutex.hpp>
 #include <thread>
 #include <mutex>
 
@@ -37,7 +37,7 @@ public:
         Started = 1
     }State;
 
-	class Slot
+    class Slot
     {
     public:
 
@@ -120,7 +120,7 @@ public:
             SegmentData::SegmentMetaInfo getMetadata() const;
 
             State
-            getState() const { return state_; };
+            getState() const { return state_; }
 
             int64_t
             getRequestTimeUsec()
@@ -204,7 +204,9 @@ public:
             bool isParity_;
 
             void resetData();
-        };
+
+        }; //class Segment
+
 
         enum State{
             StateFetched = 1<<0,    // frame has been fetched already
@@ -451,7 +453,8 @@ public:
     State stat_;
 
     //PriorityQueue priorityQueue_;
-	std::recursive_mutex syncMutex_;
+    //std::recursive_mutex syncMutex_;
+    mutable boost::recursive_mutex syncMutex_;
 
 
     //std::vector<boost::shared_ptr<Slot> > issuedSlots_;
