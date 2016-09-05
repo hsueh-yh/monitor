@@ -404,8 +404,8 @@ FrameBuffer::dataArrived(const ndn::ptr_lib::shared_ptr<Data>& data)
 void
 FrameBuffer::setSlot(const ndn::ptr_lib::shared_ptr<Data>& data, boost::shared_ptr<FrameBuffer::Slot> slot)
 {
-    FrameData gotFrame;
-    memcpy(&gotFrame, data->getContent().buf(), sizeof(FrameData));  //copy frame header
+    FrameDataSt gotFrame;
+    memcpy(&gotFrame, data->getContent().buf(), sizeof(FrameDataSt));  //copy frame header
 
     gotFrame.buf_ = (unsigned char*) malloc (gotFrame.header_.length_);
     memcpy( gotFrame.buf_, data->getContent().buf()+sizeof(FrameDataHeader), gotFrame.header_.length_);   //copy frame data
