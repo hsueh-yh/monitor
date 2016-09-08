@@ -413,6 +413,10 @@ public:
 
     bool recvData(boost::shared_ptr<Slot> slot);
 
+    void interestTimeout(const ndn::Interest &interest);
+
+    boost::shared_ptr<Slot> getSlot(const Name& prefix, bool remove);
+
     void setSlot(const ndn::ptr_lib::shared_ptr<Data>& data, boost::shared_ptr<Slot> slot);
 
     void recvData(const ndn::ptr_lib::shared_ptr<Data>& data);

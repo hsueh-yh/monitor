@@ -382,7 +382,6 @@ FrameBuffer::pushSlot(boost::shared_ptr<Slot> slot)
     return true;
 }
 
-
 void
 FrameBuffer::recvData(const ndn::ptr_lib::shared_ptr<Data>& data)
 {
@@ -409,6 +408,34 @@ FrameBuffer::recvData(const ndn::ptr_lib::shared_ptr<Data>& data)
     setSlot(data, iter->second);
 }
 
+void
+FrameBuffer::interestTimeout(const ndn::Interest &interest)
+{
+    Name name = interest.getName();
+    int p = Namespacer::findComponent(name,NameComponents::NameComponentStreamFrameVideo);
+    if (p<0)
+        p = Namespacer::findComponent(name,NameComponents::NameComponentStreamFrameAudio);
+    boost::shared_ptr<Slot> slot;
+    slot = getSlot(name.getSubName(0,p+2),false);
+    slot->markMissed(interest);
+}
+
+boost::shared_ptr<Slot>
+FrameBuffer::getSlot(const Name& prefix, bool remove)
+{
+    boost::shared_ptr<Slot> slot;
+    std::map<Name, shared_ptr<Slot> >::iterator it;
+    it = activeSlots_.find(prefix);
+    if( it != activeSlots_.end() )
+    {
+        slot = it->second;
+        if( remove )
+        {
+            freeSlots_.push_back(it);
+            activeSlots_.erase(it);
+        }
+    }
+}
 
 void
 FrameBuffer::setSlot(const ndn::ptr_lib::shared_ptr<Data>& data, boost::shared_ptr<FrameBuffer::Slot> slot)
@@ -445,7 +472,6 @@ FrameBuffer::setSlot(const ndn::ptr_lib::shared_ptr<Data>& data, boost::shared_p
     //playbackQueue_.push(slot);
 
 }
-
 
 boost::shared_ptr<FrameBuffer::Slot>
 FrameBuffer::popSlot()
