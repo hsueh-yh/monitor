@@ -1,23 +1,27 @@
 #include "name-components.h"
+#include "namespacer.h"
 #include "utils.h"
 
 
-const std::string NameComponents::NameComponentGlobal = "com";
+//const std::string NameComponents::NameComponentGlobal = "com";
 const std::string NameComponents::NameComponentApp = "monitor";
-const std::string NameComponents::NameComponentLocation = "location";
-const std::string NameComponents::NameComponentDevice = "dev";
-const std::string NameComponents::NameComponentStreams = "streams";
-const std::string NameComponents::NameComponentStreamFrame = "frame";
-const std::string NameComponents::NameComponentFrameSegment = "segment";
+const std::string NameComponents::NameComponentStreamFrameVideo = "video";
+const std::string NameComponents::NameComponentStreamFrameAudio = "audio";
 //const std::string NameComponents::KeyComponent;
 //const std::string NameComponents::CertificateComponent;
 
+std::string
+    getLocationPrefix(const std::string& location,
+                  const std::string& prefix)
+{
+
+}
 
 std::string
-NameComponents::getUserPrefix(const std::string& username,
+NameComponents::getStreamPrefix(const std::string& username,
               const std::string& prefix)
 {
-    return buildPath(hub[0] != '/',
+    return *Namespacer::buildPath(hub[0] != '/',
             &hub,
             &NameComponents::NameComponentApp,
             &NameComponents::NameComponentUser,

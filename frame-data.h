@@ -17,10 +17,14 @@
 #include "common.h"
 
 
-enum FrameType{
-    IFrame = 0,
-    PFrame = 1,
-    BFrame = 2
+/**
+  * @brief This stucture is used for storing meta info carried by data name prefixes
+  * @param
+  */
+struct PrefixMetaInfo {
+    SegmentNumber totalSegmentNum_;     // total number of segments for this frame
+    PacketNumber playbackNo_;           // absolute plaback positon for current frame
+    FrameNumber deltaFrameNo_;          // sequence number of the corresponding key frame
 };
 
 
@@ -33,7 +37,7 @@ public:
 
     virtual ~BaseData();
 
-    int getLength() const { return length_; }
+    int size() const { return length_; }
     unsigned char* getData() const { return data_; }
 
 protected:

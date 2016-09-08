@@ -245,8 +245,30 @@ int64_t NdnRtcUtils::microsecondTimestamp()
     return usec.count();
 };
 
-//******************************************************************************
-/*
+uint32_t NdnRtcUtils::generateNonceValue()
+{
+    uint32_t nonce = (uint32_t)std::rand();
+
+    return nonce;
+}
+
+Blob NdnRtcUtils::nonceToBlob(const uint32_t nonceValue)
+{
+    uint32_t beValue = htobe32(nonceValue);
+    Blob b((uint8_t *)&beValue, sizeof(uint32_t));
+    return b;
+}
+
+uint32_t NdnRtcUtils::blobToNonce(const ndn::Blob &blob)
+{
+    if (blob.size() < sizeof(uint32_t))
+        return 0;
+
+    uint32_t beValue = *(uint32_t *)blob.buf();
+    return be32toh(beValue);
+}
+
+
 unsigned int NdnRtcUtils::getSegmentsNumber(unsigned int segmentSize, unsigned int dataSize)
 {
     return (unsigned int)ceil((float)dataSize/(float)segmentSize);
@@ -338,6 +360,10 @@ int64_t NdnRtcUtils::millisecSinceEpoch()
     return msec.count();
 }
 
+
+//******************************************************************************
+/*
+ *
 //******************************************************************************
 unsigned int NdnRtcUtils::setupFrequencyMeter(unsigned int granularity)
 {
@@ -745,28 +771,6 @@ unsigned int NdnRtcUtils::toTimeMs(unsigned int frames,
     return (unsigned int)ceil((double)frames/fps*1000.);
 }
 
-uint32_t NdnRtcUtils::generateNonceValue()
-{
-    uint32_t nonce = (uint32_t)std::rand();
-
-    return nonce;
-}
-
-Blob NdnRtcUtils::nonceToBlob(const uint32_t nonceValue)
-{
-    uint32_t beValue = htobe32(nonceValue);
-    Blob b((uint8_t *)&beValue, sizeof(uint32_t));
-    return b;
-}
-
-uint32_t NdnRtcUtils::blobToNonce(const ndn::Blob &blob)
-{
-    if (blob.size() < sizeof(uint32_t))
-        return 0;
-
-    uint32_t beValue = *(uint32_t *)blob.buf();
-    return be32toh(beValue);
-}
 
 std::string NdnRtcUtils::getFullLogPath(const new_api::GeneralParams& generalParams,
                                   const std::string& fileName)

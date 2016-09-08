@@ -23,6 +23,8 @@
 
 #include "frame-data.h"
 
+#define SLOTNUM 50
+
 using namespace std;
 using namespace ndn;
 
@@ -31,11 +33,10 @@ class FrameBuffer
 {
 public:
 
-    typedef enum{
-        Stoped = -1,
-        Ready = 0,
-        Started = 1
-    }State;
+    enum State {
+        Invalid = 0,
+        Valid = 1
+    };
 
     class Slot
     {
@@ -58,14 +59,14 @@ public:
             ~Segment();
 
             /**
-             * Discards segment by swithcing it to NotUsed state and
-             * reseting all the attributes
+             * @brief Discards segment by swithcing it to NotUsed state and
+             *          reseting all the attributes
              */
             void discard();
 
             /**
-             * Moves segment into Pending state and updaets following
-             * attributes:
+             * @brief Moves segment into Pending state and updaets following
+             * @param:
              * - requestTimeUsec
              * - interestName
              * - interestNonce
@@ -74,14 +75,14 @@ public:
             void interestIssued(const uint32_t& nonceValue);
 
             /**
-             * Moves segment into Missing state if it was in Pending
-             * state before
+             * @brief Moves segment into Missing state if it was in Pending
+             *          state before
              */
             void markMissed();
 
             /**
-             * Moves segment into Fetched state and updates following
-             * attributes:
+             * @brief   Moves segment into Fetched state and updates following
+             * @param:
              * - dataName
              * - dataNonce
              * - generationDelay
@@ -91,8 +92,8 @@ public:
             dataArrived(const SegmentData::SegmentMetaInfo& segmentMeta);
 
             /**
-             * Returns true if the interest issued for a segment was
-             * answered by a producer
+             * @brief Returns true if the interest issued for a segment was
+             *          answered by a producer
              */
             bool
             isOriginal();
@@ -208,14 +209,16 @@ public:
         }; //class Segment
 
 
-        enum State{
-            StateFetched = 1<<0,    // frame has been fetched already
-            StatePending = 1<<1,    // frame awaits it's interest to
-                                    // be answered
-            StateMissing = 1<<2,    // frame was timed out or
-                                    // interests has not been issued yet
-            StateNotUsed = 1<<3     // frame is no used
-        };
+        enum State {
+            StateFree = 1<<0,  // slot is free for being used
+            StateNew = 1<<1,   // slot is being used for assembling, but has
+                            // not recevied any data segments yet
+            StateAssembling = 1<<2,    // slot is being used for assembling and
+                                    // already has some data segments arrived
+            StateReady = 1<<3, // slot assembled all the data and is ready for
+                            // decoding a frame
+            StateLocked = 1<<4 // slot is locked for decoding
+        }; // enum State
 
 		class Comparator
 		{
@@ -224,7 +227,7 @@ public:
 
             bool operator() (const boost::shared_ptr<Slot> slot1, const boost::shared_ptr<Slot> slot2)
 			{
-                return slot1->getNumber() > slot2->getNumber();
+                return slot1->getFrameNumber() > slot2->getFrameNumber();
 			}
 /*
             bool operator < (Slot slot1, Slot slot2)
@@ -241,8 +244,8 @@ public:
         ~Slot();
 
         /**
-         * Discards frame by swithcing it to NotUsed state and
-         * reseting all the attributes
+         * @brief Discards frame by swithcing it to NotUsed state and
+         *          reseting all the attributes
          */
         void discard();
 
@@ -253,22 +256,30 @@ public:
          * - interestName
          * - reqCounter
          */
-        void interestIssued();
+        void addInterest(Interest &interest);
 
         /**
-         * Moves frame into Missing state if it was in Pending
-         * state before
+         * @brief Moves frame into Missing state if it was in Pending
+         *          state before
          */
         void markMissed();
 
         /**
-         * Moves frame into Fetched state and updates following
-         * attributes:
-         * - dataName
-         * - arrivalTimeUsec
+         * @brief append data to the slot
+         * @param ndn data
          */
         void
-        dataArrived();
+        appendData( const ndn::Data &data );
+
+        /**
+         * @brief add segment data to slotData_
+         *          (allocatedSize_ may be changed)
+         * @param:
+         * -segmentData
+         * -segNo
+         */
+        void
+        addData( SegmentData segmentData, SegmentNumber segNo );
 
         void
         setPayloadSize(unsigned int payloadSize)
@@ -288,7 +299,7 @@ public:
         setNumber(FrameNumber number) { frameNumber_ = number; }
 
         FrameNumber
-        getNumber() const { return frameNumber_; }
+        getFrameNumber() const { return frameNumber_; }
 
         State
         getState() const { return state_; }
@@ -324,24 +335,47 @@ public:
 
     protected:
 
-        FrameNumber frameNumber_;
-        Name prefix_;
+        State           state_;
+        Name            prefix_;
+        FrameNumber     frameNumber_;
 
-        unsigned int payloadSize_;  // size of actual data payload
+        unsigned int    payloadSize_;  // size of actual data payload
                                     // (without frame header)
-        unsigned char* dataPtr_;    // pointer to the payload data
+        unsigned char*  slotData_;    // pointer to the payload data
+        unsigned int    allocatedSize_ = 0,
+                        assembledSize_ = 0;
 
-        State state_;
-
-        int64_t requestTimeUsec_, // local timestamp when the interest
+        int64_t         requestTimeUsec_, // local timestamp when the interest
                                   // for this frame was issued
-                arrivalTimeUsec_; // local timestamp when data for this
-                                  // frame has arrived
+                        firstSegmentTimeUsec_, // local timestamp when first segment
+                                  // for this frame has arrived
+                        readyTimeUsec_; // local timestamp when this frame is ready
+
+        int             nSegmentMissed,
+                        nSegmentTotal,
+                        nSegmentPending,
+                        nSegmentReady;
+
+        std::vector<boost::shared_ptr<Segment> >
+                        freeSegments_;
+        std::map<SegmentNumber, boost::shared_ptr<Segment> >
+                        activeSegments_;
+
         std::recursive_mutex syncMutex_;
 
-        void resetData();
+        //**************************************************
+        void reset();
 
-    };// class Slot///////////////////////////////////////////////////////////////
+        boost::shared_ptr<Segment>
+            pickFreeSegment();
+
+        boost::shared_ptr<Segment>
+            prepareSegment(SegmentNumber segNo);
+
+        boost::shared_ptr<Segment>
+            getSegment(SegmentNumber segNo);
+
+    };// class Slot
 
 
 	FrameBuffer():
@@ -358,11 +392,11 @@ public:
 #endif
     }
 
-    void
-    init()
-	{
-        //stat_ = Ready;
-	}
+    int init();
+
+    int reset();
+
+    void initialize( int slotNum=SLOTNUM );
 
     void stop()
     {
@@ -375,11 +409,15 @@ public:
     void
     unlock() { syncMutex_.unlock(); }
 
-    bool pushSlot(boost::shared_ptr<Slot> slot);
+    void interestIssued( Interest interest );
+
+    bool recvData(boost::shared_ptr<Slot> slot);
 
     void setSlot(const ndn::ptr_lib::shared_ptr<Data>& data, boost::shared_ptr<Slot> slot);
 
-    void dataArrived(const ndn::ptr_lib::shared_ptr<Data>& data);
+    void recvData(const ndn::ptr_lib::shared_ptr<Data>& data);
+
+    void acquireSlot ( MediaData *mediaData, FrameNumber frameNo );
 
     boost::shared_ptr<FrameBuffer::Slot> popSlot();
 
@@ -451,17 +489,12 @@ public:
 	int count_;
 
     State stat_;
-
-    //PriorityQueue priorityQueue_;
-    //std::recursive_mutex syncMutex_;
     mutable boost::recursive_mutex syncMutex_;
 
 
-    //std::vector<boost::shared_ptr<Slot> > issuedSlots_;
-    std::map<int, boost::shared_ptr<Slot> > activeSlots_;
+    std::vector<boost::shared_ptr<Slot> > freeSlots_;
+    std::map<Name, boost::shared_ptr<Slot> > activeSlots_;
     PlaybackQueue playbackQueue_;
-
-    int activeSlots_count_;
 
     double playbackRate = 30.0;
 };

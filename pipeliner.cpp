@@ -218,11 +218,11 @@ Pipeliner::requestFrame(PacketNumber& frameNo)
     slot->lock();
     slot->setPrefix(packetPrefix);
     slot->setNumber(frameNo);
-    slot->interestIssued();
+    slot->addInterest();
 
     //frameBuffer_->lock();
 
-    while( !frameBuffer_->pushSlot(slot))
+    while( !frameBuffer_->recvData(slot))
     {
         usleep(1000);
         //cout << ".";
@@ -327,7 +327,7 @@ Pipeliner::onData(const ptr_lib::shared_ptr<const Interest>& interest,
     if( frameBuffer_->stat_ == FrameBuffer::State::Stoped)
         return;
 
-    frameBuffer_->dataArrived(data);
+    frameBuffer_->recvData(data);
     frameBuffer_->unlock();
 
 }

@@ -114,7 +114,12 @@ public:
 
 	static int intFromComponent(const Name::Component &comp);
 	static Name::Component componentFromInt(unsigned int number);
-/*
+
+    static uint32_t generateNonceValue();
+    static Blob nonceToBlob(const uint32_t nonceValue);
+    static uint32_t blobToNonce(const Blob &blob);
+
+    /*
 	static std::string stringFromFrameType(const WebRtcVideoFrameType &frameType);
 
 	static unsigned int toFrames(unsigned int intervalMs,
@@ -122,9 +127,7 @@ public:
 	static unsigned int toTimeMs(unsigned int frames,
 								 double fps);
 
-	static uint32_t generateNonceValue();
-	static Blob nonceToBlob(const uint32_t nonceValue);
-	static uint32_t blobToNonce(const Blob &blob);
+
 
 	static std::string getFullLogPath(const new_api::GeneralParams& generalParams,
 									  const std::string& fileName);

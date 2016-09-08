@@ -9,8 +9,11 @@
 
 #include "utils.h"
 #include "frame-buffer.h"
+#include "namespacer.h"
 
-
+//*****************************************************
+//  FrameBuffer::Slot::Segment
+//*****************************************************
 FrameBuffer::Slot::Segment::Segment()
 {
     resetData();
@@ -23,7 +26,6 @@ FrameBuffer::Slot::Segment::~Segment()
 
 
 //******************************************************************************
-
 void
 FrameBuffer::Slot::Segment::discard()
 {
@@ -31,8 +33,7 @@ FrameBuffer::Slot::Segment::discard()
 }
 
 void
-FrameBuffer::Slot::Segment::interestIssued
-(const uint32_t& nonceValue)
+FrameBuffer::Slot::Segment::interestIssued (const uint32_t& nonceValue)
 {
     assert(nonceValue != 0);
 
@@ -52,8 +53,7 @@ FrameBuffer::Slot::Segment::markMissed()
 }
 
 void
-FrameBuffer::Slot::Segment::dataArrived
-(const SegmentData::SegmentMetaInfo& segmentMeta)
+FrameBuffer::Slot::Segment::dataArrived (const SegmentData::SegmentMetaInfo& segmentMeta)
 {
     state_ = StateFetched;
     arrivalTimeUsec_ = NdnRtcUtils::microsecondTimestamp();
@@ -68,6 +68,7 @@ FrameBuffer::Slot::Segment::isOriginal()
     return (interestNonce_ != 0 && dataNonce_ == interestNonce_);
 }
 
+inline
 SegmentData::SegmentMetaInfo
 FrameBuffer::Slot::Segment::getMetadata() const
 {
@@ -79,7 +80,6 @@ FrameBuffer::Slot::Segment::getMetadata() const
     return meta;
 }
 
-//******************************************************************************
 
 void
 FrameBuffer::Slot::Segment::resetData()
@@ -99,54 +99,55 @@ FrameBuffer::Slot::Segment::resetData()
 }
 
 
-
-
-////////////////////////////////////////////////////////////////
-///     FrameBuffer::Slot
-////////////////////////////////////////////////////////////////
+//*****************************************************
+//  FrameBuffer::Slot
+//*****************************************************
 
 FrameBuffer::Slot::Slot()
 {
-    resetData();
+    reset();
 }
 
-
 FrameBuffer::Slot::~Slot()
-{}
+{
+    if (slotData_)
+            free(slotData_);
 
+    if (fecSegmentList_)
+        free(fecSegmentList_);
+}
 
 void
 FrameBuffer::Slot::discard()
 {
-    resetData();
+    reset();
 }
-
 
 void
-FrameBuffer::Slot::resetData()
+FrameBuffer::Slot::addInterest( ndn::Interest &interest )
 {
-    state_ = FrameBuffer::Slot::StateNotUsed;
-    requestTimeUsec_ = -1;
-    arrivalTimeUsec_ = -1;
-    //reqCounter_ = 0;
-    frameNumber_ = -1;
-    payloadSize_ = -1;
-    prefix_ = Name();
+    Name name = interest.getName();
+    SegmentNumber segNumber;
+    FrameNumber frameNumber;
+
+    Namespacer::getSegmentationNumbers(name,frameNumber,segNumber);
+
+    boost::shared_ptr<Segment> segment;
+    segment = prepareSegment( segNumber );    // get the segment by segment number
+
+    segment->interestIssued( NdnRtcUtils::blobToNonce(interest.getNonce()) );
+
+    // first time to express interest for this frame
+    if ( getState() == StateFree )
+    {
+        state_ = StateNew;
+        requestTimeUsec_ = segment->getRequestTimeUsec();
+        prefix_ = name;
+        frameNumber_ = frameNumber;
+    }
+
+    nSegmentPending ++;
 }
-
-
-void
-FrameBuffer::Slot::interestIssued()
-{
-
-    state_ = StatePending;
-
-    if (requestTimeUsec_ <= 0)
-        requestTimeUsec_ = NdnRtcUtils::microsecondTimestamp();
-
-    //reqCounter_++;
-}
-
 
 void
 FrameBuffer::Slot::markMissed()
@@ -154,217 +155,205 @@ FrameBuffer::Slot::markMissed()
     state_ = StateMissing;
 }
 
-
 void
-FrameBuffer::Slot::dataArrived ()
+FrameBuffer::Slot::appendData ( const ndn::Data &data )
 {
-    state_ = StateFetched;
-    arrivalTimeUsec_ = NdnRtcUtils::microsecondTimestamp();
-}
+    // set the Segment object
+    boost::shared_ptr<Segment> segment;
+    segment = prepareSegment( segNumber );    // get the segment by segment number
+    SegmentData segmentData;
+    SegmentData::segmentDataFromRaw(data.getContent().size(),
+                                    data.getContent().buf(),
+                                    segmentData);
+    segment->dataArrived( segmentData );
 
+    // get name component info
+    Name name = data.getName();
+    int frmNumber, segNumber;
+    Namespacer::getSegmentationNumbers(name,frmNumber,segNumber);
+    PrefixMetaInfo prefixMetaInfo;
+    Namespacer::getPrefixMetaInfo(name,prefixMetaInfo);
 
+    // update segment parameter
+    boost::shared_ptr<Segment> segment;
+    segment = getSegment( segNumber );
+    if( segment->getState() == Segment::StateMissing )
+        nSegmentMissed --;
+    segment->dataArrived(segment.getMetaData());
 
-////////////////////////////////////////////////////////////////
-///     FrameBuffer::PlaybackQueue
-////////////////////////////////////////////////////////////////
-/*
-FrameBuffer::PlaybackQueue::PlaybackQueue(double playbackRate):
-    playbackRate_(playbackRate),
-    lastFrameDuration_(ceil(1000./playbackRate)),
-    comparator_(FrameBuffer::Slot::PlaybackComparator(false))
-{}
-
-
-
-int64_t
-FrameBuffer::PlaybackQueue::getPlaybackDuration(bool estimate)
-{
-    int64_t playbackDurationMs = 0;
-
-    if (this->size() >= 1)
+    // update slot parameter
+    if ( getState() == StateNew ) // first time to recieve segment in this slot
     {
-        PlaybackQueueBase::iterator it = this->begin();
-        Slot* slot1 = *it;
+        nSegmentTotal = prefixMetaInfo.totalSegmentNum_;
 
-        while (++it != this->end())
-        {
-            Slot* slot2 = *it;
-
-            // if header metadata is available - we have frame timestamp
-            // and frames are consequent - we have real playback time
-            if (slot1->getConsistencyState()&Slot::HeaderMeta &&
-                slot2->getConsistencyState()&Slot::HeaderMeta &&
-                slot1->getPlaybackNumber() + 1 == slot2->getPlaybackNumber())
-            {
-                lastFrameDuration_ = (slot2->getProducerTimestamp() - slot1->getProducerTimestamp());
-                // duration can be 0 if we got RTCP and RTP packets
-                assert(lastFrameDuration_ >= 0);
-                playbackDurationMs += lastFrameDuration_;
-            }
-            else
-            {
-                // otherwise - infer playback duration from the producer rate
-                playbackDurationMs += (estimate)?getInferredFrameDuration():0;
-            }
-
-            slot1 = slot2;
-        }
+        setstate( getState() << 1 ); // change to next state (StateAssembling)
     }
 
-    return playbackDurationMs;
+    if( nSegmentReady == 1 )
+        firstSegmentTimeUsec_ = segment->getArrivalTimeUsec();
+    if( nSegmentReady == nSegmentTotal )
+        readyTimeUsec_ = segment->getArrivalTimeUsec();
+    nSegmentPending --;
+    nSegmentReady ++;
+
+    // restore ndn::Data to SegmentData
+    SegmentData segmentData;
+    segmentData.initFromRawData(data.getContent().size(),data.getContent().buf());
+    // append segment data block to Slot::slotData_
+    addData( segmentData, segNumber );
+
 }
 
 void
-FrameBuffer::PlaybackQueue::updatePlaybackDeadlines()
+FrameBuffer::Slot::addData( SegmentData segmentData, SegmentNumber segNo )
 {
-    sort();
-    int64_t playbackDeadlineMs = 0;
-
-    if (this->size() >= 1)
+    // first time to allocate memory
+    if( allocatedSize_ <= 0 )
     {
-        PlaybackQueueBase::iterator it = this->begin();
-        Slot* slot1 = *it;
+        slotData_ = (unsigned char*) malloc ( nSegmentTotal*segmentData.size() );
+        allocatedSize_ = nSegmentTotal*segmentData.size();
+    }
+    // allocted memory is not enough
+    if( allocatedSize_ - payloadSize_ < segmentData.size() )
+    {
+        slotData_ = (unsigned char*) realloc ( slotData_, nSegmentTotal*segmentData.size() );
+        allocatedSize_ = nSegmentTotal*segmentData.size();
+    }
 
-        while (++it != this->end())
-        {
-            slot1->setPlaybackDeadline(playbackDeadlineMs);
-            Slot* slot2 = *it;
+    // copy data
+    int segIdx = segNo * segmentData.size();
+    memcpy( slotData_+segIdx, segmentData.getData(), segmentData.size() );
+}
 
-            // if header metadata is available - we have frame timestamp
-            if (slot1->getConsistencyState()&Slot::HeaderMeta &&
-                slot2->getConsistencyState()&Slot::HeaderMeta)
-            {
-                playbackDeadlineMs += (slot2->getProducerTimestamp() - slot1->getProducerTimestamp());
-            }
-            else
-            {
-                // otherwise - infer playback duration from the producer rate
-                playbackDeadlineMs += getInferredFrameDuration();
-            }
 
-            slot1 = slot2;
-        }
+//*****************************************************
+/**
+  * @brief pick a free segment from freeSegments_ and delete it from Slot::freeSegments_.
+  * @param
+  */
+boost::shared_ptr<Segment>
+FrameBuffer::Slot::pickFreeSegment()
+{
+    boost::shared_ptr<Segment> freeSegment;
+    if( freeSegments_.size() )
+    {
+        freeSegment = freeSegments_.at(freeSegments_.size()-1);
+        freeSegment = freeSegments_.pop_back();
+    }
+    else
+    {
+        freeSegment.reset(new Segment());
+        //freeSegments_.push_back(freeSegment);
+    }
+    return freeSegment;
+}
 
-        // set deadline for the last frame
-        slot1->setPlaybackDeadline(playbackDeadlineMs);
+/**
+  * @brief prepare a segment with segment number,
+  *         this segment must in the Slot::activeSegments_,
+  *         if its not in activeSegments_, then pick a free
+  *         segment from freeSegments_ and set the segment number to segNo.
+  * @param segNo, segment number
+  */
+boost::shared_ptr<Segment>
+FrameBuffer::Slot::prepareSegment(SegmentNumber segNo)
+{
+    boost::shared_ptr<Segment> freeSegment;
+    std::map<SegmentNumber, boost::shared_ptr<Segment> >::iterator iter;
+
+    iter = activeSegments_.find(segNo);
+    // segment exist in activeSegments_
+    if( iter != activeSegments_.end() )
+    {
+        freeSegment = iter->second;
+    }
+    //pick a free segment and set segment number with segNo
+    else
+    {
+        freeSegment = pickFreeSegment();
+        freeSegment->setNumber(segNo);
+    }
+    return freeSegment;
+}
+
+/**
+  * @brief get a segment by segNo from active segments.
+  * @param segNo
+  */
+boost::shared_ptr<Segment>
+FrameBuffer::Slot::getSegment(SegmentNumber segNo)
+{
+    boost::shared_ptr<Segment> segment;
+    std::map<SegmentNumber, boost::shared_ptr<Segment> >::iterator iter;
+
+    iter = activeSegments_.find(segNo);
+    // segment exist in activeSegments_
+    if( iter != activeSegments_.end() )
+    {
+        segment = iter->second;
+    }
+    return segment;
+}
+
+void
+FrameBuffer::Slot::reset()
+{
+    state_ = StateFree;
+    prefix_.clear();
+    frameNumber_ = -1;
+    payloadSize_ = -1;
+
+    requestTimeUsec_ = -1;
+    arrivalTimeUsec_ = -1;
+
+    nSegmentMissed = -1;
+    nSegmentTotal = -1;
+    nSegmentPending = -1;
+    nSegmentReady = -1;
+
+    assembledSize_ = 0;
+    payloadSize_ = 0;
+    //memset( slotData_,0, allocatedSize_);
+
+    // clear all active segments if any
+    std::map<SegmentNumber, boost::shared_ptr<Segment> >::iterator iter;
+    for( iter = activeSegments_.begin(); iter != activeSegments_.end(); iter++ )
+    {
+        iter->second->discard();
+        freeSegments_.push_back(iter);
+        activeSegments_.erase(iter);
+    }
+    activeSegments_.clear();
+}
+
+
+//*****************************************************
+//  FrameBuffer
+//*****************************************************
+
+int
+FrameBuffer::init()
+{
+    reset();
+    lock_guard<recursive_mutex> scopedLock(syncMutex_);
+    initialize();
+}
+
+int
+FrameBuffer::reset()
+{
+
+}
+
+void
+FrameBuffer::initialize( int slotNum )
+{
+    while( freeSlots_.size() < slotNum )
+    {
+        boost::shared_ptr<Slot> slot(new Slot);
+        freeSlots_.push_back(slot);
     }
 }
-
-void
-FrameBuffer::PlaybackQueue::pushSlot
-(FrameBuffer::Slot* const slot)
-{
-    LogTraceC << "▼push[" << slot->dump() << "]" << std::endl;
-    this->push_back(slot);
-
-    updatePlaybackDeadlines();
-    dumpQueue();
-}
-
-FrameBuffer::Slot*
-FrameBuffer::PlaybackQueue::peekSlot()
-{
-    return (0 != this->size()) ? *(this->begin()) : nullptr;
-}
-
-void
-FrameBuffer::PlaybackQueue::popSlot()
-{
-    FrameBuffer::Slot* slot;
-
-    if (0 != this->size())
-    {
-        slot = *(this->begin());
-        LogTraceC << "▲pop [" << slot->dump() << "]" << std::endl;
-
-        this->erase(this->begin());
-        updatePlaybackDeadlines();
-
-        dumpQueue();
-    }
-}
-
-void
-FrameBuffer::PlaybackQueue::updatePlaybackRate(double playbackRate)
-{
-    playbackRate_ = playbackRate;
-}
-
-void
-FrameBuffer::PlaybackQueue::clear()
-{
-    PlaybackQueueBase::clear();
-}
-
-void
-FrameBuffer::PlaybackQueue::sort()
-{
-    std::sort(this->begin(), this->end(), comparator_);
-}
-
-void
-FrameBuffer::PlaybackQueue::dumpQueue()
-{
-    if (this->logger_->getLogLevel() != NdnLoggerDetailLevelAll)
-        return;
-
-    PlaybackQueueBase::iterator it;
-    int i = 0;
-
-    for (it = this->begin(); it != this->end(); ++it)
-    {
-        LogTraceC
-        << "[" << std::setw(3) << i++ << ": "
-        << (*it)->dump() << "]" << std::endl;
-    }
-}
-
-std::string
-FrameBuffer::PlaybackQueue::dumpShort()
-{
-    std::stringstream ss;
-    PlaybackQueueBase::iterator it;
-    int nSkipped = 0;
-
-    ss << "[" ;
-    for (it = this->begin(); it != this->end(); ++it)
-    {
-        if (it+2 == this->end())
-            ss << " +" << nSkipped << " ";
-
-        if (it == this->begin() ||
-            it+1 == this->end() || it+2 == this->end() ||
-            (*it)->getNamespace() == Slot::Key)
-        {
-            if (nSkipped != 0 && it < this->end()-2)
-            {
-                ss << " +" << nSkipped << " ";
-                nSkipped = 0;
-            }
-
-            ss << (*it)->getSequentialNumber() << "(";
-
-            if (it+1 == this->end() ||
-                it+2 == this->end() ||
-                (*it)->getNamespace() == Slot::Key)
-                ss << (*it)->getPlaybackDeadline() << "|";
-
-            ss << round((*it)->getAssembledLevel()*100)/100 << ")";
-        }
-        else
-            nSkipped++;
-    }
-    ss << "]";
-
-    return ss.str();
-}
-
-*/
-
-////////////////////////////////////////////////////////////////
-///     FrameBuffer
-////////////////////////////////////////////////////////////////
-
 
 bool
 FrameBuffer::pushSlot(boost::shared_ptr<Slot> slot)
@@ -384,7 +373,7 @@ FrameBuffer::pushSlot(boost::shared_ptr<Slot> slot)
 
 
 void
-FrameBuffer::dataArrived(const ndn::ptr_lib::shared_ptr<Data>& data)
+FrameBuffer::recvData(const ndn::ptr_lib::shared_ptr<Data>& data)
 {
     lock_guard<recursive_mutex> scopedLock(syncMutex_);
 
@@ -432,7 +421,7 @@ FrameBuffer::setSlot(const ndn::ptr_lib::shared_ptr<Data>& data, boost::shared_p
     //slot->setNumber(std::atoi(data->getName().get(1).toEscapedString()));
     slot->setPayloadSize(gotFrame.header_.length_);
     //slot->setPrefix(data->getName());
-    slot->dataArrived();
+    slot->appendData();
 
     slot->unlock();
 
@@ -458,7 +447,7 @@ FrameBuffer::popSlot()
 
     map<int, boost::shared_ptr<Slot> >::iterator iter;
 
-    iter = activeSlots_.find(tmp->getNumber());
+    iter = activeSlots_.find(tmp->getFrameNumber());
     if( iter != activeSlots_.end() )
         activeSlots_.erase(iter);
 
@@ -467,3 +456,4 @@ FrameBuffer::popSlot()
 
 	return tmp;
 }
+
