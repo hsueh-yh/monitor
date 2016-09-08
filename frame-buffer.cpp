@@ -375,6 +375,7 @@ FrameBuffer::pushSlot(boost::shared_ptr<Slot> slot)
 void
 FrameBuffer::recvData(const ndn::ptr_lib::shared_ptr<Data>& data)
 {
+
     lock_guard<recursive_mutex> scopedLock(syncMutex_);
 
     Name name = data->getName();
