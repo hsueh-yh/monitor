@@ -150,9 +150,20 @@ FrameBuffer::Slot::addInterest( ndn::Interest &interest )
 }
 
 void
-FrameBuffer::Slot::markMissed()
+FrameBuffer::Slot::markMissed(const ndn::Interest &interest)
 {
-    state_ = StateMissing;
+    Name name = interest.getName();
+    FrameNumber frameNo;
+    SegmentNumber segNo;
+    Namespacer::getSegmentationNumbers(name, frameNo, segNo );
+    boost::shared_ptr<Segment> segment;
+    segment = getSegment(segNo);
+    if( segment.get() && segment->getState() == Segment::StatePending )
+    {
+        segment->markMissed();
+        nSegmentMissed ++;
+        nSegmentPending --;
+    }
 }
 
 void
@@ -375,8 +386,13 @@ FrameBuffer::pushSlot(boost::shared_ptr<Slot> slot)
 void
 FrameBuffer::recvData(const ndn::ptr_lib::shared_ptr<Data>& data)
 {
-
     lock_guard<recursive_mutex> scopedLock(syncMutex_);
+    Name name = data->getName();
+    FrameNumber frameNo;
+    SegmentNumber segNo;
+
+    Namespacer::getSegmentationNumbers(name,frameNo, segNo);
+
 
     Name name = data->getName();
     int componentCount = data->getName().getComponentCount();

@@ -262,7 +262,7 @@ public:
          * @brief Moves frame into Missing state if it was in Pending
          *          state before
          */
-        void markMissed();
+        void markMissed(const Interest &interest);
 
         /**
          * @brief append data to the slot
