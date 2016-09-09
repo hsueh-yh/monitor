@@ -1,6 +1,8 @@
 #ifndef NAMESPACER_H
 #define NAMESPACER_H
 
+// Name:  .../monitor/<location>/<streams>/video(audio)/<frameNumber>/<segmentNumber>/<PrefixMetaInfo>
+
 #include <string>
 #include <ndn-cpp/name.hpp>
 
@@ -40,6 +42,12 @@ public:
         getStreamAudioPath(const std::string &prefix,
                            const std::string &location,
                            const std::string streamName);
+
+    static void
+        getFramePrefix(const Name &prefix, Name &subPrefix);
+
+    static boost::shared_ptr<std::string>
+        getSegmentPrefix(const Name &prefix, Name &subPrefix);
 
     //*****************************************************
     //  get name component with corresponding struct

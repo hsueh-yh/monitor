@@ -169,3 +169,31 @@ Namespacer::getPrefixMetaInfo(const ndn::Name &prefix,
         }
     }
 }
+
+void
+Namespacer::getFramePrefix(const Name &prefix, Name& subPrefix)
+{
+    int p = -1;
+    p = findComponent(prefix,NameComponents::NameComponentStreamFrameVideo);
+    if ( p < 0 )
+        p = findComponent(prefix,NameComponents::NameComponentStreamFrameAudio);
+    if( p > 0 )
+    {
+        if( prefix.size() > p+2 )
+            subPrefix = prefix.getSubName(0,p+2);
+    }
+}
+
+boost::shared_ptr<std::string>
+Namespacer::getSegmentPrefix(const Name &prefix, Name &subPrefix)
+{
+    int p = -1;
+    p = findComponent(prefix,NameComponents::NameComponentStreamFrameVideo);
+    if ( p < 0 )
+        p = findComponent(prefix,NameComponents::NameComponentStreamFrameAudio);
+    if( p > 0 )
+    {
+        if( prefix.size() > p+3 )
+            subPrefix = prefix.getSubName(0,p+3);
+    }
+}

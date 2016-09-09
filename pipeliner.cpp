@@ -324,7 +324,7 @@ Pipeliner::onData(const ptr_lib::shared_ptr<const Interest>& interest,
 
     frameBuffer_->lock();
 
-    if( frameBuffer_->stat_ == FrameBuffer::State::Stoped)
+    if( frameBuffer_->state_ == FrameBuffer::State::Stoped)
         return;
 
     frameBuffer_->recvData(data);

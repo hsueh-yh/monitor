@@ -29,6 +29,12 @@ using namespace std;
 using namespace ndn;
 
 
+class IFrameBufferCallback
+{
+    virtual void onSegmentNeeded( FrameNumber frameNo, SegmentNumber segNo );
+};
+
+
 class FrameBuffer
 {
 public:
@@ -170,7 +176,7 @@ public:
         protected:
 
             SegmentNumber segmentNumber_;
-            Name prefix_;
+            Name prefix_;               //segment prefix:<.../FrameNo/SegmentNo>
             unsigned int payloadSize_;  // size of actual data payload
                                         // (without segment header)
             unsigned char* dataPtr_;    // pointer to the payload data
@@ -204,7 +210,7 @@ public:
                                          // header, otherwise - 0
             bool isParity_;
 
-            void resetData();
+            void reset();
 
         }; //class Segment
 
@@ -270,16 +276,6 @@ public:
          */
         void
         appendData( const ndn::Data &data );
-
-        /**
-         * @brief add segment data to slotData_
-         *          (allocatedSize_ may be changed)
-         * @param:
-         * -segmentData
-         * -segNo
-         */
-        void
-        addData( SegmentData segmentData, SegmentNumber segNo );
 
         void
         setPayloadSize(unsigned int payloadSize)
@@ -356,12 +352,13 @@ public:
                         nSegmentPending,
                         nSegmentReady;
 
-        std::vector<boost::shared_ptr<Segment> >
+        std::vector<boost::shared_ptr<Segment>>
                         freeSegments_;
-        std::map<SegmentNumber, boost::shared_ptr<Segment> >
+        std::map<SegmentNumber, boost::shared_ptr<Segment>>
                         activeSegments_;
 
         std::recursive_mutex syncMutex_;
+
 
         //**************************************************
         void reset();
@@ -375,13 +372,28 @@ public:
         boost::shared_ptr<Segment>
             getSegment(SegmentNumber segNo);
 
+        /**
+         * @brief add segment data to slotData_
+         *          (allocatedSize_ may be changed)
+         * @param:
+         * -segmentData
+         * -segNo
+         */
+        unsigned char *addData( SegmentData segmentData, SegmentNumber segNo );
+
+        void updateSlot();
+
+        void freeActiveSegment(SegmentNumber segNo );
+        void freeActiveSegment
+                (std::map<SegmentNumber, boost::shared_ptr<Segment>>::iterator iter );
+
     };// class Slot
 
 
 	FrameBuffer():
         count_(0),
         activeSlots_count_(0),
-        stat_(Started)
+        state_(Started)
 	{}
 
 
@@ -400,7 +412,7 @@ public:
 
     void stop()
     {
-        stat_ = Stoped;
+        state_ = Stoped;
     }
 
     void
@@ -415,6 +427,8 @@ public:
 
     void interestTimeout(const ndn::Interest &interest);
 
+    void checkMissed(FrameNumber frameNo, SegmentNumber segNo);
+
     boost::shared_ptr<Slot> getSlot(const Name& prefix, bool remove);
 
     void setSlot(const ndn::ptr_lib::shared_ptr<Data>& data, boost::shared_ptr<Slot> slot);
@@ -428,7 +442,7 @@ public:
 
 	//bool status_;
 
-//private:
+protected:
 
     /*
     typedef std::vector<FrameBuffer::Slot*> PlaybackQueueBase;
@@ -484,24 +498,23 @@ public:
     };
 */
 
-    typedef boost::shared_ptr<Slot> SlotPtr;
 
+    State state_;
+
+    mutable std::recursive_mutex syncMutex_;
+
+    typedef boost::shared_ptr<Slot> SlotPtr;
     typedef
-        priority_queue< SlotPtr, vector<SlotPtr>, Slot::Comparator/*greater<Slot::Comparator>*/ >
+        priority_queue< SlotPtr, vector<SlotPtr>, Slot::Comparator>
     PlaybackQueue;
 
-	int count_;
-
-    State stat_;
-    mutable boost::recursive_mutex syncMutex_;
-
-
-    std::vector<boost::shared_ptr<Slot> > freeSlots_;
-    std::map<Name, boost::shared_ptr<Slot> > activeSlots_;
     PlaybackQueue playbackQueue_;
+    std::vector<boost::shared_ptr<Slot> > freeSlots_;
+    std::map<Name, boost::shared_ptr<Slot>> activeSlots_;
 
-    double playbackRate = 30.0;
+    IFrameBufferCallback *callback_;
 };
+
 
 
 #endif /* FRAME_BUFFER_H_ */
