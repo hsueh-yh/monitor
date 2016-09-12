@@ -25,14 +25,22 @@ FrameBuffer::Slot::Segment::~Segment()
 }
 
 void
-FrameBuffer::Slot::Segment::interestIssued (const uint32_t& nonceValue)
+FrameBuffer::Slot::Segment::interestIssued (const ndn::Interest& interest)
 {
+    uint32_t nonceValue = interest.getNonce();
+
     assert(nonceValue != 0);
 
     state_ = StatePending;
 
     if (requestTimeUsec_ <= 0)
         requestTimeUsec_ = NdnRtcUtils::microsecondTimestamp();
+
+    Name name = interest.getName();
+    FrameNumber frameNo;
+    SegmentNumber segNo;
+    Namespacer::getSegmentationNumbers(name,frameNo,segNo);
+    setSegmentNumber(segNo);
 
     interestNonce_ = nonceValue;
     requestCounter_++;
@@ -42,9 +50,9 @@ void
 FrameBuffer::Slot::Segment::dataArrived (const SegmentData::SegmentMetaInfo& segmentMeta)
 {
     state_ = StateFetched;
+    dataNonce_ = segmentMeta.interestNonce_;
     arrivalTimeUsec_ = NdnRtcUtils::microsecondTimestamp();
     consumeTimeMs_ = segmentMeta.interestArrivalMs_;
-    dataNonce_ = segmentMeta.interestNonce_;
     generationDelayMs_ = segmentMeta.generationDelayMs_;
 }
 
@@ -66,33 +74,24 @@ FrameBuffer::Slot::Segment::isOriginal()
     return (interestNonce_ != 0 && dataNonce_ == interestNonce_);
 }
 
-//setter and getter
-inline SegmentData::SegmentMetaInfo
-FrameBuffer::Slot::Segment::getMetadata() const
-{
-    SegmentData::SegmentMetaInfo meta;
-    meta.generationDelayMs_ = generationDelayMs_;
-    meta.interestNonce_ = interestNonce_;
-    meta.interestArrivalMs_ = consumeTimeMs_;
-
-    return meta;
-}
 
 //protected functions
 void
 FrameBuffer::Slot::Segment::reset()
 {
-    state_ = FrameBuffer::Slot::Segment::StateNotUsed;
-    requestTimeUsec_ = -1;
-    arrivalTimeUsec_ = -1;
-    requestCounter_ = 0;
+    state_ = StateNotUsed;
+    segmentNumber_ = -1;
     dataNonce_ = 0;
     interestNonce_ = -1;
-    generationDelayMs_ = -1;
-    segmentNumber_ = -1;
-    payloadSize_ = -1;
+
+    requestTimeUsec_ = -1;
+    arrivalTimeUsec_ = -1;
     consumeTimeMs_ = -1;
-    prefix_ = Name();
+    generationDelayMs_ = -1;
+
+    requestCounter_ = 0;
+    dataPtr_ = NULL;
+    payloadSize_ = -1;
     isParity_ = false;
 }
 
@@ -166,7 +165,7 @@ FrameBuffer::Slot::appendData ( const ndn::Data &data )
         nSegmentMissed --;
     }
 
-    segment->setNumber(segNumber);
+    segment->setSegmentNumber(segNumber);
 
     // update slot parameter
     State oldState = getState();
@@ -307,7 +306,7 @@ FrameBuffer::Slot::prepareSegment(SegmentNumber segNo)
     else
     {
         freeSegment = pickFreeSegment();
-        freeSegment->setNumber(segNo);
+        freeSegment->setSegmentNumber(segNo);
     }
     return freeSegment;
 }
@@ -386,7 +385,7 @@ FrameBuffer::Slot::updateSlot()
         for ( iter = nSegmentPending; iter < nSegmentTotal; iter++ )
         {
             boost::shared_ptr<Segment> segment(new Segment());
-            segment->setNumber(iter);
+            segment->setSegmentNumber(iter);
             segment->markMissed();
             segment-setState(Segment::StateMissing);
             nSegmentMissed++;

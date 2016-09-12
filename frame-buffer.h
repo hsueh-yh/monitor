@@ -66,21 +66,22 @@ public:
 
             /**
              * @brief Moves segment into Pending state and updaets following
-             * @param:
              * - requestTimeUsec
-             * - interestName
+             * - segmentNumber
              * - interestNonce
-             * - reqCounter
+             * - requestCounter
+             * @param:
+             * - interest, ndn interest (with nonce value)
              */
-            void interestIssued(const uint32_t& nonceValue);
+            void interestIssued(const ndn::Interest& interest);
 
             /**
              * @brief   Moves segment into Fetched state and updates following
              * @param:
-             * - dataName
              * - dataNonce
-             * - generationDelay
              * - arrivalTimeUsec
+             * - consumeTimeMs
+             * - generationDelay
              */
             void
             dataArrived(const SegmentData::SegmentMetaInfo& segmentMeta);
@@ -101,23 +102,26 @@ public:
              * @brief Returns true if the interest issued for a segment was
              *          answered by a producer
              */
-            bool
             isOriginal();
 
 
             //setter and getter
             //************************************************
             State
-            getState() const { return state_; }
+            getState() const
+            { return state_; }
 
             void
-            setState( State state ){ state_ = state; }
+            setState( State state )
+            { state_ = state; }
 
             void
-            setNumber(SegmentNumber number) { segmentNumber_ = number; }
+            setSegmentNumber(SegmentNumber number)
+            { segmentNumber_ = number; }
 
             SegmentNumber
-            getSegmentNumber() const { return segmentNumber_; }
+            getSegmentNumber() const
+            { return segmentNumber_; }
 
             int64_t
             getRequestTimeUsec()
@@ -140,14 +144,16 @@ public:
             { payloadSize_ = payloadSize; }
 
             unsigned int
-            getPayloadSize() const { return payloadSize_; }
+            getPayloadSize() const
+            { return payloadSize_; }
 
             void
             setDataPtr(const unsigned char* dataPtr)
             { dataPtr_ = const_cast<unsigned char*>(dataPtr); }
 
             unsigned char*
-            getDataPtr() const { return dataPtr_; }
+            getDataPtr() const
+            { return dataPtr_; }
 
             void
             setIsParity(bool isParity)
@@ -158,7 +164,15 @@ public:
             { return isParity_; }
 
             SegmentData::SegmentMetaInfo
-            getMetadata() const;
+            getMetadata() const
+            {
+                SegmentData::SegmentMetaInfo meta;
+                meta.generationDelayMs_ = generationDelayMs_;
+                meta.interestNonce_ = interestNonce_;
+                meta.interestArrivalMs_ = consumeTimeMs_;
+
+                return meta;
+            }
 
             static std::string
             stateToString(State s)
@@ -190,15 +204,15 @@ public:
 
             int64_t requestTimeUsec_, // local timestamp when the interest
                                       // for this segment was issued
-            arrivalTimeUsec_, // local timestamp when data for this
-                              // segment has arrived
-            consumeTimeMs_;   // remote timestamp (milliseconds)
-                              // when the interest, issued for
-                              // this segment, has been consumed
-                              // by a producer. could be 0 if
-                              // interest was not answered by
-                              // producer directly (cached on
-                              // the network)
+                    arrivalTimeUsec_, // local timestamp when data for this
+                                      // segment has arrived
+                    consumeTimeMs_;   // remote timestamp (milliseconds)
+                                      // when the interest, issued for
+                                      // this segment, has been consumed
+                                      // by a producer. could be 0 if
+                                      // interest was not answered by
+                                      // producer directly (cached on
+                                      // the network)
             int32_t generationDelayMs_;  // in case if segment arrived
                                          // straight from producer, it
                                          // puts a delay between receiving
@@ -206,8 +220,8 @@ public:
                                          // into the segment's meta data
                                          // header, otherwise - 0
 
-            int requestCounter_; // indicates, how many times segment was
-                             // requested
+            int     requestCounter_; // indicates, how many times segment was
+                                     // requested
 
             unsigned char* dataPtr_;    // pointer to the payload data
             unsigned int payloadSize_;  // size of actual data payload
