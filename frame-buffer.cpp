@@ -68,12 +68,6 @@ FrameBuffer::Slot::Segment::discard()
     reset();
 }
 
-bool
-FrameBuffer::Slot::Segment::isOriginal()
-{
-    return (interestNonce_ != 0 && dataNonce_ == interestNonce_);
-}
-
 
 //protected functions
 void

@@ -98,12 +98,6 @@ public:
              */
             void discard();
 
-            /**
-             * @brief Returns true if the interest issued for a segment was
-             *          answered by a producer
-             */
-            isOriginal();
-
 
             //setter and getter
             //************************************************
