@@ -200,10 +200,10 @@ MainWindow::on_simulate_waiting( int simuId )
 
     long duration = simulator->getTimer();
 
-    clock_t start, finish;
+    clock_t start;//, finish;
     start = clock();
 
-    finish = start + duration;
+    //finish = start + duration;
 
     //controler->stopConsumer(consumerSmltId);
 
@@ -312,8 +312,8 @@ MainWindow::addStream( std::string stream_/*QString stream*/ )
         return -1;
     }
     QString prefix = list[0].simplified();
-    QString host = list[1].simplified();
-    int port = (list.size() > 2) ? list[2].toInt() : 6363;
+    //QString host = list[1].simplified();
+    //int port = (list.size() > 2) ? list[2].toInt() : 6363;
 
 //    std::cout << "Prefix: " << prefix.toStdString() << std::endl
 //              << "Face  : " << host.toStdString()
@@ -329,7 +329,7 @@ MainWindow::addStream( std::string stream_/*QString stream*/ )
 
     consumerId = controler->addStream(prefix.toStdString());
 
-    int num = controler->consumerNumber_;
+    //int num = controler->consumerNumber_;
     QLabel *label = new QLabel(this->ui->labelWidget);
     labelMap.insert(pair<int,QLabel*>(consumerId,label));//.push_back(label);
 
@@ -358,5 +358,9 @@ MainWindow::stopStream(int id)
 //    }
 
     if ( -1 == controler->stopConsumer(id))
+    {
         cout << "Stop Consumer failed! " << endl;
+        return -1;
+    }
+    return 1;
 }

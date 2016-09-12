@@ -31,18 +31,15 @@ using namespace ndn;
 
 class IFrameBufferCallback
 {
-    virtual void onSegmentNeeded( FrameNumber frameNo, SegmentNumber segNo );
+public:
+    virtual void
+    onSegmentNeeded( const FrameNumber frameNo, const SegmentNumber segNo ) = 0;
 };
 
 
 class FrameBuffer
 {
 public:
-
-    enum State {
-        Invalid = 0,
-        Valid = 1
-    };
 
     class Slot
     {
@@ -64,11 +61,8 @@ public:
             Segment();
             ~Segment();
 
-            /**
-             * @brief Discards segment by swithcing it to NotUsed state and
-             *          reseting all the attributes
-             */
-            void discard();
+            //upward communication with Slot
+            //************************************************
 
             /**
              * @brief Moves segment into Pending state and updaets following
@@ -79,12 +73,6 @@ public:
              * - reqCounter
              */
             void interestIssued(const uint32_t& nonceValue);
-
-            /**
-             * @brief Moves segment into Missing state if it was in Pending
-             *          state before
-             */
-            void markMissed();
 
             /**
              * @brief   Moves segment into Fetched state and updates following
@@ -98,36 +86,38 @@ public:
             dataArrived(const SegmentData::SegmentMetaInfo& segmentMeta);
 
             /**
+             * @brief Moves segment into Missing state if it was in Pending
+             *          state before
+             */
+            void markMissed();
+
+            /**
+             * @brief Discards segment by swithcing it to NotUsed state and
+             *          reseting all the attributes
+             */
+            void discard();
+
+            /**
              * @brief Returns true if the interest issued for a segment was
              *          answered by a producer
              */
             bool
             isOriginal();
 
+
+            //setter and getter
+            //************************************************
+            State
+            getState() const { return state_; }
+
             void
-            setPayloadSize(unsigned int payloadSize)
-            { payloadSize_ = payloadSize; }
-
-            unsigned int
-            getPayloadSize() const { return payloadSize_; }
-
-            void
-            setDataPtr(const unsigned char* dataPtr)
-            { dataPtr_ = const_cast<unsigned char*>(dataPtr); }
-
-            unsigned char*
-            getDataPtr() const { return dataPtr_; }
+            setState( State state ){ state_ = state; }
 
             void
             setNumber(SegmentNumber number) { segmentNumber_ = number; }
 
             SegmentNumber
-            getNumber() const { return segmentNumber_; }
-
-            SegmentData::SegmentMetaInfo getMetadata() const;
-
-            State
-            getState() const { return state_; }
+            getSegmentNumber() const { return segmentNumber_; }
 
             int64_t
             getRequestTimeUsec()
@@ -146,11 +136,18 @@ public:
             }
 
             void
-            setPrefix(const Name& prefix)
-            { prefix_ = prefix; }
+            setPayloadSize(unsigned int payloadSize)
+            { payloadSize_ = payloadSize; }
 
-            const Name&
-            getPrefix() { return prefix_; }
+            unsigned int
+            getPayloadSize() const { return payloadSize_; }
+
+            void
+            setDataPtr(const unsigned char* dataPtr)
+            { dataPtr_ = const_cast<unsigned char*>(dataPtr); }
+
+            unsigned char*
+            getDataPtr() const { return dataPtr_; }
 
             void
             setIsParity(bool isParity)
@@ -159,6 +156,9 @@ public:
             bool
             isParity()
             { return isParity_; }
+
+            SegmentData::SegmentMetaInfo
+            getMetadata() const;
 
             static std::string
             stateToString(State s)
@@ -173,14 +173,20 @@ public:
                 }
             }
 
+
         protected:
 
-            SegmentNumber segmentNumber_;
-            Name prefix_;               //segment prefix:<.../FrameNo/SegmentNo>
-            unsigned int payloadSize_;  // size of actual data payload
-                                        // (without segment header)
-            unsigned char* dataPtr_;    // pointer to the payload data
             State state_;
+
+            SegmentNumber segmentNumber_;
+
+            uint32_t dataNonce_; // nonce value provided with the
+                                 // segment's meta data
+            uint32_t interestNonce_; // nonce used with issuing interest
+                                     // for this segment. if dataNonce_
+                                     // and interestNonce_ coincides,
+                                     // this means that the interest was
+                                     // answered by a producer
 
             int64_t requestTimeUsec_, // local timestamp when the interest
                                       // for this segment was issued
@@ -193,40 +199,29 @@ public:
                               // interest was not answered by
                               // producer directly (cached on
                               // the network)
-            int reqCounter_; // indicates, how many times segment was
-                             // requested
-            uint32_t dataNonce_; // nonce value provided with the
-                                 // segment's meta data
-            uint32_t interestNonce_; // nonce used with issuing interest
-                                     // for this segment. if dataNonce_
-                                     // and interestNonce_ coincides,
-                                     // this means that the interest was
-                                     // answered by a producer
             int32_t generationDelayMs_;  // in case if segment arrived
                                          // straight from producer, it
                                          // puts a delay between receiving
                                          // an interest and answering it
                                          // into the segment's meta data
                                          // header, otherwise - 0
+
+            int requestCounter_; // indicates, how many times segment was
+                             // requested
+
+            unsigned char* dataPtr_;    // pointer to the payload data
+            unsigned int payloadSize_;  // size of actual data payload
+                                        // (without segment header)
+
             bool isParity_;
 
+
+            //************************************************
             void reset();
 
         }; //class Segment
 
-
-        enum State {
-            StateFree = 1<<0,  // slot is free for being used
-            StateNew = 1<<1,   // slot is being used for assembling, but has
-                            // not recevied any data segments yet
-            StateAssembling = 1<<2,    // slot is being used for assembling and
-                                    // already has some data segments arrived
-            StateReady = 1<<3, // slot assembled all the data and is ready for
-                            // decoding a frame
-            StateLocked = 1<<4 // slot is locked for decoding
-        }; // enum State
-
-		class Comparator
+        class Comparator
 		{
 		public:
 			Comparator(bool inverted = false):inverted_(inverted){}
@@ -246,15 +241,23 @@ public:
 			bool inverted_;
 		};
 
+        enum State {
+            StateFree = 1<<0,  // slot is free for being used
+            StateNew = 1<<1,   // slot is being used for assembling, but has
+                            // not recevied any data segments yet
+            StateAssembling = 1<<2,    // slot is being used for assembling and
+                                    // already has some data segments arrived
+            StateReady = 1<<3, // slot assembled all the data and is ready for
+                            // decoding a frame
+            StateLocked = 1<<4 // slot is locked for decoding
+        }; // enum State
+
         Slot();
         ~Slot();
 
-        /**
-         * @brief Discards frame by swithcing it to NotUsed state and
-         *          reseting all the attributes
-         */
-        void discard();
 
+        //upward communication with FrameBuffer
+        //************************************************
         /**
          * Moves frame into Pending state and updaets following
          * attributes:
@@ -265,40 +268,48 @@ public:
         void addInterest(Interest &interest);
 
         /**
-         * @brief Moves frame into Missing state if it was in Pending
-         *          state before
-         */
-        void markMissed(const Interest &interest);
-
-        /**
          * @brief append data to the slot
          * @param ndn data
          */
         void
         appendData( const ndn::Data &data );
 
-        void
-        setPayloadSize(unsigned int payloadSize)
-        { payloadSize_ = payloadSize; }
+        /**
+         * @brief Moves frame into Missing state if it was in Pending
+         *          state before
+         */
+        void markMissed(const Interest &interest);
 
-        unsigned int
-        getPayloadSize() const { return payloadSize_; }
-
-        void
-        setDataPtr(const unsigned char* dataPtr)
-        { dataPtr_ = const_cast<unsigned char*>(dataPtr); }
-
-        unsigned char*
-        getDataPtr() const { return dataPtr_; }
+        /**
+         * @brief Discards frame by swithcing it to NotUsed state and
+         *          reseting all the attributes
+         */
+        void discard();
 
         void
-        setNumber(FrameNumber number) { frameNumber_ = number; }
+        getMissedSegments(std::vector<SegmentNumber>& missedSegments);
+
+
+        //getter and setter
+        //************************************************
+        State
+        getState() const { return state_; }
+
+        void
+        setState( State state ) { state_ = state; }
+
+        const Name&
+        getPrefix() { return prefix_; }
+
+        void
+        setPrefix(const Name& prefix)
+        { prefix_ = prefix; }
 
         FrameNumber
         getFrameNumber() const { return frameNumber_; }
 
-        State
-        getState() const { return state_; }
+        void
+        setFrameNumber(FrameNumber number) { frameNumber_ = number; }
 
         int64_t
         getRequestTimeUsec()
@@ -306,22 +317,30 @@ public:
 
         int64_t
         getArrivalTimeUsec()
-        { return arrivalTimeUsec_; }
+        { return readyTimeUsec_; }
 
         int64_t
         getRoundTripDelayUsec()
         {
-            if (arrivalTimeUsec_ <= 0 || requestTimeUsec_ <= 0)
+            if (readyTimeUsec_ <= 0 || requestTimeUsec_ <= 0)
                 return -1;
-            return (arrivalTimeUsec_-requestTimeUsec_);
+            return (readyTimeUsec_-requestTimeUsec_);
         }
 
-        void
-        setPrefix(const Name& prefix)
-        { prefix_ = prefix; }
+        unsigned char*
+        getDataPtr() const { return slotData_; }
 
-        const Name&
-        getPrefix() { return prefix_; }
+        void
+        setDataPtr(const unsigned char* dataPtr)
+        { slotData_ = const_cast<unsigned char*>(dataPtr); }
+
+        unsigned int
+        getPayloadSize() const { return payloadSize_; }
+
+        void
+        setPayloadSize(unsigned int payloadSize)
+        { payloadSize_ = payloadSize; }
+
 
         void
         lock()  { syncMutex_.lock(); }
@@ -329,21 +348,17 @@ public:
         void
         unlock() { syncMutex_.unlock(); }
 
+
     protected:
 
         State           state_;
+
         Name            prefix_;
         FrameNumber     frameNumber_;
 
-        unsigned int    payloadSize_;  // size of actual data payload
-                                    // (without frame header)
-        unsigned char*  slotData_;    // pointer to the payload data
-        unsigned int    allocatedSize_ = 0,
-                        assembledSize_ = 0;
-
         int64_t         requestTimeUsec_, // local timestamp when the interest
                                   // for this frame was issued
-                        firstSegmentTimeUsec_, // local timestamp when first segment
+                        //firstSegmentTimeUsec_, // local timestamp when first segment
                                   // for this frame has arrived
                         readyTimeUsec_; // local timestamp when this frame is ready
 
@@ -357,9 +372,16 @@ public:
         std::map<SegmentNumber, boost::shared_ptr<Segment>>
                         activeSegments_;
 
+        unsigned char*  slotData_;    // pointer to the payload data
+        unsigned int    payloadSize_;  // size of actual data payload
+                                    // (without frame header)
+        unsigned int    allocatedSize_ = 0,
+                        assembledSize_ = 0;
+
         std::recursive_mutex syncMutex_;
 
 
+        //downward communication with Segment
         //**************************************************
         void reset();
 
@@ -390,11 +412,17 @@ public:
     };// class Slot
 
 
-	FrameBuffer():
-        count_(0),
-        activeSlots_count_(0),
-        state_(Started)
-	{}
+    enum State {
+        Invalid = 0,
+        Valid = 1
+    };
+
+
+    FrameBuffer():
+        state_(Valid)
+    {
+        reset();
+    }
 
 
     ~FrameBuffer()
@@ -406,41 +434,28 @@ public:
 
     int init();
 
-    int reset();
+    void reset();
 
     void initialize( int slotNum=SLOTNUM );
 
-    void stop()
-    {
-        state_ = Stoped;
-    }
+    void stop() { setState( Invalid ); }
 
-    void
-    lock()  { syncMutex_.lock(); }
-
-    void
-    unlock() { syncMutex_.unlock(); }
-
+    //upward communication with Pipeliner
+    //************************************************
     void interestIssued( Interest interest );
-
-    bool recvData(boost::shared_ptr<Slot> slot);
-
-    void interestTimeout(const ndn::Interest &interest);
-
-    void checkMissed(FrameNumber frameNo, SegmentNumber segNo);
-
-    boost::shared_ptr<Slot> getSlot(const Name& prefix, bool remove);
-
-    void setSlot(const ndn::ptr_lib::shared_ptr<Data>& data, boost::shared_ptr<Slot> slot);
 
     void recvData(const ndn::ptr_lib::shared_ptr<Data>& data);
 
+    void interestTimeout(const ndn::Interest &interest);
+
+    void checkMissed();
+
     void acquireSlot ( MediaData *mediaData, FrameNumber frameNo );
 
-    boost::shared_ptr<FrameBuffer::Slot> popSlot();
+    void
+    registerCallback(IFrameBufferCallback* callback)
+    { callback_ = callback; }
 
-
-	//bool status_;
 
 protected:
 
@@ -501,7 +516,10 @@ protected:
 
     State state_;
 
-    mutable std::recursive_mutex syncMutex_;
+    PacketNumber playbackNo_;
+
+    boost::shared_ptr<Slot> playbackSlot_;
+
 
     typedef boost::shared_ptr<Slot> SlotPtr;
     typedef
@@ -512,7 +530,23 @@ protected:
     std::vector<boost::shared_ptr<Slot> > freeSlots_;
     std::map<Name, boost::shared_ptr<Slot>> activeSlots_;
 
-    IFrameBufferCallback *callback_;
+
+    IFrameBufferCallback* callback_;
+
+    mutable std::recursive_mutex syncMutex_;
+
+    //downward communication with Slot
+    //************************************************
+    boost::shared_ptr<FrameBuffer::Slot> getSlot(const ndn::Name& prefix, bool remove);
+
+    void setSlot(const ndn::ptr_lib::shared_ptr<Data>& data, boost::shared_ptr<Slot> slot);
+
+    void lock()  { syncMutex_.lock(); }
+
+    void unlock() { syncMutex_.unlock(); }
+
+    int getActiveSlotCount() { return activeSlots_.size(); }
+
 };
 
 

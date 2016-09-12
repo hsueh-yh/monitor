@@ -39,7 +39,7 @@ public:
     static Name prefixfromFrameNo( int frameNo )
     {
         Name tmp = getBasePrefix();
-        tmp.append(frameNo);
+        tmp.append(componentFromInt(frameNo));
         return tmp;
     }
 

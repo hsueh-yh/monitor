@@ -160,6 +160,8 @@ Pipeliner::init(boost::shared_ptr<FrameBuffer> frameBuffer, boost::shared_ptr<Fa
     faceWrapper_ = faceWrapper;
     window_.init(100/*,frameBuffer_*/);
     changetoState(Pipeliner::State::Ready);
+
+    frameBuffer->registerCallback(this);
 }
 
 
@@ -217,8 +219,8 @@ Pipeliner::requestFrame(PacketNumber& frameNo)
     slot.reset(new FrameBuffer::Slot());
     slot->lock();
     slot->setPrefix(packetPrefix);
-    slot->setNumber(frameNo);
-    slot->addInterest();
+    slot->setFrameNumber(frameNo);
+    //slot->addInterest();
 
     //frameBuffer_->lock();
 
@@ -228,7 +230,7 @@ Pipeliner::requestFrame(PacketNumber& frameNo)
         //cout << ".";
     }
 
-    frameBuffer_->activeSlots_.insert(std::pair<int,boost::shared_ptr<FrameBuffer::Slot>>(frameNo,slot));
+    //frameBuffer_->activeSlots_.insert(std::pair<int,boost::shared_ptr<FrameBuffer::Slot>>(frameNo,slot));
     //frameBuffer_->unlock();
 
     slot->unlock();
@@ -324,7 +326,7 @@ Pipeliner::onData(const ptr_lib::shared_ptr<const Interest>& interest,
 
     frameBuffer_->lock();
 
-    if( frameBuffer_->state_ == FrameBuffer::State::Stoped)
+    if( frameBuffer_->getState() == FrameBuffer::Invalid)
         return;
 
     frameBuffer_->recvData(data);
@@ -348,3 +350,8 @@ Pipeliner::onTimeout(const ptr_lib::shared_ptr<const Interest>& interest)
 }
 
 
+void
+Pipeliner::onSegmentNeeded( const FrameNumber frameNo, const SegmentNumber segNo )
+{
+    //
+}

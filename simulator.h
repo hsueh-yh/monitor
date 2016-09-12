@@ -18,7 +18,6 @@ static double *pareto( double alpha, int n, double min, double max )
 {
     double x;
     double *result;
-    int size = max - min;
 
     result = (double*) malloc ( sizeof(double) * n );
 

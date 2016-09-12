@@ -64,7 +64,7 @@ private:
 };
 
 
-class Pipeliner
+class Pipeliner : public IFrameBufferCallback
 {
 public:
 
@@ -112,6 +112,10 @@ public:
 
     void
     unlock() { syncMutex_.unlock(); }
+
+    void
+    onSegmentNeeded( const FrameNumber frameNo, const SegmentNumber segNo );
+
 
 private:
 

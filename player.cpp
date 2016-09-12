@@ -218,7 +218,7 @@ Player::writeFile ()
 		//while(frameBuffer_->status_ != STARTED);
 
 		while ( slot== NULL )
-            slot = frameBuffer_->popSlot();
+            slot = frameBuffer_->acquireSlot(mediaData,frameNo);
 
         unsigned char *p_Out_Frame = new unsigned char[WIDTH * HEIGHT * 3 / 2];
 		unsigned char *p_In_Frame = slot->getDataPtr();
