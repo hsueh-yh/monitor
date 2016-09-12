@@ -20,9 +20,7 @@ FrameBuffer::Slot::Segment::Segment()
 }
 
 FrameBuffer::Slot::Segment::~Segment()
-{
-
-}
+{}
 
 void
 FrameBuffer::Slot::Segment::interestIssued (const ndn::Interest& interest)
