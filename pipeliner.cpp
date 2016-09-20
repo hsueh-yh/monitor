@@ -12,6 +12,7 @@
 #include "pipeliner.h"
 #include "consumer.h"
 #include "frame-data.h"
+#include "logger.hpp"
 
 using namespace std;
 
@@ -25,11 +26,9 @@ PipelinerWindow::PipelinerWindow():
 {
 }
 
-
 PipelinerWindow::~PipelinerWindow()
 {
 }
-
 
 void
 PipelinerWindow::init(unsigned int windowSize/*, const FrameBuffer* frameBuffer*/)
@@ -41,13 +40,11 @@ PipelinerWindow::init(unsigned int windowSize/*, const FrameBuffer* frameBuffer*
     w_ = (int)windowSize;
 }
 
-
 void
 PipelinerWindow::reset()
 {
     isInitialized_ = false;
 }
-
 
 void
 PipelinerWindow::dataArrived(PacketNumber packetNo)
@@ -62,7 +59,6 @@ PipelinerWindow::dataArrived(PacketNumber packetNo)
         framePool_.erase(it);
     }
 }
-
 
 bool
 PipelinerWindow::canAskForData(PacketNumber packetNo)
@@ -80,20 +76,17 @@ PipelinerWindow::canAskForData(PacketNumber packetNo)
     return added;
 }
 
-
 unsigned int
 PipelinerWindow::getDefaultWindowSize()
 {
     return dw_;
 }
 
-
 int
 PipelinerWindow::getCurrentWindowSize()
 {
     return w_;
 }
-
 
 int
 PipelinerWindow::changeWindow(int delta)
@@ -121,7 +114,6 @@ PipelinerWindow::changeWindow(int delta)
 }
 
 
-
 /////////////////////////////////////////////////////////////////////////////////
 ///     Pipeliner
 /////////////////////////////////////////////////////////////////////////////////
@@ -141,7 +133,6 @@ Pipeliner::Pipeliner(std::string prefix):
 
 }
 
-
 Pipeliner::~Pipeliner()
 {
 //    frameBuffer_.reset();
@@ -152,34 +143,34 @@ Pipeliner::~Pipeliner()
     //fclose(pipelinerFIle_);
 }
 
-
 void
 Pipeliner::init(boost::shared_ptr<FrameBuffer> frameBuffer, boost::shared_ptr<FaceWrapper> faceWrapper)
 {
     frameBuffer_ = frameBuffer;
     faceWrapper_ = faceWrapper;
-    window_.init(100/*,frameBuffer_*/);
+    window_.init(50/*,frameBuffer_*/);
     changetoState(Pipeliner::State::Ready);
 
+    frameBuffer->init(50);
     frameBuffer->registerCallback(this);
 }
-
 
 void
 Pipeliner::express(Interest& interest/*, int64_t priority*/)
 {
-    faceWrapper_->expressInterest(
-            interest,
-            bind(&Pipeliner::onData, this, _1, _2),
-            bind(&Pipeliner::onTimeout, this, _1));
-
-#ifdef __SHOW_CONSOLE_
-    int componentCount = interest.getName().getComponentCount();
-    cout << "Express : " << interest.getName().get(componentCount-1).toEscapedString()
-         << " " << interest.getName().toUri() << endl;
-#endif
+    if( frameBuffer_->interestIssued(interest))
+    {
+        faceWrapper_->expressInterest(
+                    interest,
+                    bind(&Pipeliner::onData, this, _1, _2),
+                    bind(&Pipeliner::onTimeout, this, _1));
+        LOG(INFO)<<"[Pipeliner] Express Interest \"" << interest.getName() << "\"";
+    }
+    else
+    {
+        LOG(INFO)<<"[Pipeliner] Express Interest canceled \"" << interest.getName() << "\"";
+    }
 }
-
 
 void
 Pipeliner::express(Name& name/*, int64_t priority*/)
@@ -199,50 +190,35 @@ Pipeliner::express(Name& name/*, int64_t priority*/)
 #endif
 }
 
-
 void
 Pipeliner::requestFrame(PacketNumber& frameNo)
 {
-    if( !window_.canAskForData(frameNo) )
+    while( !window_.canAskForData(frameNo) )
     {
         //cout << "Windown: " << window_.getCurrentWindowSize() << endl;
         usleep(10*1000);
     }
 
+    LOG(INFO) << "Fetching frame " << frameNo;
     Name packetPrefix(basePrefix_);
     packetPrefix.append(NdnRtcUtils::componentFromInt(frameNo));
-    //packetPrefix.appendTimestamp(NdnRtcUtils::microsecondTimestamp());
-    //boost::shared_ptr<Interest> frameInterest = getDefaultInterest(packetPrefix);
-
-    boost::shared_ptr<FrameBuffer::Slot> slot;
-
-    slot.reset(new FrameBuffer::Slot());
-    slot->lock();
-    slot->setPrefix(packetPrefix);
-    slot->setFrameNumber(frameNo);
-    //slot->addInterest();
-
-    //frameBuffer_->lock();
-
-    while( !frameBuffer_->recvData(slot))
+    int segNo = estimateSegmentNumber();
+    uint32_t nonce;
+    for ( int i = 0; i < segNo; i++ )
     {
-        usleep(1000);
-        //cout << ".";
+        Name segPrefix(packetPrefix);
+        segPrefix.append(NdnRtcUtils::componentFromInt(i));
+        nonce = NdnRtcUtils::generateNonceValue();
+        Interest interest(segPrefix);
+        interest.setNonce(NdnRtcUtils::nonceToBlob(nonce));
+        express(interest);
     }
-
-    //frameBuffer_->activeSlots_.insert(std::pair<int,boost::shared_ptr<FrameBuffer::Slot>>(frameNo,slot));
-    //frameBuffer_->unlock();
-
-    slot->unlock();
-
-    //express(frameInterest);
-    express(packetPrefix);
 }
-
 
 void
 Pipeliner::startFetching()
 {
+    LOG(INFO)<<"[Pipeliner] Start fetching";
     int frameNo = 0;
     while( getState() != Stoped )
     {
@@ -251,9 +227,8 @@ Pipeliner::startFetching()
 
         usleep(10*1000);
     }
-    //cout << "[Pipeliner] stop fetching" << endl;
+    LOG(INFO)<<"[Pipeliner] Stop fetching";
 }
-
 
 void
 Pipeliner::stop()
@@ -268,7 +243,6 @@ Pipeliner::stop()
     }
 }
 
-
 boost::shared_ptr<Interest>
 Pipeliner::getDefaultInterest(const ndn::Name &prefix, int64_t timeoutMs)
 {
@@ -277,7 +251,6 @@ Pipeliner::getDefaultInterest(const ndn::Name &prefix, int64_t timeoutMs)
 
     return interest;
 }
-
 
 void
 Pipeliner::changetoState(Pipeliner::State stat)
@@ -324,16 +297,9 @@ Pipeliner::onData(const ptr_lib::shared_ptr<const Interest>& interest,
     if (getState() == Stoped)
         return;
 
-    frameBuffer_->lock();
-
-    if( frameBuffer_->getState() == FrameBuffer::Invalid)
-        return;
-
     frameBuffer_->recvData(data);
-    frameBuffer_->unlock();
 
 }
-
 
 void
 Pipeliner::onTimeout(const ptr_lib::shared_ptr<const Interest>& interest)
@@ -346,9 +312,9 @@ Pipeliner::onTimeout(const ptr_lib::shared_ptr<const Interest>& interest)
     int componentCount = interest->getName().getComponentCount();
     FrameNumber frameNo = std::atoi(interest->getName().get(componentCount-1).toEscapedString().c_str());
 
-    requestFrame(frameNo);
+    frameBuffer_->interestTimeout(*interest.get());
+    //window_.changeWindow(-1);
 }
-
 
 void
 Pipeliner::onSegmentNeeded( const FrameNumber frameNo, const SegmentNumber segNo )

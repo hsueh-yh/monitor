@@ -25,6 +25,7 @@ BaseData::~BaseData()
         free(data_);
 }
 
+void
 BaseData::copyFromRaw(unsigned int dataLength, const unsigned char *rawData)
 {
     length_ = dataLength;
@@ -53,7 +54,7 @@ SegmentData::SegmentData( const unsigned char *segmentData,
     isDataCopied_ = true;
     data_ = ( unsigned char* ) malloc ( length_ );
     memcpy( data_ + headerSize, segmentData, dataSize );
-    (SegmentHeader*)(&data[0]) = metadata;
+    *(SegmentHeader*)(data_) = metadata;
 }
 
 
@@ -65,7 +66,7 @@ SegmentData::SegmentData( const unsigned char *segmentData,
 int SegmentData::initFromRawData(unsigned int dataLength,
                     const unsigned char* rawData)
 {
-    if( dataLength > getMetaData() && rawData )
+    if( dataLength > getHeaderSize() && rawData )
     {
         length_ = dataLength;
         data_ = const_cast<unsigned char*>(rawData);
@@ -87,7 +88,7 @@ SegmentData::segmentDataFromRaw(unsigned int dataLength,
 //  FrameData
 //*****************************************************
 
-FrameDataSt::FrameDataSt(unsigned char *data,
+FrameData::FrameData(unsigned char *data,
                      unsigned int length,
                      FrameMetadata *metaData)
 {
@@ -99,13 +100,11 @@ FrameDataSt::FrameDataSt(unsigned char *data,
         data_ = (unsigned char*) malloc ( length_ );
         memcpy(data_,metaData,metaSize);
         memcpy(data_+metaSize, data, length);
-        return true;
     }
-    return false;
 }
 
 int
-FrameDataSt::initFromRawData(unsigned int dataLength, const unsigned char *rawData)
+FrameData::initFromRawData(unsigned int dataLength, const unsigned char *rawData)
 {
     if( dataLength > getHeaderSize() && rawData )
     {

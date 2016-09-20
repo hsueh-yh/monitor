@@ -227,24 +227,6 @@ void NdnRtcUtils::destroyLibFace()
 
 //******************************************************************************
 
-Name::Component NdnRtcUtils::componentFromInt(unsigned int number)
-{
-    stringstream ss;
-
-    ss << number;
-    std::string frameNoStr = ss.str();
-
-    return Name::Component((const unsigned char*)frameNoStr.c_str(),
-                           frameNoStr.size());
-}
-
-// monotonic clock
-int64_t NdnRtcUtils::microsecondTimestamp()
-{
-    microseconds usec = duration_cast<microseconds>(steady_clock::now().time_since_epoch());
-    return usec.count();
-};
-
 uint32_t NdnRtcUtils::generateNonceValue()
 {
     uint32_t nonce = (uint32_t)std::rand();
@@ -325,25 +307,18 @@ Name::Component NdnRtcUtils::componentFromInt(unsigned int number)
 }
 
 // monotonic clock
-int64_t NdnRtcUtils::millisecondTimestamp()
-{
-    milliseconds msec = duration_cast<milliseconds>(steady_clock::now().time_since_epoch());
-    return msec.count();
-};
-
-// monotonic clock
 int64_t NdnRtcUtils::microsecondTimestamp()
 {
     microseconds usec = duration_cast<microseconds>(steady_clock::now().time_since_epoch());
     return usec.count();
-};
+}
 
 // monotonic clock
 int64_t NdnRtcUtils::nanosecondTimestamp()
 {
     boost::chrono::nanoseconds nsec = boost::chrono::steady_clock::now().time_since_epoch();
     return nsec.count();
-};
+}
 
 // system clock
 double NdnRtcUtils::unixTimestamp()

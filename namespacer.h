@@ -31,17 +31,17 @@ public:
     static boost::shared_ptr<std::string>
         getStreamPath(const std::string &prefix,
                       const std::string &location,
-                      const std::string streamName);
+                      const std::string &streamName);
 
     static boost::shared_ptr<std::string>
         getStreamVideoPath(const std::string &prefix,
                            const std::string &location,
-                           const std::string streamName);
+                           const std::string &streamName);
 
     static boost::shared_ptr<std::string>
         getStreamAudioPath(const std::string &prefix,
                            const std::string &location,
-                           const std::string streamName);
+                           const std::string &streamName);
 
     static void
         getFramePrefix(const Name &prefix, Name &subPrefix);
@@ -57,8 +57,14 @@ public:
                                        PacketNumber &packetNumber,
                                        SegmentNumber &segmentNumber);
 
+    static void getFrameNumber(const ndn::Name &prefix,
+                                       PacketNumber &packetNumber);
+
+    static void getSegmentNumber(const ndn::Name &prefix,
+                                       SegmentNumber &segmentNumber);
+
     static void getPrefixMetaInfo(const ndn::Name &prefix,
-                                  const PrefixMetaInfo& prefixMetaInfo);
+                                  PrefixMetaInfo &prefixMetaInfo);
 
 };
 

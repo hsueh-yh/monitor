@@ -65,44 +65,48 @@ boost::shared_ptr<std::string>
 Namespacer::getLocationPrefix(const std::string &prefix,
                           const std::string &location)
 {
-    return buildPath( prefix[0] != "/",
-                      NameComponents::NameComponentApp,
-                      location);
+    return buildPath(
+                prefix[0] != '/',
+                      &NameComponents::NameComponentApp,
+                      &location);
 }
 
 boost::shared_ptr<std::string>
 Namespacer::getStreamPath(const std::string &prefix,
                       const std::string &location,
-                      const std::string streamName)
+                      const std::string &streamName)
 {
-    return buildPath( prefix[0] != "/",
-                      NameComponents::NameComponentApp,
-                      location,
-                      streamName);
+    return buildPath( prefix[0] != '/',
+                      &prefix,
+                      &NameComponents::NameComponentApp,
+                      &location,
+                      &streamName);
 }
 
 boost::shared_ptr<std::string>
 Namespacer::getStreamVideoPath(const std::string &prefix,
                       const std::string &location,
-                      const std::string streamName)
+                      const std::string &streamName)
 {
-    return buildPath( prefix[0] != "/",
-                      NameComponents::NameComponentApp,
-                      location,
-                      streamName,
-                      NameComponents::NameComponentStreamFrameVideo);
+    return buildPath( prefix[0] != '/',
+                      &prefix,
+                      &NameComponents::NameComponentApp,
+                      &location,
+                      &streamName,
+                      &NameComponents::NameComponentStreamFrameVideo);
 }
 
 boost::shared_ptr<std::string>
 Namespacer::getStreamAudioPath(const std::string &prefix,
                       const std::string &location,
-                      const std::string streamName)
+                      const std::string &streamName)
 {
-    return buildPath( prefix[0] != "/",
-                      NameComponents::NameComponentApp,
-                      location,
-                      streamName,
-                      NameComponents::NameComponentStreamFrameAudio);
+    return buildPath( prefix[0] != '/',
+                      &prefix,
+                      &NameComponents::NameComponentApp,
+                      &location,
+                      &streamName,
+                      &NameComponents::NameComponentStreamFrameAudio);
 }
 
 void
@@ -138,8 +142,54 @@ Namespacer::getSegmentationNumbers(const ndn::Name &prefix,
 }
 
 void
+Namespacer::getFrameNumber(const ndn::Name &prefix,
+                                   PacketNumber &packetNumber)
+{
+    int p = -1;
+    packetNumber = -1;
+    p = findComponent(prefix, NameComponents::NameComponentStreamFrameVideo);
+
+    if (p < 0)
+        p = findComponent(prefix, NameComponents::NameComponentStreamFrameAudio);
+
+    if (p > 0)
+    {
+        //the packet number is next to NameComponents::NameComponentStreamFrameVideo(Audio)
+        if (p+1 < prefix.size())
+        {
+            Name::Component packetNoComp = prefix.get(p+1);
+            packetNumber = NdnRtcUtils::frameNumber(packetNoComp);
+        }
+    }
+}
+
+void
+Namespacer::getSegmentNumber(const ndn::Name &prefix,
+                                   SegmentNumber &segmentNumber)
+{
+    int p = -1;
+    segmentNumber = -1;
+
+    p = findComponent(prefix, NameComponents::NameComponentStreamFrameVideo);
+
+    if (p < 0)
+        p = findComponent(prefix, NameComponents::NameComponentStreamFrameAudio);
+
+    if (p > 0)
+    {
+        //the segment number is next two to NameComponents::NameComponentStreamFrameVideo(Audio)
+        if (p+2 < prefix.size())
+        {
+            Name::Component segmentNoComp = prefix.get(p+2);
+            segmentNumber = segmentNoComp.toNumber();
+            segmentNumber = NdnRtcUtils::segmentNumber(segmentNoComp);
+        }
+    }
+}
+
+void
 Namespacer::getPrefixMetaInfo(const ndn::Name &prefix,
-                              const PrefixMetaInfo& prefixMetaInfo)
+                              PrefixMetaInfo& prefixMetaInfo)
 {
     int p = -1;
 
@@ -160,12 +210,12 @@ Namespacer::getPrefixMetaInfo(const ndn::Name &prefix,
         if (p+4 < prefix.size())
         {
             Name::Component segmentNoComp = prefix.get(p+4);
-            prefixMetaInfo.playbackNo_ = NdnRtcUtils::intFromComponent(packetNoComp);
+            prefixMetaInfo.playbackNo_ = NdnRtcUtils::intFromComponent(segmentNoComp);
         }
         if (p+5 < prefix.size())
         {
             Name::Component segmentNoComp = prefix.get(p+5);
-            prefixMetaInfo.deltaFrameNo_ = NdnRtcUtils::intFromComponent(packetNoComp);
+            prefixMetaInfo.deltaFrameNo_ = NdnRtcUtils::intFromComponent(segmentNoComp);
         }
     }
 }

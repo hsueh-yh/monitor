@@ -1,5 +1,6 @@
 #include "controler.h"
 #include <iostream>
+#include "logger.hpp"
 
 #define HOST "localhost"
 //#define HOST "10.103.242.213"
@@ -38,13 +39,12 @@ Controler::addConsumer( std::string prefix )
     int consumerId = ++maxId_;
     //int consumerId = ++consumerIdx_;
     consumerNumber_++;
-#ifdef __SHOW_CONSOLE_
-    std::cout << "[Controler] Add Consumer :" << consumerId << std::endl;
-#endif
 
     Consumer *consumer = new Consumer(prefix.c_str(), FaceWrapper_);
     consumersMap_.insert(pair<int,Consumer*>(consumerId,consumer));
 
+    LOG(INFO) << "[Controler] Adding consumer: \"" << prefix << "\""
+                 << "ID: "<< consumerId;
     return consumerId;
 }
 
@@ -68,13 +68,12 @@ Controler::getConsumer( const int consumerId )
 int
 Controler::startConsumer( int consumerId )
 {
-#ifdef __SHOW_CONSOLE_
-    std::cout << "[Controler] Start Consumer " << consumerId << std::endl;
-#endif
+    LOG(INFO) << "[Controler] Starting consumer ID: " << consumerId;
     Consumer *consumer = getConsumer(consumerId);
     if( consumer == NULL )
     {
         std::cout << "Can not start Consumer " << consumerId << std::endl;
+        LOG(WARNING) << "[Controler] Fail to finding consumer when Starting consumer ID: " << consumerId;
         return -1;
     }
 

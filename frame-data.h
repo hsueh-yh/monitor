@@ -40,18 +40,19 @@ public:
     int size() const { return length_; }
     unsigned char* getData() const { return data_; }
 
-protected:
-
-    unsigned int length_;
-    unsigned char* data_ = NULL;
-    bool isDataCopied_ = false;
-
     virtual int
     initFromRawData(unsigned int dataLength,
                     const unsigned char* rawData) = 0;
 
     void copyFromRaw(unsigned int dataLength,
                      const unsigned char* rawData);
+
+protected:
+
+    unsigned int length_;
+    unsigned char* data_ = NULL;
+    bool isDataCopied_ = false;
+
 };
 
 

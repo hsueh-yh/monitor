@@ -45,9 +45,9 @@ HEADERS  += mainwindow.h \
     addstreamdialog.h \
     simulator.h \
     myTimer.h \
-    tmp.hpp \
     name-components.h \
-    namespacer.h
+    namespacer.h \
+    logger.hpp
 
 
 CONFIG += C++11
@@ -55,46 +55,42 @@ CONFIG += C++11
 FORMS    += mainwindow.ui \
     addstreamdialog.ui
 
-win32:CONFIG(release, debug|release): LIBS += -L$$PWD/ffmpeg/lib/release/ -lavcodec
-else:win32:CONFIG(debug, debug|release): LIBS += -L$$PWD/ffmpeg/lib/debug/ -lavcodec
-else:unix: LIBS += -L$$PWD/ffmpeg/lib/ -lavcodec
-
-INCLUDEPATH += $$PWD/ffmpeg/include
-DEPENDPATH += $$PWD/ffmpeg/include
-
-win32-g++:CONFIG(release, debug|release): PRE_TARGETDEPS += $$PWD/ffmpeg/lib/release/libavcodec.a
-else:win32-g++:CONFIG(debug, debug|release): PRE_TARGETDEPS += $$PWD/ffmpeg/lib/debug/libavcodec.a
-else:win32:!win32-g++:CONFIG(release, debug|release): PRE_TARGETDEPS += $$PWD/ffmpeg/lib/release/avcodec.lib
-else:win32:!win32-g++:CONFIG(debug, debug|release): PRE_TARGETDEPS += $$PWD/ffmpeg/lib/debug/avcodec.lib
-else:unix: PRE_TARGETDEPS += $$PWD/ffmpeg/lib/libavcodec.a
-
-win32:CONFIG(release, debug|release): LIBS += -L$$PWD/ffmpeg/lib/release/ -lavutil
-else:win32:CONFIG(debug, debug|release): LIBS += -L$$PWD/ffmpeg/lib/debug/ -lavutil
-else:unix: LIBS += -L$$PWD/ffmpeg/lib/ -lavutil
-
-INCLUDEPATH += $$PWD/ffmpeg/include
-DEPENDPATH += $$PWD/ffmpeg/include
-
-win32-g++:CONFIG(release, debug|release): PRE_TARGETDEPS += $$PWD/ffmpeg/lib/release/libavutil.a
-else:win32-g++:CONFIG(debug, debug|release): PRE_TARGETDEPS += $$PWD/ffmpeg/lib/debug/libavutil.a
-else:win32:!win32-g++:CONFIG(release, debug|release): PRE_TARGETDEPS += $$PWD/ffmpeg/lib/release/avutil.lib
-else:win32:!win32-g++:CONFIG(debug, debug|release): PRE_TARGETDEPS += $$PWD/ffmpeg/lib/debug/avutil.lib
-else:unix: PRE_TARGETDEPS += $$PWD/ffmpeg/lib/libavutil.a
-
-win32:CONFIG(release, debug|release): LIBS += -L$$PWD/ffmpeg/lib/release/ -lpostproc
-else:win32:CONFIG(debug, debug|release): LIBS += -L$$PWD/ffmpeg/lib/debug/ -lpostproc
-else:unix: LIBS += -L$$PWD/ffmpeg/lib/ -lpostproc
-
-INCLUDEPATH += $$PWD/ffmpeg/include
-DEPENDPATH += $$PWD/ffmpeg/include
-
-win32-g++:CONFIG(release, debug|release): PRE_TARGETDEPS += $$PWD/ffmpeg/lib/release/libpostproc.a
-else:win32-g++:CONFIG(debug, debug|release): PRE_TARGETDEPS += $$PWD/ffmpeg/lib/debug/libpostproc.a
-else:win32:!win32-g++:CONFIG(release, debug|release): PRE_TARGETDEPS += $$PWD/ffmpeg/lib/release/postproc.lib
-else:win32:!win32-g++:CONFIG(debug, debug|release): PRE_TARGETDEPS += $$PWD/ffmpeg/lib/debug/postproc.lib
-else:unix: PRE_TARGETDEPS += $$PWD/ffmpeg/lib/libpostproc.a
-
 LIBS += -lboost_thread -lboost_system -lboost_chrono -lboost_regex -lndn-cpp -lpthread -lprotobuf -lsqlite3 -lcrypto -ldl
 
 OTHER_FILES += \
     README
+
+
+INCLUDEPATH += $$PWD/include
+DEPENDPATH += $$PWD/include
+
+
+# include ffmpeg
+
+win32:CONFIG(release, debug|release): LIBS += -L$$PWD/lib/ffmpeg/release/ -lavutil
+else:win32:CONFIG(debug, debug|release): LIBS += -L$$PWD/lib/ffmpeg/debug/ -lavutil
+else:unix: LIBS += -L$$PWD/lib/ffmpeg/ -lavutil
+
+win32:CONFIG(release, debug|release): LIBS += -L$$PWD/lib/ffmpeg/release/ -lavcodec
+else:win32:CONFIG(debug, debug|release): LIBS += -L$$PWD/lib/ffmpeg/debug/ -lavcodec
+else:unix: LIBS += -L$$PWD/lib/ffmpeg/ -lavcodec
+
+win32:CONFIG(release, debug|release): LIBS += -L$$PWD/lib/ffmpeg/release/ -lpostproc
+else:win32:CONFIG(debug, debug|release): LIBS += -L$$PWD/lib/ffmpeg/debug/ -lpostproc
+else:unix: LIBS += -L$$PWD/lib/ffmpeg/ -lpostproc
+
+INCLUDEPATH += $$PWD/include/ffmpeg
+DEPENDPATH += $$PWD/include/ffmpeg
+
+
+# include glog
+
+win32:CONFIG(release, debug|release): LIBS += -L$$PWD/lib/glog/release/ -lglog
+else:win32:CONFIG(debug, debug|release): LIBS += -L$$PWD/lib/glog/debug/ -lglog
+else:unix: LIBS += -L$$PWD/lib/glog/ -lglog
+
+INCLUDEPATH += $$PWD/include/glog
+DEPENDPATH += $$PWD/include/glog
+
+
+#

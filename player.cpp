@@ -168,11 +168,7 @@ void
 Player::start()
 {
     changetoState(Started);
-    while(1)
-    {
-        refresh();
-        usleep(40*1000);
-    }
+    processing();
 }
 
 
@@ -203,50 +199,50 @@ Player::changetoState(Player::State stat)
 }
 
 
-void
-Player::writeFile ()
-{
-    std::cout<< std::endl<< std::endl << " Write start " << std::endl<< std::endl;
-	int i=0;
-    std::cout << i <<std::endl;
-	while( ++i <= 202)
-	{
+//void
+//Player::writeFile ()
+//{
+//    std::cout<< std::endl<< std::endl << " Write start " << std::endl<< std::endl;
+//	int i=0;
+//    std::cout << i <<std::endl;
+//	while( ++i <= 202)
+//	{
 
-        //FrameBuffer::Slot *slot =NULL;
-        boost::shared_ptr<FrameBuffer::Slot> slot;
-		//cout << frameBuffer_->status_ << endl;
-		//while(frameBuffer_->status_ != STARTED);
+//        //FrameBuffer::Slot *slot =NULL;
+//        boost::shared_ptr<FrameBuffer::Slot> slot;
+//		//cout << frameBuffer_->status_ << endl;
+//		//while(frameBuffer_->status_ != STARTED);
 
-		while ( slot== NULL )
-            slot = frameBuffer_->acquireSlot(mediaData,frameNo);
+//		while ( slot== NULL )
+//            slot = frameBuffer_->acquireSlot(mediaData,frameNo);
 
-        unsigned char *p_Out_Frame = new unsigned char[WIDTH * HEIGHT * 3 / 2];
-		unsigned char *p_In_Frame = slot->getDataPtr();
-		int outlen, inlen;
-        inlen = slot->getPayloadSize();
+//        unsigned char *p_Out_Frame = new unsigned char[WIDTH * HEIGHT * 3 / 2];
+//		unsigned char *p_In_Frame = slot->getDataPtr();
+//		int outlen, inlen;
+//        inlen = slot->getPayloadSize();
 
-//		std::cout << "Write " << i << " " << "size:" << inlen<< std::endl;
-//		cout << slot->getSlotNumber()<<endl;
-		for( int i = 0; i <20; i++ )
-				printf("%X ",p_In_Frame[i]);
-		cout << endl;
-//		std::cout << std::endl << std::endl;
-//		fwrite ( p_In_Frame, inlen, 1, pFile1_ );
+////		std::cout << "Write " << i << " " << "size:" << inlen<< std::endl;
+////		cout << slot->getSlotNumber()<<endl;
+//		for( int i = 0; i <20; i++ )
+//				printf("%X ",p_In_Frame[i]);
+//		cout << endl;
+////		std::cout << std::endl << std::endl;
+////		fwrite ( p_In_Frame, inlen, 1, pFile1_ );
 
-        std::cout << std::endl << "SizeIn: " << slot->getPayloadSize() << std::endl;
+//        std::cout << std::endl << "SizeIn: " << slot->getPayloadSize() << std::endl;
 
-		decoder_->decode( p_In_Frame, inlen, p_Out_Frame, outlen );
-		//decoder_->decode( pFile1_,slot->getDataPtr(),slot->getFrameSize(), p_Out_Frame, outlen );
+//		decoder_->decode( p_In_Frame, inlen, p_Out_Frame, outlen );
+//		//decoder_->decode( pFile1_,slot->getDataPtr(),slot->getFrameSize(), p_Out_Frame, outlen );
 
-		std::cout << std::endl << "SizeOut: " << outlen << std::endl;
+//		std::cout << std::endl << "SizeOut: " << outlen << std::endl;
 
-		if ( outlen > 0 )
-			fwrite ( p_Out_Frame, outlen, 1, pFile_ );
+//		if ( outlen > 0 )
+//			fwrite ( p_Out_Frame, outlen, 1, pFile_ );
 
-		usleep(300);
-	}
-	cout << endl << "wirte thread end" << endl;
-}
+//		usleep(300);
+//	}
+//	cout << endl << "wirte thread end" << endl;
+//}
 
 
 bool
@@ -254,20 +250,20 @@ Player::refresh()
 {
     if( getState() == Stoped)
         return false;
-    boost::shared_ptr<FrameBuffer::Slot> slot;
 
-    slot = frameBuffer_->popSlot();
+    FrameData mediaData;
+    PacketNumber frameNo;
 
-    while ( slot== NULL )
+    if( frameBuffer_->acquireSlot(mediaData, frameNo))
     {
-        slot = frameBuffer_->popSlot();
-        usleep(1000);
-        //return false;
+        frameBuffer_->releaseAcquiredSlot();
     }
 
-    unsigned char *p_In_Frame = slot->getDataPtr();
+return false;
+
+    unsigned char *p_In_Frame = mediaData.getData();
     int outlen, inlen;
-    inlen = slot->getPayloadSize();
+    inlen = mediaData.size();
 
     /*
     for( int i = 0; i <20; i++ )
@@ -301,4 +297,15 @@ Player::refresh()
     //cout << endl << slot->getNumber() << " " << slot->getPayloadSize() << endl << endl;
 
     return false;
+}
+
+
+bool
+Player::processing()
+{
+    while(1)
+    {
+        refresh();
+        usleep(40*1000);
+    }
 }

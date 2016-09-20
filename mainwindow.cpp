@@ -2,6 +2,7 @@
 #include "ui_mainwindow.h"
 #include "simulator.h"
 #include "myTimer.h"
+#include "logger.hpp"
 
 #include <thread>
 #include <math.h>
@@ -166,7 +167,9 @@ void
 MainWindow::on_start_btn_clicked()
 {
     //addStream("/video:10.103.240.100:6363");
-    addStream("/video:localhost:6363");
+    string prefix("/com/monitor/local/stream1/video:localhost:6363");
+    //addStream("/video:localhost:6363");
+    addStream(prefix);
 }
 
 
@@ -303,7 +306,8 @@ MainWindow::on_simulate_btn_clicked()
 int
 MainWindow::addStream( std::string stream_/*QString stream*/ )
 {
-    //cout << "Added Stream"<<endl;
+    LOG(INFO)<<"Adding stream: \"" << stream_ << "\"";
+
     QString stream = QString::fromStdString(stream_);
     QStringList list = stream.split(":");
 

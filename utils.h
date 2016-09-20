@@ -109,6 +109,7 @@ public:
 	static double currentIncline(unsigned int estimatorId);
 	static void releaseInclineEstimator(unsigned int estimatorId);
 
+    unsigned int getSegmentsNumber(unsigned int segmentSize, unsigned int dataSize);
 	static int frameNumber(const Name::Component &segmentComponent);
 	static int segmentNumber(const Name::Component &segmentComponent);
 

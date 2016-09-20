@@ -41,17 +41,14 @@ public:
 
     void stop();
 
-    void changetoState(Player::State stat);
-
 	void writeFile ();
 
     bool refresh();
 
-    void
-    lock()  { syncMutex_.lock(); }
 
-    void
-    unlock() { syncMutex_.unlock(); }
+    void lock()  { syncMutex_.lock(); }
+    void unlock() { syncMutex_.unlock(); }
+
 
     State getState()
     { lock(); Player::State stat = state_; unlock();return stat;  }
@@ -64,13 +61,19 @@ public:
     State state_;
     std::recursive_mutex syncMutex_;
 
-private:
+protected:
+
     boost::shared_ptr<FrameBuffer> frameBuffer_;
 
     FILE *pFile_;
 	Decoder *decoder_;
 
     unsigned char * yuv_frameBuf_/**, bmp_frameBuf_*/;
+
+
+    bool processing();
+
+    void changetoState(Player::State stat);
 
 };
 

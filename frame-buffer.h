@@ -65,7 +65,8 @@ public:
             //************************************************
 
             /**
-             * @brief Moves segment into Pending state and updaets following
+             * @brief Moves segment into Pending state and updates following
+             * attributes:
              * - requestTimeUsec
              * - segmentNumber
              * - interestNonce
@@ -267,16 +268,23 @@ public:
         //upward communication with FrameBuffer
         //************************************************
         /**
-         * Moves frame into Pending state and updaets following
+         * @brief Adds pending segment to the slot and updates following
          * attributes:
+         * - nSegmentPending
+         * and following attibutes if the old state is StateFree
+         * - state
+         * - prefix
+         * - frameNumber
          * - requestTimeUsec
-         * - interestName
-         * - reqCounter
+         * @param interest, ndn interest (with nonce value)
+         * @return true, add interest success
+         *         false, add interest failed(segment have received)
          */
-        void addInterest(Interest &interest);
+        bool
+        addInterest(Interest &interest);
 
         /**
-         * @brief append data to the slot
+         * @brief append data to this slot and update slot status
          * @param ndn data
          */
         void
@@ -284,7 +292,9 @@ public:
 
         /**
          * @brief Moves frame into Missing state if it was in Pending
-         *          state before
+         *          state before and may updates following attributes:
+         * - nSegmentMissed
+         * - nSegmentPending
          */
         void markMissed(const Interest &interest);
 
@@ -366,7 +376,7 @@ public:
 
         int64_t         requestTimeUsec_, // local timestamp when the interest
                                   // for this frame was issued
-                        //firstSegmentTimeUsec_, // local timestamp when first segment
+                        firstSegmentTimeUsec_, // local timestamp when first segment
                                   // for this frame has arrived
                         readyTimeUsec_; // local timestamp when this frame is ready
 
@@ -393,29 +403,57 @@ public:
         //**************************************************
         void reset();
 
-        boost::shared_ptr<Segment>
-            pickFreeSegment();
-
-        boost::shared_ptr<Segment>
-            prepareSegment(SegmentNumber segNo);
-
-        boost::shared_ptr<Segment>
-            getSegment(SegmentNumber segNo);
+        /**
+         * @brief pick a free segment from freeSegments_ or new one if freeSegments_
+         * is empty
+         * @note this segment will be delete from freeSegments_
+         *       this function do not change activeSegments_
+         * @return Segment Ptr, a free segment from freeSegments_
+         */
+        boost::shared_ptr<Segment> pickFreeSegment();
 
         /**
-         * @brief add segment data to slotData_
-         *          (allocatedSize_ may be changed)
+          * @brief prepare a segment with segment number,
+          *         this segment must exists in Slot::activeSegments_,
+          *         if not, pick a free segment from freeSegments_ and
+          *         set the segment number to segNo and insert into
+          *         activeSegments_.
+          * @param segNo, segment number
+          * @return Segment Ptr, segment from activeSegments_
+          */
+        boost::shared_ptr<Segment> prepareSegment(SegmentNumber segNo);
+
+        /**
+          * @brief get a segment by segNo from active segments.
+          * @param segNo
+          * @return Segment Ptr, segment from activeSegments_
+          */
+        boost::shared_ptr<Segment> getSegment(SegmentNumber segNo);
+
+        /**
+         * @brief add segment data to slotData_ (allocatedSize_ may be changed)
          * @param:
          * -segmentData
          * -segNo
          */
         unsigned char *addData( SegmentData segmentData, SegmentNumber segNo );
 
+        /**
+         * @brief delete segments if we overestimate the number of segment for
+         * this frame, mark have not requested segments as StateMissing if
+         * underestimate segment number
+         * @note it is rely on Slot and Segment parameters, nSegmentTotal
+         * must be reliable. nSegmentMissed or nSegmentPending may be changed
+         */
         void updateSlot();
 
+        /**
+         * @brief push the segment back bo freeSegments_ and erase from activeSegments_
+         * @param segNo, segment number
+         */
         void freeActiveSegment(SegmentNumber segNo );
         void freeActiveSegment
-                (std::map<SegmentNumber, boost::shared_ptr<Segment>>::iterator iter );
+                (std::map<SegmentNumber, boost::shared_ptr<Segment>>::reverse_iterator iter );
 
     };// class Slot
 
@@ -440,28 +478,31 @@ public:
 #endif
     }
 
-    int init();
+    int init(int slotNum);
 
-    void reset();
-
-    void initialize( int slotNum=SLOTNUM );
-
-    void stop() { setState( Invalid ); }
+    void stop()
+    { state_ = Invalid; }
 
     //upward communication with Pipeliner
     //************************************************
-    void interestIssued( Interest interest );
+    /**
+     * @brief reserves slot for specified interest
+     * @param interest, segment interest that has been issued
+     * @return
+     */
+    bool interestIssued(Interest &interest );
 
     void recvData(const ndn::ptr_lib::shared_ptr<Data>& data);
 
     void interestTimeout(const ndn::Interest &interest);
 
-    void checkMissed();
+    bool acquireSlot ( MediaData &mediaData, PacketNumber packetNo );
 
-    void acquireSlot ( MediaData *mediaData, FrameNumber frameNo );
+    void releaseAcquiredSlot();
 
-    void
-    registerCallback(IFrameBufferCallback* callback)
+    void checkRetransmissions();
+
+    void registerCallback(IFrameBufferCallback* callback)
     { callback_ = callback; }
 
 
@@ -525,7 +566,6 @@ protected:
     State state_;
 
     PacketNumber playbackNo_;
-
     boost::shared_ptr<Slot> playbackSlot_;
 
 
@@ -538,6 +578,9 @@ protected:
     std::vector<boost::shared_ptr<Slot> > freeSlots_;
     std::map<Name, boost::shared_ptr<Slot>> activeSlots_;
 
+    PacketNumber    lastRequestPacketNo_,
+                    lastRecvPacketNo_;
+
 
     IFrameBufferCallback* callback_;
 
@@ -545,16 +588,59 @@ protected:
 
     //downward communication with Slot
     //************************************************
-    boost::shared_ptr<FrameBuffer::Slot> getSlot(const ndn::Name& prefix, bool remove);
+    void reset();
+
+    /**
+     * @brief allocate free slot with slotNum
+     * @param slotNum, default number of slots
+     */
+    void initSlots( int slotNum=SLOTNUM );
+
+    /**
+     * @brief pick a slot from free slots
+     * @note this slot will be delete from free slots
+     *       this function do not change active slots
+     * @return Slot Ptr, a free slots from free slots
+     *          empty Ptr, free slots is empty
+     */
+    boost::shared_ptr<FrameBuffer::Slot>
+    pickFreeSlot();
+
+    /**
+      * @brief prepare a slot with frame prefix,
+      *         this slot must exists in Slot::activeSlots_,
+      *         if not, pick a free slot from freeSlots_ and
+      *         insert it into activeSlots_, and initialilize:
+      * - prefix
+      * - FrameNumber
+      * @param prefix, frame prefix
+      * @return Slot Ptr, slot from activeSlots_
+      */
+    boost::shared_ptr<FrameBuffer::Slot>
+    prepareSlot(const ndn::Name& prefix);
+
+    /**
+      * @brief get a slot by frame prefix from active slots.
+      * @param prefix, frame prefix
+      * @return Slot Ptr, slot from activeSlots_
+      */
+    boost::shared_ptr<FrameBuffer::Slot>
+    getSlot(const ndn::Name& prefix, bool remove=false);
 
     void setSlot(const ndn::ptr_lib::shared_ptr<Data>& data, boost::shared_ptr<Slot> slot);
 
-    void lock()  { syncMutex_.lock(); }
+    void lock()
+    { syncMutex_.lock(); }
 
-    void unlock() { syncMutex_.unlock(); }
+    void unlock()
+    { syncMutex_.unlock(); }
 
-    int getActiveSlotCount() { return activeSlots_.size(); }
+    int getActiveSlotCount()
+    { return activeSlots_.size(); }
 
+    void freeOldSlot();
+
+    void recycleOldSlot();
 };
 
 

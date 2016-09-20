@@ -130,6 +130,10 @@ private:
     int count_;
     State state_;
     std::recursive_mutex syncMutex_;
+
+    int estimateSegmentNumber()
+    { return 5; }
+
 };
 
 
