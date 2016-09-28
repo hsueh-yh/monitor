@@ -212,29 +212,6 @@ bool Decoder::decode( unsigned char * inbuf, const int & inlen, unsigned char * 
         }
 
         outlen = m_width*m_height * 3 / 2;
-
-/*
-		showImage[0] = outbuf;
-		showImage[1] = showImage[0] + m_width*m_height;
-		showImage[2] = showImage[1] + m_width*m_height / 4;
-		showLx[0] = m_width; showLx[1] = m_width >> 1; showLx[2] = m_width >> 1;
-		showheight[0] = m_height; showheight[1] = m_height >> 1; showheight[2] = m_height >> 1;
-        //debug//cout << "pp_postprocess" <<endl;
-        pp_postprocess(pdecFrame->data, pdecFrame->linesize, showImage, showLx, m_width, m_height, pdecFrame->qscale_table,
-            pdecFrame->qstride, pp_mode_, pp_context_, pdecFrame->pict_type);
-        GetImage(	pdecFrame->data,
-                    showImage,
-                    pdecFrame->linesize,
-                    showLx,
-                    showheight);
-        debug//cout << "pp_postprocess done" <<endl;
-		outlen = m_width*m_height * 3 / 2;
-
-        cout << "pdecFrame:" << pdecFrame->linesize << " " << pdecFrame->width << "*" << pdecFrame->height << endl;
-
-        memcpy(outbuf,pdecFrame->data,outlen);
-        cout << "done" << endl;
-*/
 	}
 	else
 	{
