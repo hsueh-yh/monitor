@@ -56,7 +56,7 @@ public:
         
     uint64_t
     registerPrefix(const Name& prefix,
-                    const OnInterest& onInterest,
+                    const OnInterestCallback& onInterest,
                     const OnRegisterFailed& onRegisterFailed,
                     const ForwardingFlags& flags = ForwardingFlags(),
                     WireFormat& wireFormat = *WireFormat::getDefaultWireFormat());

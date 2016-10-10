@@ -56,7 +56,7 @@ FaceWrapper::removePendingInterest(uint64_t interestId)
 }
 
 uint64_t FaceWrapper::registerPrefix(const Name& prefix,
-                                     const OnInterest& onInterest,
+                                     const OnInterestCallback& onInterest,
                                      const OnRegisterFailed& onRegisterFailed,
                                      const ForwardingFlags& flags,
                                      WireFormat& wireFormat)
