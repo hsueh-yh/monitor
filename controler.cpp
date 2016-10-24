@@ -2,9 +2,10 @@
 #include <iostream>
 #include "logger.hpp"
 
-#define HOST "localhost"
+//#define HOST "localhost"
 //#define HOST "10.103.242.213"
 //#define HOST "10.103.243.176"
+#define HOST "10.103.246.164"
 #define PORT 6363
 
 static boost::asio::io_service libIoService;

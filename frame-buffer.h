@@ -10,7 +10,6 @@
 
 #include <iostream>
 #include <functional>
-#include <boost/thread/mutex.hpp>
 #include <thread>
 #include <mutex>
 
@@ -34,6 +33,8 @@ class IFrameBufferCallback
 public:
     virtual void
     onSegmentNeeded( const FrameNumber frameNo, const SegmentNumber segNo ) = 0;
+    virtual void
+    onSegmentNeeded( const Name prefix ) = 0;
 };
 
 
@@ -235,7 +236,7 @@ public:
 		public:
 			Comparator(bool inverted = false):inverted_(inverted){}
 
-            bool operator() (const boost::shared_ptr<Slot> slot1, const boost::shared_ptr<Slot> slot2)
+            bool operator() (const ptr_lib::shared_ptr<Slot> slot1, const ptr_lib::shared_ptr<Slot> slot2)
 			{
                 return slot1->getFrameNumber() > slot2->getFrameNumber();
 			}
@@ -281,7 +282,7 @@ public:
          *         false, add interest failed(segment have received)
          */
         bool
-        addInterest(Interest &interest);
+        addInterest( const ndn::Interest &interest );
 
         /**
          * @brief append data to this slot and update slot status
@@ -385,9 +386,9 @@ public:
                         nSegmentPending,
                         nSegmentReady;
 
-        std::vector<boost::shared_ptr<Segment>>
+        std::vector<ptr_lib::shared_ptr<Segment>>
                         freeSegments_;
-        std::map<SegmentNumber, boost::shared_ptr<Segment>>
+        std::map<SegmentNumber, ptr_lib::shared_ptr<Segment>>
                         activeSegments_;
 
         unsigned char*  slotData_;    // pointer to the payload data
@@ -410,7 +411,7 @@ public:
          *       this function do not change activeSegments_
          * @return Segment Ptr, a free segment from freeSegments_
          */
-        boost::shared_ptr<Segment> pickFreeSegment();
+        ptr_lib::shared_ptr<Segment> pickFreeSegment();
 
         /**
           * @brief prepare a segment with segment number,
@@ -421,14 +422,14 @@ public:
           * @param segNo, segment number
           * @return Segment Ptr, segment from activeSegments_
           */
-        boost::shared_ptr<Segment> prepareSegment(SegmentNumber segNo);
+        ptr_lib::shared_ptr<Segment> prepareSegment(SegmentNumber segNo);
 
         /**
           * @brief get a segment by segNo from active segments.
           * @param segNo
           * @return Segment Ptr, segment from activeSegments_
           */
-        boost::shared_ptr<Segment> getSegment(SegmentNumber segNo);
+        ptr_lib::shared_ptr<Segment> getSegment(SegmentNumber segNo);
 
         /**
          * @brief add segment data to slotData_ (allocatedSize_ may be changed)
@@ -436,7 +437,7 @@ public:
          * -segmentData
          * -segNo
          */
-        unsigned char *addData( SegmentData segmentData, SegmentNumber segNo );
+        unsigned char *cacheData( SegmentData segmentData, SegmentNumber segNo );
 
         /**
          * @brief delete segments if we overestimate the number of segment for
@@ -453,7 +454,7 @@ public:
          */
         void freeActiveSegment(SegmentNumber segNo );
         void freeActiveSegment
-                (std::map<SegmentNumber, boost::shared_ptr<Segment>>::reverse_iterator iter );
+                (std::map<SegmentNumber, ptr_lib::shared_ptr<Segment>>::reverse_iterator iter );
 
     };// class Slot
 
@@ -490,7 +491,7 @@ public:
      * @param interest, segment interest that has been issued
      * @return
      */
-    bool interestIssued(Interest &interest );
+    bool interestIssued(const Interest &interest );
 
     void recvData(const ndn::ptr_lib::shared_ptr<Data>& data);
 
@@ -566,17 +567,17 @@ protected:
     State state_;
 
     PacketNumber playbackNo_;
-    boost::shared_ptr<Slot> playbackSlot_;
+    ptr_lib::shared_ptr<Slot> playbackSlot_;
 
 
-    typedef boost::shared_ptr<Slot> SlotPtr;
+    typedef ptr_lib::shared_ptr<Slot> SlotPtr;
     typedef
         priority_queue< SlotPtr, vector<SlotPtr>, Slot::Comparator>
     PlaybackQueue;
 
     PlaybackQueue playbackQueue_;
-    std::vector<boost::shared_ptr<Slot> > freeSlots_;
-    std::map<Name, boost::shared_ptr<Slot>> activeSlots_;
+    std::vector<ptr_lib::shared_ptr<Slot> > freeSlots_;
+    std::map<Name, ptr_lib::shared_ptr<Slot>> activeSlots_;
 
     PacketNumber    lastRequestPacketNo_,
                     lastRecvPacketNo_;
@@ -603,7 +604,7 @@ protected:
      * @return Slot Ptr, a free slots from free slots
      *          empty Ptr, free slots is empty
      */
-    boost::shared_ptr<FrameBuffer::Slot>
+    ptr_lib::shared_ptr<FrameBuffer::Slot>
     pickFreeSlot();
 
     /**
@@ -616,7 +617,7 @@ protected:
       * @param prefix, frame prefix
       * @return Slot Ptr, slot from activeSlots_
       */
-    boost::shared_ptr<FrameBuffer::Slot>
+    ptr_lib::shared_ptr<FrameBuffer::Slot>
     prepareSlot(const ndn::Name& prefix);
 
     /**
@@ -624,10 +625,10 @@ protected:
       * @param prefix, frame prefix
       * @return Slot Ptr, slot from activeSlots_
       */
-    boost::shared_ptr<FrameBuffer::Slot>
+    ptr_lib::shared_ptr<FrameBuffer::Slot>
     getSlot(const ndn::Name& prefix, bool remove=false);
 
-    void setSlot(const ndn::ptr_lib::shared_ptr<Data>& data, boost::shared_ptr<Slot> slot);
+    void setSlot(const ndn::ptr_lib::shared_ptr<Data>& data, ptr_lib::shared_ptr<Slot> slot);
 
     void lock()
     { syncMutex_.lock(); }

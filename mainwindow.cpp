@@ -167,7 +167,7 @@ void
 MainWindow::on_start_btn_clicked()
 {
     //addStream("/video:10.103.240.100:6363");
-    string prefix("/com/monitor/local/stream1/video:localhost:6363");
+    string prefix("/com/monitor/location1/stream0/video:localhost:6363");
     //addStream("/video:localhost:6363");
     addStream(prefix);
 }

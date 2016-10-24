@@ -14,7 +14,7 @@
 class Namespacer {
 public:
 
-    static boost::shared_ptr<std::string>
+    static ptr_lib::shared_ptr<std::string>
         buildPath(bool precede, const std::string *component1, ...);
 
     static int findComponent(const Name &prefix,
@@ -24,30 +24,30 @@ public:
     //  get prefix with string
     //*****************************************************
 
-    static boost::shared_ptr<std::string>
+    static ptr_lib::shared_ptr<std::string>
         getLocationPrefix(const std::string &prefix,
                           const std::string &location);
 
-    static boost::shared_ptr<std::string>
+    static ptr_lib::shared_ptr<std::string>
         getStreamPath(const std::string &prefix,
                       const std::string &location,
                       const std::string &streamName);
 
-    static boost::shared_ptr<std::string>
+    static ptr_lib::shared_ptr<std::string>
         getStreamVideoPath(const std::string &prefix,
                            const std::string &location,
                            const std::string &streamName);
 
-    static boost::shared_ptr<std::string>
+    static ptr_lib::shared_ptr<std::string>
         getStreamAudioPath(const std::string &prefix,
                            const std::string &location,
                            const std::string &streamName);
 
-    static void
-        getFramePrefix(const Name &prefix, Name &subPrefix);
+    static void getFramePrefix(const Name &prefix, Name &subPrefix);
 
-    static boost::shared_ptr<std::string>
-        getSegmentPrefix(const Name &prefix, Name &subPrefix);
+    static void getSegmentPrefix(const Name &prefix, Name &subPrefix);
+
+    static void getStreamVideoPrefix(const Name &prefix, Name &subPrefix);
 
     //*****************************************************
     //  get name component with corresponding struct
@@ -66,6 +66,8 @@ public:
     static void getPrefixMetaInfo(const ndn::Name &prefix,
                                   PrefixMetaInfo &prefixMetaInfo);
 
+    static void getMetaNumber(const ndn::Name &prefix,
+                              PacketNumber &packetNumber);
 };
 
 #endif // NAMESPACER_H

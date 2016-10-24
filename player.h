@@ -10,8 +10,6 @@
 #define __PLAYER_H_
 
 #include <iostream>
-#include <boost/shared_ptr.hpp>
-
 #include "decoder.h"
 #include "frame-buffer.h"
 
@@ -35,7 +33,7 @@ public:
 
 	~Player();
 
-    bool init (boost::shared_ptr<FrameBuffer> frameBuffer);
+    bool init (ptr_lib::shared_ptr<FrameBuffer> frameBuffer);
 
     void start();
 
@@ -63,7 +61,7 @@ public:
 
 protected:
 
-    boost::shared_ptr<FrameBuffer> frameBuffer_;
+    ptr_lib::shared_ptr<FrameBuffer> frameBuffer_;
 
     FILE *pFile_;
 	Decoder *decoder_;

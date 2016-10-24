@@ -3,7 +3,6 @@
 
 #include <pthread.h>
 #include <ndn-cpp/face.hpp>
-#include <boost/shared_ptr.hpp>
 
 #include <cstdlib>
 #include <iostream>
@@ -39,7 +38,7 @@ public:
 
     }Status;
 
-    Consumer (string uri, boost::shared_ptr<FaceWrapper> faceWrapper);
+    Consumer (string uri, ptr_lib::shared_ptr<FaceWrapper> faceWrapper);
 
 	~Consumer ();
 
@@ -52,10 +51,10 @@ public:
     Status getstatus()
     { return status_;}
 
-	boost::shared_ptr<FaceWrapper> faceWrapper_;
-	boost::shared_ptr<FrameBuffer> frameBuffer_;
-	boost::shared_ptr<Pipeliner> pipeliner_;
-    boost::shared_ptr<Player> player_;
+    ptr_lib::shared_ptr<FaceWrapper> faceWrapper_;
+    ptr_lib::shared_ptr<FrameBuffer> frameBuffer_;
+    ptr_lib::shared_ptr<Pipeliner> pipeliner_;
+    ptr_lib::shared_ptr<Player> player_;
 
 private:
 

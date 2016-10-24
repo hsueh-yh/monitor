@@ -53,7 +53,7 @@ public:
 
     //map<int,std::thread*> consumerThreads_;
 
-    boost::shared_ptr<FaceWrapper> FaceWrapper_;
+    ptr_lib::shared_ptr<FaceWrapper> FaceWrapper_;
 
     std::mutex/*recursive_mutex*/ syncMutex_;
 

@@ -13,6 +13,10 @@
 #include "consumer.h"
 #include "frame-data.h"
 #include "logger.hpp"
+#include "namespacer.h"
+#include "name-components.h"
+
+#include <stdio.h>
 
 using namespace std;
 
@@ -49,7 +53,7 @@ PipelinerWindow::reset()
 void
 PipelinerWindow::dataArrived(PacketNumber packetNo)
 {
-    boost::lock_guard<boost::mutex> scopedLock(mutex_);
+    ptr_lib::lock_guard<ptr_lib::mutex> scopedLock(mutex_);
 
     std::set<PacketNumber>::iterator it = framePool_.find(packetNo);
 
@@ -63,7 +67,7 @@ PipelinerWindow::dataArrived(PacketNumber packetNo)
 bool
 PipelinerWindow::canAskForData(PacketNumber packetNo)
 {
-    boost::lock_guard<boost::mutex> scopedLock(mutex_);
+    ptr_lib::lock_guard<ptr_lib::mutex> scopedLock(mutex_);
 
     bool added = false;
     if (w_ > 0)
@@ -121,9 +125,9 @@ PipelinerWindow::changeWindow(int delta)
 Pipeliner::Pipeliner(std::string prefix):
     basePrefix_(prefix.c_str()),
     count_(0),
+    fetchingFramNo_(0),
     state_(Stoped)
 {
-
 //	pipelinerFIle_ = fopen ( "pipelinerFIle_.264", "wb+" );
 //	if ( pipelinerFIle_ == NULL )
 //	{
@@ -144,11 +148,12 @@ Pipeliner::~Pipeliner()
 }
 
 void
-Pipeliner::init(boost::shared_ptr<FrameBuffer> frameBuffer, boost::shared_ptr<FaceWrapper> faceWrapper)
+Pipeliner::init(ptr_lib::shared_ptr<FrameBuffer> frameBuffer, ptr_lib::shared_ptr<FaceWrapper> faceWrapper)
 {
     frameBuffer_ = frameBuffer;
+    frameBuffer_->init(10);
     faceWrapper_ = faceWrapper;
-    window_.init(50/*,frameBuffer_*/);
+    window_.init(10/*,frameBuffer_*/);
     changetoState(Pipeliner::State::Ready);
 
     frameBuffer->init(50);
@@ -156,29 +161,59 @@ Pipeliner::init(boost::shared_ptr<FrameBuffer> frameBuffer, boost::shared_ptr<Fa
 }
 
 void
-Pipeliner::express(Interest& interest/*, int64_t priority*/)
+Pipeliner::start()
+{
+    ndn::Name prefix;
+    Namespacer::getStreamVideoPrefix(basePrefix_,prefix);
+    prefix.append(NameComponents::NameComponentStreamMetainfo);
+    prefix.append(NdnRtcUtils::toString(NdnRtcUtils::microsecondTimestamp()));
+
+    //express(prefix);
+    LOG(INFO)<<"[Pipeliner] Express Interest \"" << prefix.toUri() << "\"";
+    faceWrapper_->expressInterest(
+            prefix,
+            func_lib::bind(&Pipeliner::onMetaData, this, func_lib::_1, func_lib::_2),
+            func_lib::bind(&Pipeliner::onTimeout, this, func_lib::_1) );
+}
+
+void
+Pipeliner::stop()
+{
+#ifdef __SHOW_CONSOLE_
+    cout << "[Pipeliner] Stoping" << endl;
+#endif
+    window_.reset();
+    while(getState() != Stoped)
+    {
+        changetoState(Stoped);
+    }
+}
+
+void
+Pipeliner::express(const Interest& interest/*, int64_t priority*/)
 {
     if( frameBuffer_->interestIssued(interest))
     {
         faceWrapper_->expressInterest(
                     interest,
-                    bind(&Pipeliner::onData, this, _1, _2),
-                    bind(&Pipeliner::onTimeout, this, _1));
-        LOG(INFO)<<"[Pipeliner] Express Interest \"" << interest.getName() << "\"";
+                    func_lib::bind(&Pipeliner::onData, this, func_lib::_1, func_lib::_2),
+                    func_lib::bind(&Pipeliner::onTimeout, this, func_lib::_1) );
+        LOG(INFO)<<"[Pipeliner] Express Interest \"" << interest.getName().toUri() << "\"";
     }
     else
     {
-        LOG(INFO)<<"[Pipeliner] Express Interest canceled \"" << interest.getName() << "\"";
+        LOG(INFO)<<"[Pipeliner] Express Interest canceled \"" << interest.getName().toUri() << "\"";
     }
 }
 
 void
-Pipeliner::express(Name& name/*, int64_t priority*/)
+Pipeliner::express(const Name& name/*, int64_t priority*/)
 {
     faceWrapper_->expressInterest(
             name,
-            bind(&Pipeliner::onData, this, _1, _2),
-            bind(&Pipeliner::onTimeout, this, _1));
+                func_lib::bind(&Pipeliner::onData, this, func_lib::_1, func_lib::_2),
+                func_lib::bind(&Pipeliner::onTimeout, this, func_lib::_1) );
+    LOG(INFO)<<"[Pipeliner] Express Interest \"" << name.toUri() << "\"";
 
 #ifdef __SHOW_CONSOLE_
     time_t t = time(NULL);
@@ -199,7 +234,6 @@ Pipeliner::requestFrame(PacketNumber& frameNo)
         usleep(10*1000);
     }
 
-    LOG(INFO) << "Fetching frame " << frameNo;
     Name packetPrefix(basePrefix_);
     packetPrefix.append(NdnRtcUtils::componentFromInt(frameNo));
     int segNo = estimateSegmentNumber();
@@ -216,37 +250,23 @@ Pipeliner::requestFrame(PacketNumber& frameNo)
 }
 
 void
-Pipeliner::startFetching()
+Pipeliner::fetchingNext()
 {
-    LOG(INFO)<<"[Pipeliner] Start fetching";
-    int frameNo = 0;
-    while( getState() != Stoped )
+    //while( getState() != Stoped )
+    if( getState() != Stoped )
     {
-        requestFrame(frameNo);
-        frameNo++;
+        requestFrame(fetchingFramNo_);
+        ++fetchingFramNo_;
 
         usleep(10*1000);
     }
-    LOG(INFO)<<"[Pipeliner] Stop fetching";
+    //LOG(INFO)<<"[Pipeliner] Stop fetching";
 }
 
-void
-Pipeliner::stop()
-{
-#ifdef __SHOW_CONSOLE_
-    cout << "[Pipeliner] Stoping" << endl;
-#endif
-    window_.reset();
-    while(getState() != Stoped)
-    {
-        changetoState(Stoped);
-    }
-}
-
-boost::shared_ptr<Interest>
+ptr_lib::shared_ptr<Interest>
 Pipeliner::getDefaultInterest(const ndn::Name &prefix, int64_t timeoutMs)
 {
-    boost::shared_ptr<Interest> interest(new Interest(prefix));
+    ptr_lib::shared_ptr<Interest> interest(new Interest(prefix));
     interest->setMustBeFresh(true);
 
     return interest;
@@ -269,48 +289,59 @@ Pipeliner::onData(const ptr_lib::shared_ptr<const Interest>& interest,
 {
     if (getState() == Stoped)
         return;
-    int componentCount = data->getName().getComponentCount();
-    FrameNumber frameNo = std::atoi(data->getName().get(componentCount-1).toEscapedString().c_str());
-	//std::cout<<"Pipeliner onData:"<<std::endl;
 
-//	if ( data->getContent ().buf () == NULL )
-//			cout << "content is null !" << endl;
-//    cout << "Pipeliner:" << (int)getpid() << "-" << std::this_thread::get_id() << " ";
+    if( fetchingFramNo_ < 0 )
+    {
+        onMetaData(interest,data);
+        return;
+    }
+    ndn::Name prefix(data->getName());
+    FrameNumber frameNo;
+    Namespacer::getFrameNumber(prefix,frameNo);
 
-#ifdef __SHOW_CONSOLE_
-    //time_t t = time(NULL);
+    LOG(INFO) << "[Pipeliner] Got Data " << prefix.toUri()
+              << " ( size = " << data->getContent().size() << " )"
+              << endl;
 
-    //cout << "time " << t << endl;
-
-    cout << "Got Data: "<<frameNo// << " "<< data->getName().toUri()
-         << " size: " << data->getContent ().size () << endl;
-#endif
-
-//    FrameData gotFrame;
-//    memcpy(gotFrame, data->getContent().buf(), sizeof(FrameData));  //copy frame header
-
-//    gotFrame.buf_ = (unsigned char*) malloc (gotFrame.header_.length_);
-//    memcpy( gotFrame.buf_, data->getContent().buf()+sizeof(FrameData), gotFrame.header_.length_);   //copy frame data
+    //NdnRtcUtils::printMem("PipelinerRCEV",data->getContent().buf(),data->getContent().size());
 
     window_.dataArrived(frameNo);
 
     if (getState() == Stoped)
         return;
 
-    frameBuffer_->recvData(data);
+    if( data->getContent().size() == 0 )
+    {
+        frameBuffer_->interestTimeout(*interest.get());
+        return;
+    }
 
+    frameBuffer_->recvData(data);
+    fetchingNext();
+}
+
+void
+Pipeliner::onMetaData(const ptr_lib::shared_ptr<const Interest>& interest,
+        const ptr_lib::shared_ptr<Data>& data)
+{
+    LOG(INFO) << "Got meta Data " << endl;
+    Namespacer::getMetaNumber(data->getName(),fetchingFramNo_);
+    //onData(interest,data);
+    LOG(INFO) << "Got meta Data " << data->getName().toUri()
+              << " frameNo = " << fetchingFramNo_ << endl;
+    fetchingNext();
 }
 
 void
 Pipeliner::onTimeout(const ptr_lib::shared_ptr<const Interest>& interest)
 {
+    LOG(INFO) << "[Pipeliner] TimeOut " << interest->getName().toUri() << endl;
 
-#ifdef __SHOW_CONSOLE_
-    cout << "Pipeliner timeout: " << interest->getName().toUri()<< endl;
-#endif
-
-    int componentCount = interest->getName().getComponentCount();
-    FrameNumber frameNo = std::atoi(interest->getName().get(componentCount-1).toEscapedString().c_str());
+    ndn::Name prefix(interest->getName());
+    FrameNumber frameNo;
+    Namespacer::getFrameNumber(prefix,frameNo);
+    window_.dataArrived(frameNo);
+    //requestFrame(frameNo);
 
     frameBuffer_->interestTimeout(*interest.get());
     //window_.changeWindow(-1);
@@ -320,4 +351,10 @@ void
 Pipeliner::onSegmentNeeded( const FrameNumber frameNo, const SegmentNumber segNo )
 {
     //
+}
+
+void
+Pipeliner::onSegmentNeeded( const Name prefix )
+{
+    express(prefix);
 }

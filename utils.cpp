@@ -78,7 +78,7 @@ typedef struct _SlidingAverage {
 //********************************************************************************
 
 static boost::asio::io_service* NdnRtcIoService;
-static boost::shared_ptr<FaceProcessor> LibraryFace;
+static ptr_lib::shared_ptr<FaceProcessor> LibraryFace;
 
 /*
 static std::vector<FrequencyMeter> freqMeters_;
@@ -94,7 +94,7 @@ static VoiceEngine *VoiceEngineInstance = NULL;
 static boost::thread backgroundThread;
 static boost::shared_ptr<boost::asio::io_service::work> backgroundWork;
 
-static boost::shared_ptr<KeyChain> DefaultKeyChain(new KeyChain());
+static ptr_lib::shared_ptr<KeyChain> DefaultKeyChain(new KeyChain());
 
 //void initVE();
 void resetThread();
@@ -200,16 +200,16 @@ void NdnRtcUtils::createLibFace(const std::string host, const int port/*const ne
         //LogInfo(LIB_LOG) << "Creating library Face..." << std::endl;
 
         LibraryFace = FaceProcessor::createFaceProcessor(host,port,DefaultKeyChain);
-        		//(generalParams.host_, generalParams.portNum_, NdnRtcNamespace::defaultKeyChain());
+                //(generalParams.host_, generalParams.portNum_, NdnRtcNamespace::defaultKeyChain());
 
         //std::cout<<"starting libFace..." << std::endl;
         LibraryFace->startProcessing(10);
-        
+
         //LogInfo(LIB_LOG) << "Library Face created" << std::endl;
     }
 }
 
-boost::shared_ptr<FaceProcessor> NdnRtcUtils::getLibFace()
+ptr_lib::shared_ptr<FaceProcessor> NdnRtcUtils::getLibFace()
 {
     return LibraryFace;
 }
@@ -333,6 +333,23 @@ int64_t NdnRtcUtils::millisecSinceEpoch()
 {
     milliseconds msec = duration_cast<milliseconds>(system_clock::now().time_since_epoch());
     return msec.count();
+}
+
+void NdnRtcUtils::printMem( char msg[], const unsigned char* startBuf, std::size_t size )
+{
+    unsigned char* buf = const_cast<unsigned char*>(startBuf);
+    printf("\n[%s] size = %ld   addr:[ %p ~ %p ]\n",
+           msg, size, (void*)buf, (void*)buf+size);
+    printf("**********************************************************************\n");
+    fflush(stdout);
+    for( int i = 0; i < size; ++i )
+    {
+        printf("%X ",buf[i]);
+        fflush(stdout);
+    }
+    printf("\n**********************************************************************");
+    printf("\n[%s]-End\n\n",msg);
+    fflush(stdout);
 }
 
 
@@ -802,4 +819,5 @@ void resetThread()
     });
 
 }
+
 

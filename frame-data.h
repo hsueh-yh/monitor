@@ -11,7 +11,6 @@
 #ifndef __frame_data__
 #define __frame_data__
 
-#include <boost/crc.hpp>
 #include <ndn-cpp/name.hpp>
 
 #include "common.h"
@@ -38,7 +37,7 @@ public:
     virtual ~BaseData();
 
     int size() const { return length_; }
-    unsigned char* getData() const { return data_; }
+    unsigned char* buf() const { return data_; }
 
     virtual int
     initFromRawData(unsigned int dataLength,

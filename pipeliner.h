@@ -58,7 +58,7 @@ private:
     int w_;             // current window size
     bool isInitialized_;
     PacketNumber lastAddedToPool_;
-    boost::mutex mutex_;
+    ptr_lib::mutex mutex_;
     std::set<PacketNumber> framePool_;
     const FrameBuffer* frameBuffer_;
 };
@@ -81,15 +81,19 @@ public:
 
     //******************************************************************************
 
-    void init(boost::shared_ptr<FrameBuffer> frameBuffer, boost::shared_ptr<FaceWrapper> faceWrapper);
+    void init(ptr_lib::shared_ptr<FrameBuffer> frameBuffer, ptr_lib::shared_ptr<FaceWrapper> faceWrapper);
 
-    void express(Name& name);
+    void express(const Name& name);
 
-    void express(Interest& interest);
+    void express(const Interest &interest);
 
     void requestFrame(PacketNumber& frameNo);
 
-    void startFetching();
+    void fetchingNext();
+
+    void fetchMetainfo();
+
+    void start();
 
     void stop();
 
@@ -98,11 +102,13 @@ public:
     Pipeliner::State getState()
     { lock(); Pipeliner::State stat = state_; unlock(); return stat;  }
 
-    boost::shared_ptr<Interest>
+    ptr_lib::shared_ptr<Interest>
     getDefaultInterest(const Name& prefix, int64_t timeoutMs = 0);
 
     //******************************************************************************
 	void onData(const ptr_lib::shared_ptr<const Interest>& interest, const ptr_lib::shared_ptr<Data>& data);
+
+    void onMetaData(const ptr_lib::shared_ptr<const Interest>& interest, const ptr_lib::shared_ptr<Data>& data);
 
 	void onTimeout(const ptr_lib::shared_ptr<const Interest>& interest);
 
@@ -116,23 +122,27 @@ public:
     void
     onSegmentNeeded( const FrameNumber frameNo, const SegmentNumber segNo );
 
+    void
+    onSegmentNeeded( const Name prefix );
+
 
 private:
 
     Name basePrefix_;
 
-    boost::shared_ptr<FaceWrapper> faceWrapper_;
-    boost::shared_ptr<FrameBuffer> frameBuffer_;
+    ptr_lib::shared_ptr<FaceWrapper> faceWrapper_;
+    ptr_lib::shared_ptr<FrameBuffer> frameBuffer_;
     PipelinerWindow window_;
 
     //FILE *pipelinerFIle_;
 
     int count_;
+    FrameNumber fetchingFramNo_;
     State state_;
     std::recursive_mutex syncMutex_;
 
     int estimateSegmentNumber()
-    { return 5; }
+    { return 1; }
 
 };
 

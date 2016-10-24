@@ -5,6 +5,8 @@
  *      Author: xyh
  */
 
+#include <unistd.h>
+
 #include "player.h"
 
 static int
@@ -148,7 +150,7 @@ Player::~Player()
 
 
 bool
-Player::init (boost::shared_ptr<FrameBuffer> frameBuffer)
+Player::init (ptr_lib::shared_ptr<FrameBuffer> frameBuffer)
 {
 //    cout << "Player: " << (int)getpid() << "-"
 //         << std::this_thread::get_id() << " ";
@@ -209,7 +211,7 @@ Player::changetoState(Player::State stat)
 //	{
 
 //        //FrameBuffer::Slot *slot =NULL;
-//        boost::shared_ptr<FrameBuffer::Slot> slot;
+//        ptr_lib::shared_ptr<FrameBuffer::Slot> slot;
 //		//cout << frameBuffer_->status_ << endl;
 //		//while(frameBuffer_->status_ != STARTED);
 
@@ -261,7 +263,7 @@ Player::refresh()
 
 return false;
 
-    unsigned char *p_In_Frame = mediaData.getData();
+    unsigned char *p_In_Frame = mediaData.buf();
     int outlen, inlen;
     inlen = mediaData.size();
 
