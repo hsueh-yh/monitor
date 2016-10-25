@@ -27,7 +27,8 @@ SOURCES += main.cpp\
     myTimer.cpp \
     frame-data.cpp \
     name-components.cpp \
-    namespacer.cpp
+    namespacer.cpp \
+    statistics.cpp
 
 HEADERS  += mainwindow.h \
     common.h \
@@ -47,7 +48,8 @@ HEADERS  += mainwindow.h \
     myTimer.h \
     name-components.h \
     namespacer.h \
-    logger.hpp
+    logger.hpp \
+    statistics.hpp
 
 
 CONFIG += C++11

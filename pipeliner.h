@@ -18,6 +18,7 @@
 #include "common.h"
 #include "frame-buffer.h"
 #include "face-wrapper.h"
+#include "statistics.hpp"
 
 using namespace ndn;
 
@@ -58,13 +59,13 @@ private:
     int w_;             // current window size
     bool isInitialized_;
     PacketNumber lastAddedToPool_;
-    ptr_lib::mutex mutex_;
+    std::mutex mutex_;
     std::set<PacketNumber> framePool_;
     const FrameBuffer* frameBuffer_;
 };
 
 
-class Pipeliner : public IFrameBufferCallback
+class Pipeliner
 {
 public:
 
@@ -83,17 +84,13 @@ public:
 
     void init(ptr_lib::shared_ptr<FrameBuffer> frameBuffer, ptr_lib::shared_ptr<FaceWrapper> faceWrapper);
 
-    void express(const Name& name);
+    void express(Name& name);
 
-    void express(const Interest &interest);
+    void express(Interest& interest);
 
-    void requestFrame(PacketNumber& frameNo);
+    void requestFrame(PacketNumber frameNo);
 
-    void fetchingNext();
-
-    void fetchMetainfo();
-
-    void start();
+    void startFetching();
 
     void stop();
 
@@ -106,11 +103,9 @@ public:
     getDefaultInterest(const Name& prefix, int64_t timeoutMs = 0);
 
     //******************************************************************************
-	void onData(const ptr_lib::shared_ptr<const Interest>& interest, const ptr_lib::shared_ptr<Data>& data);
+    void onData(const ptr_lib::shared_ptr<const Interest>& interest, const ptr_lib::shared_ptr<Data>& data);
 
-    void onMetaData(const ptr_lib::shared_ptr<const Interest>& interest, const ptr_lib::shared_ptr<Data>& data);
-
-	void onTimeout(const ptr_lib::shared_ptr<const Interest>& interest);
+    void onTimeout(const ptr_lib::shared_ptr<const Interest>& interest);
 
 
     void
@@ -118,13 +113,6 @@ public:
 
     void
     unlock() { syncMutex_.unlock(); }
-
-    void
-    onSegmentNeeded( const FrameNumber frameNo, const SegmentNumber segNo );
-
-    void
-    onSegmentNeeded( const Name prefix );
-
 
 private:
 
@@ -135,15 +123,13 @@ private:
     PipelinerWindow window_;
 
     //FILE *pipelinerFIle_;
+    Statistics *statistic;
+    bool isRetransmission;
 
     int count_;
-    FrameNumber fetchingFramNo_;
+    unsigned int requestPktNo_;
     State state_;
     std::recursive_mutex syncMutex_;
-
-    int estimateSegmentNumber()
-    { return 1; }
-
 };
 
 

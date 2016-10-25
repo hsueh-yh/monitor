@@ -10,6 +10,7 @@
 #define __PLAYER_H_
 
 #include <iostream>
+
 #include "decoder.h"
 #include "frame-buffer.h"
 
@@ -31,7 +32,7 @@ public:
 
     Player();
 
-	~Player();
+    ~Player();
 
     bool init (ptr_lib::shared_ptr<FrameBuffer> frameBuffer);
 
@@ -39,14 +40,17 @@ public:
 
     void stop();
 
-	void writeFile ();
+    void changetoState(Player::State stat);
+
+    void writeFile ();
 
     bool refresh();
 
+    void
+    lock()  { syncMutex_.lock(); }
 
-    void lock()  { syncMutex_.lock(); }
-    void unlock() { syncMutex_.unlock(); }
-
+    void
+    unlock() { syncMutex_.unlock(); }
 
     State getState()
     { lock(); Player::State stat = state_; unlock();return stat;  }
@@ -59,19 +63,13 @@ public:
     State state_;
     std::recursive_mutex syncMutex_;
 
-protected:
-
+private:
     ptr_lib::shared_ptr<FrameBuffer> frameBuffer_;
 
     FILE *pFile_;
-	Decoder *decoder_;
+    Decoder *decoder_;
 
     unsigned char * yuv_frameBuf_/**, bmp_frameBuf_*/;
-
-
-    bool processing();
-
-    void changetoState(Player::State stat);
 
 };
 

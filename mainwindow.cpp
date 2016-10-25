@@ -13,7 +13,7 @@
 #define WIDTH 640
 #define HEIGHT 480
 
-#define _FRAME_RATE_ 30*1000    //30ms
+#define _FRAME_RATE_ 20*1000    //20ms
 
 MainWindow::MainWindow(QWidget *parent) :
     QMainWindow(parent),

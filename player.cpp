@@ -5,36 +5,35 @@
  *      Author: xyh
  */
 
-#include <unistd.h>
-
 #include "player.h"
+#include "logger.hpp"
 
 static int
 FindStartCode(unsigned char *Buf, int zeros_in_startcode)
 {
-	int info;
-	int i;
+    int info;
+    int i;
 
-	info = 1;
-	for (i = 0; i < zeros_in_startcode; i++)
-	{
-		if (Buf[i] != 0)
-			info = 0;
-	}
+    info = 1;
+    for (i = 0; i < zeros_in_startcode; i++)
+    {
+        if (Buf[i] != 0)
+            info = 0;
+    }
 
-	if (Buf[i] != 1)
-		info = 0;
-	return info;
+    if (Buf[i] != 1)
+        info = 0;
+    return info;
 }
 
 
 static bool
 Check_StartCode(unsigned char *Buf, int pos)
 {
-	int info3 = 0;
+    int info3 = 0;
 
-	info3 = FindStartCode(&Buf[pos - 4], 3);
-	return info3 == 1;
+    info3 = FindStartCode(&Buf[pos - 4], 3);
+    return info3 == 1;
 
 }
 
@@ -42,44 +41,44 @@ Check_StartCode(unsigned char *Buf, int pos)
 static int
 getNextNal(unsigned char* &inpf, unsigned char* inpf_end, unsigned char* inBuf)
 {
-	int inBuf_pos = 0;
-	int StartCodeFound = 0;
-	int info2 = 0;
-	int info3 = 0;
+    int inBuf_pos = 0;
+    int StartCodeFound = 0;
+    int info2 = 0;
+    int info3 = 0;
 
-	int nCount = 0;
-	while ( inpf <= inpf_end && ++nCount <= 4)
-	{
-		inBuf[inBuf_pos++] = *inpf++;
-	}
+    int nCount = 0;
+    while ( inpf <= inpf_end && ++nCount <= 4)
+    {
+        inBuf[inBuf_pos++] = *inpf++;
+    }
 
-	if (!Check_StartCode(inBuf, inBuf_pos))
-	{
-		return 0;
-	}
+    if (!Check_StartCode(inBuf, inBuf_pos))
+    {
+        return 0;
+    }
 
 
-	//while (!feof(inpf) && (inBuf[inBuf_pos++] = fgetc(inpf)) == 0);
+    //while (!feof(inpf) && (inBuf[inBuf_pos++] = fgetc(inpf)) == 0);
 
-	//find the next start code
-	while (!StartCodeFound)
-	{
-		//end of file
-		if (inpf>=inpf_end)
-		{
-			//			return -1;
-			return inBuf_pos - 1;
-		}
-		inBuf[inBuf_pos++] = *inpf++;
+    //find the next start code
+    while (!StartCodeFound)
+    {
+        //end of file
+        if (inpf>=inpf_end)
+        {
+            //			return -1;
+            return inBuf_pos - 1;
+        }
+        inBuf[inBuf_pos++] = *inpf++;
 
-		StartCodeFound = Check_StartCode(inBuf, inBuf_pos);
-	}
+        StartCodeFound = Check_StartCode(inBuf, inBuf_pos);
+    }
 
-	//fseek(inpf, -4, SEEK_CUR);
-	inpf -= 4;
+    //fseek(inpf, -4, SEEK_CUR);
+    inpf -= 4;
 
-	// return the end(length) of this NALU
-	return inBuf_pos - 4;
+    // return the end(length) of this NALU
+    return inBuf_pos - 4;
 }
 
 
@@ -157,12 +156,12 @@ Player::init (ptr_lib::shared_ptr<FrameBuffer> frameBuffer)
     frameBuffer_ = frameBuffer;
 
     if (!decoder_->InitDeocder(WIDTH, HEIGHT))
-	{
-		return false;
+    {
+        return false;
     }
 
     changetoState(Started);
-	return true;
+    return true;
 }
 
 
@@ -170,7 +169,11 @@ void
 Player::start()
 {
     changetoState(Started);
-    processing();
+    while(1)
+    {
+        refresh();
+        usleep(40*1000);
+    }
 }
 
 
@@ -201,50 +204,50 @@ Player::changetoState(Player::State stat)
 }
 
 
-//void
-//Player::writeFile ()
-//{
-//    std::cout<< std::endl<< std::endl << " Write start " << std::endl<< std::endl;
-//	int i=0;
-//    std::cout << i <<std::endl;
-//	while( ++i <= 202)
-//	{
+void
+Player::writeFile ()
+{
+    std::cout<< std::endl<< std::endl << " Write start " << std::endl<< std::endl;
+    int i=0;
+    std::cout << i <<std::endl;
+    while( ++i <= 202)
+    {
 
-//        //FrameBuffer::Slot *slot =NULL;
-//        ptr_lib::shared_ptr<FrameBuffer::Slot> slot;
-//		//cout << frameBuffer_->status_ << endl;
-//		//while(frameBuffer_->status_ != STARTED);
+        //FrameBuffer::Slot *slot =NULL;
+        ptr_lib::shared_ptr<FrameBuffer::Slot> slot;
+        //cout << frameBuffer_->status_ << endl;
+        //while(frameBuffer_->status_ != STARTED);
 
-//		while ( slot== NULL )
-//            slot = frameBuffer_->acquireSlot(mediaData,frameNo);
+        while ( slot== NULL )
+            slot = frameBuffer_->acquireData();
 
-//        unsigned char *p_Out_Frame = new unsigned char[WIDTH * HEIGHT * 3 / 2];
-//		unsigned char *p_In_Frame = slot->getDataPtr();
-//		int outlen, inlen;
-//        inlen = slot->getPayloadSize();
+        unsigned char *p_Out_Frame = new unsigned char[WIDTH * HEIGHT * 3 / 2];
+        unsigned char *p_In_Frame = slot->getDataPtr();
+        int outlen, inlen;
+        inlen = slot->getPayloadSize();
 
-////		std::cout << "Write " << i << " " << "size:" << inlen<< std::endl;
-////		cout << slot->getSlotNumber()<<endl;
-//		for( int i = 0; i <20; i++ )
-//				printf("%X ",p_In_Frame[i]);
-//		cout << endl;
-////		std::cout << std::endl << std::endl;
-////		fwrite ( p_In_Frame, inlen, 1, pFile1_ );
+//		std::cout << "Write " << i << " " << "size:" << inlen<< std::endl;
+//		cout << slot->getSlotNumber()<<endl;
+        for( int i = 0; i <20; i++ )
+                printf("%X ",p_In_Frame[i]);
+        cout << endl;
+//		std::cout << std::endl << std::endl;
+//		fwrite ( p_In_Frame, inlen, 1, pFile1_ );
 
-//        std::cout << std::endl << "SizeIn: " << slot->getPayloadSize() << std::endl;
+        std::cout << std::endl << "SizeIn: " << slot->getPayloadSize() << std::endl;
 
-//		decoder_->decode( p_In_Frame, inlen, p_Out_Frame, outlen );
-//		//decoder_->decode( pFile1_,slot->getDataPtr(),slot->getFrameSize(), p_Out_Frame, outlen );
+        decoder_->decode( p_In_Frame, inlen, p_Out_Frame, outlen );
+        //decoder_->decode( pFile1_,slot->getDataPtr(),slot->getFrameSize(), p_Out_Frame, outlen );
 
-//		std::cout << std::endl << "SizeOut: " << outlen << std::endl;
+        std::cout << std::endl << "SizeOut: " << outlen << std::endl;
 
-//		if ( outlen > 0 )
-//			fwrite ( p_Out_Frame, outlen, 1, pFile_ );
+        if ( outlen > 0 )
+            fwrite ( p_Out_Frame, outlen, 1, pFile_ );
 
-//		usleep(300);
-//	}
-//	cout << endl << "wirte thread end" << endl;
-//}
+        usleep(300);
+    }
+    cout << endl << "wirte thread end" << endl;
+}
 
 
 bool
@@ -252,20 +255,23 @@ Player::refresh()
 {
     if( getState() == Stoped)
         return false;
+    ptr_lib::shared_ptr<FrameBuffer::Slot> slot;
 
-    FrameData mediaData;
-    PacketNumber frameNo;
+    slot = frameBuffer_->acquireData();
 
-    if( frameBuffer_->acquireSlot(mediaData, frameNo))
+    while ( slot== NULL )
     {
-        frameBuffer_->releaseAcquiredSlot();
+       // LOG(INFO) << "[Player] wait frame " << endl;
+        slot = frameBuffer_->acquireData();
+        usleep(10000);
+        //return false;
     }
 
-return false;
+    LOG(INFO) << "[Player] get " << slot->getNumber() << endl;
 
-    unsigned char *p_In_Frame = mediaData.buf();
+    unsigned char *p_In_Frame = slot->getDataPtr();
     int outlen, inlen;
-    inlen = mediaData.size();
+    inlen = slot->getPayloadSize();
 
     /*
     for( int i = 0; i <20; i++ )
@@ -280,12 +286,7 @@ return false;
 
     if ( outlen > 0 )
     {
-
-#ifdef __SHOW_CONSOLE_
-        cout << "[Play]  : "
-             << slot->getNumber() << " "
-             << slot->getPayloadSize() << " "<<endl;
-#endif
+       // LOG(INFO) << "[Player] play " << slot->getNumber() << endl;
 
         unsigned char* yuv[3] = {yuv_frameBuf_,yuv_frameBuf_+ WIDTH*HEIGHT, yuv_frameBuf_ +WIDTH*HEIGHT*5/4};
 
@@ -299,15 +300,4 @@ return false;
     //cout << endl << slot->getNumber() << " " << slot->getPayloadSize() << endl << endl;
 
     return false;
-}
-
-
-bool
-Player::processing()
-{
-    while(1)
-    {
-        refresh();
-        usleep(40*1000);
-    }
 }

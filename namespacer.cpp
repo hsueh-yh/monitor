@@ -142,8 +142,27 @@ Namespacer::getSegmentationNumbers(const ndn::Name &prefix,
 }
 
 void
-Namespacer::getFrameNumber(const ndn::Name &prefix,
+Namespacer::getPacketNumber(const ndn::Name &prefix,
                                    PacketNumber &packetNumber)
+{
+    int p = -1;
+    packetNumber = -1;
+    p = findComponent(prefix, NameComponents::NameComponentStreamMetainfo);
+
+    if (p > 0)
+    {
+        //the packet number is next to NameComponents::NameComponentStreamFrameVideo(Audio)
+        if (p+1 < prefix.size())
+        {
+            Name::Component packetNoComp = prefix.get(p+1);
+            packetNumber = NdnRtcUtils::frameNumber(packetNoComp);
+        }
+    }
+}
+
+void
+Namespacer::getFrameNumber(const ndn::Name &prefix,
+                                   FrameNumber &packetNumber)
 {
     int p = -1;
     packetNumber = -1;

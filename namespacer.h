@@ -57,8 +57,11 @@ public:
                                        PacketNumber &packetNumber,
                                        SegmentNumber &segmentNumber);
 
-    static void getFrameNumber(const ndn::Name &prefix,
+    static void getPacketNumber(const ndn::Name &prefix,
                                        PacketNumber &packetNumber);
+
+    static void getFrameNumber(const ndn::Name &prefix,
+                                       FrameNumber &packetNumber);
 
     static void getSegmentNumber(const ndn::Name &prefix,
                                        SegmentNumber &segmentNumber);

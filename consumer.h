@@ -17,6 +17,7 @@
 #include "frame-buffer.h"
 #include "pipeliner.h"
 #include "player.h"
+#include "statistics.hpp"
 
 using namespace std;
 using namespace ndn;
@@ -40,11 +41,11 @@ public:
 
     Consumer (string uri, ptr_lib::shared_ptr<FaceWrapper> faceWrapper);
 
-	~Consumer ();
+    ~Consumer ();
 
-	void init();
+    void init();
 
-	void start();
+    void start();
 
     void stop();
 
@@ -55,12 +56,14 @@ public:
     ptr_lib::shared_ptr<FrameBuffer> frameBuffer_;
     ptr_lib::shared_ptr<Pipeliner> pipeliner_;
     ptr_lib::shared_ptr<Player> player_;
+    static Statistics statistic;
 
 private:
 
     //Name *name;
     std::string prefix_;
     int callbackCount_;
+
 
     Status status_;
 

@@ -72,7 +72,7 @@ Consumer::start()
     status_ = STARTED;
 
     //cout <<"<Pipeliner> count:"<< pipeliner_.use_count() << endl;
-    pipeliner_->start();
+    pipeliner_->startFetching();
 
 }
 
