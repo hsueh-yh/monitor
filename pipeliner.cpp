@@ -133,7 +133,7 @@ PipelinerWindow::changeWindow(int delta)
 Pipeliner::Pipeliner(std::string prefix):
     basePrefix_(prefix.c_str()),
     count_(0),
-    requestPktNo_(0),
+    reqCurPktNo_(0),
     state_(Stoped),
     isRetransmission(false),
     statistic(Statistics::getInstance())
@@ -181,9 +181,7 @@ Pipeliner::express(Interest& interest/*, int64_t priority*/)
             //bind(&Pipeliner::onTimeout, this, func_lib::_1));
 
 #ifdef __SHOW_CONSOLE_
-    int componentCount = interest.getName().getComponentCount();
-    cout << "Express : " << interest.getName().get(componentCount-1).toEscapedString()
-         << " " << interest.getName().toUri() << endl;
+    cout << "Express : " << interest.getName().toUri() << endl;
 #endif
 }
 
@@ -221,7 +219,7 @@ Pipeliner::requestFrame(PacketNumber frameNo)
     }
     LOG(INFO) << "Request " << frameNo << endl;
     Name packetPrefix(basePrefix_);
-    packetPrefix.append(NdnRtcUtils::componentFromInt(frameNo));
+    packetPrefix.append(NdnUtils::componentFromInt(frameNo));
     //packetPrefix.appendTimestamp(NdnRtcUtils::microsecondTimestamp());
     //ptr_lib::shared_ptr<Interest> frameInterest = getDefaultInterest(packetPrefix);
 
@@ -263,7 +261,7 @@ Pipeliner::startFetching()
         case Ready:
             packetPrefix = basePrefix_;
             packetPrefix.append(NameComponents::NameComponentStreamMetainfo);
-            packetPrefix.append(NdnRtcUtils::componentFromInt(NdnRtcUtils::microsecondTimestamp()));
+            packetPrefix.append(NdnUtils::componentFromInt(NdnUtils::microsecondTimestamp()));
             express(packetPrefix);
             changetoState(Bootstrap);
             break;
@@ -274,7 +272,14 @@ Pipeliner::startFetching()
             break;
 
         case Fetching:
-            requestFrame(requestPktNo_++);
+            if( reqCurPktNo_ == reqLastNo_+1 )
+            {
+                usleep(30*1000);
+                requestFrame(reqCurPktNo_++);
+            }
+            else
+            while( reqCurPktNo_ <= reqLastNo_ )
+                requestFrame(reqCurPktNo_++);
             break;
 
         default:
@@ -350,12 +355,14 @@ Pipeliner::onData(const ptr_lib::shared_ptr<const Interest>& interest,
     int p = Namespacer::findComponent(data->getName(), NameComponents::NameComponentStreamMetainfo );
     if( -1 != p )
     {
-        requestPktNo_ = NdnRtcUtils::frameNumber(data->getName().get(p+2));
-        cout << requestPktNo_ << "**********************"<<endl;
+        reqCurPktNo_ = NdnUtils::frameNumber(data->getName().get(p+2));
+        cout << reqCurPktNo_ << "**********************"<<endl;
+        reqLastNo_ = reqCurPktNo_;
         changetoState(Fetching);
         return;
     }
 
+    reqLastNo_ = NdnUtils::frameNumber(data->getName().get(-1));
     unsigned int pktNo;
     Namespacer::getFrameNumber(data->getName(),pktNo);
 

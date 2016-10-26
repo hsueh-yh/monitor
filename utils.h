@@ -28,7 +28,7 @@ using namespace ndn;
 
 class FaceProcessor;
 
-class NdnRtcUtils {
+class NdnUtils {
 
 public:
     static unsigned int getSegmentsNumber(unsigned int segmentSize, unsigned int dataSize);

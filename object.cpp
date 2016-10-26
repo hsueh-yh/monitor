@@ -26,14 +26,14 @@ using namespace boost;
  * @name NdnRtcComponent class
  */
 NdnRtcComponent::NdnRtcComponent():
-watchdogTimer_(NdnRtcUtils::getIoService()),
+watchdogTimer_(NdnUtils::getIoService()),
 isJobScheduled_(false),
 isTimerCancelled_(false)
 {}
 
 NdnRtcComponent::NdnRtcComponent(INdnRtcComponentCallback *callback):
 callback_(callback),
-watchdogTimer_(NdnRtcUtils::getIoService()),
+watchdogTimer_(NdnUtils::getIoService()),
 isJobScheduled_(false),
 isTimerCancelled_(false)
 {}
@@ -168,7 +168,7 @@ void NdnRtcComponent::scheduleJob(const unsigned int usecInterval,
 
 void NdnRtcComponent::stopJob()
 {
-    NdnRtcUtils::performOnBackgroundThread([this]()->void{
+    NdnUtils::performOnBackgroundThread([this]()->void{
         boost::lock_guard<boost::recursive_mutex> scopedLock(jobMutex_);
         watchdogTimer_.cancel();
         isTimerCancelled_ = true;

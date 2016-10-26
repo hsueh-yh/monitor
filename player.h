@@ -44,7 +44,9 @@ public:
 
     void writeFile ();
 
-    bool refresh();
+    bool refresh( int a );
+
+    unsigned int refresh();
 
     void
     lock()  { syncMutex_.lock(); }
@@ -58,7 +60,7 @@ public:
 
     unsigned char* imageProcess(const void* p,unsigned char* dst);
 
-    unsigned char* bmp_frameBuf_;
+    unsigned char *bmp_frameBuf_, *p_In_Frame;
 
     State state_;
     std::recursive_mutex syncMutex_;

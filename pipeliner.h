@@ -127,7 +127,7 @@ private:
     bool isRetransmission;
 
     int count_;
-    unsigned int requestPktNo_;
+    unsigned int reqCurPktNo_, reqLastNo_;
     State state_;
     std::recursive_mutex syncMutex_;
 };

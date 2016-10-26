@@ -122,6 +122,7 @@ YUV420p_to_RGB24(unsigned char *yuv420[3], unsigned char *rgb24, int width, int 
 
 Player::Player():
     decoder_(new Decoder()),
+    p_In_Frame(new unsigned char[WIDTH * HEIGHT * 3 / 2]),
     yuv_frameBuf_(new unsigned char[WIDTH * HEIGHT * 3 / 2]),
     bmp_frameBuf_(new unsigned char[WIDTH * HEIGHT * 3/*1536000+54*/]),
     state_(Ready)
@@ -250,11 +251,11 @@ Player::writeFile ()
 }
 
 
-bool
+unsigned int
 Player::refresh()
 {
     if( getState() == Stoped)
-        return false;
+        return 0;
     ptr_lib::shared_ptr<FrameBuffer::Slot> slot;
 
     slot = frameBuffer_->acquireData();
@@ -267,22 +268,13 @@ Player::refresh()
         //return false;
     }
 
-    LOG(INFO) << "[Player] get " << slot->getNumber() << endl;
+    LOG(INFO) << "[Player] get " << slot->getFrameNo() << endl;
 
     unsigned char *p_In_Frame = slot->getDataPtr();
     int outlen, inlen;
     inlen = slot->getPayloadSize();
 
-    /*
-    for( int i = 0; i <20; i++ )
-            printf("%2X ",p_In_Frame[i]);
-    cout << endl;
-    */
-
     decoder_->decode( p_In_Frame, inlen, yuv_frameBuf_, outlen );
-
-    //        std::cout << std::endl << "SizeIn: " << slot->getPayloadSize()
-    //                  << " SizeOut: " << outlen << std::endl;
 
     if ( outlen > 0 )
     {
@@ -291,13 +283,44 @@ Player::refresh()
         unsigned char* yuv[3] = {yuv_frameBuf_,yuv_frameBuf_+ WIDTH*HEIGHT, yuv_frameBuf_ +WIDTH*HEIGHT*5/4};
 
         YUV420p_to_RGB24(yuv,bmp_frameBuf_,WIDTH,HEIGHT);
-        //fwrite ( bmp_frameBuf_, WIDTH*HEIGHT*3/*outlen+54*/, 1, pFile_ );
+    }
 
-        //return bmp_frameBuf_;
-        //pixmap->loadFromData(image_buf, 800*480*4+54, "bmp", NULL);
+    return frameBuffer_->getBufSize();
+}
+
+
+bool
+Player::refresh( int a)
+{
+    if( getState() == Stoped)
+        return false;
+
+    unsigned int bufsize;
+    bufsize = frameBuffer_->acquireData( p_In_Frame );
+
+    while ( bufsize == NULL )
+    {
+       // LOG(INFO) << "[Player] wait frame " << endl;
+        bufsize = frameBuffer_->acquireData( p_In_Frame );
+        usleep(10*1000);
+        //return false;
+    }
+
+    LOG(INFO) << "[Player] get NALU ( size = " << bufsize << " )" << endl;
+
+    int outlen;
+    decoder_->decode( p_In_Frame, bufsize, yuv_frameBuf_, outlen );
+
+    if ( outlen > 0 )
+    {
+       // LOG(INFO) << "[Player] play " << slot->getNumber() << endl;
+
+        unsigned char* yuv[3] = {yuv_frameBuf_,yuv_frameBuf_+ WIDTH*HEIGHT, yuv_frameBuf_ +WIDTH*HEIGHT*5/4};
+
+        YUV420p_to_RGB24(yuv,bmp_frameBuf_,WIDTH,HEIGHT);
+
         return true;
     }
-    //cout << endl << slot->getNumber() << " " << slot->getPayloadSize() << endl << endl;
 
     return false;
 }

@@ -157,14 +157,14 @@ Controler::addFace(const std::string host, const int port)
     std::cout << "Create Face: " << host<< ":"<<port << endl;
 #endif
 
-    NdnRtcUtils::setIoService(libIoService);
+    NdnUtils::setIoService(libIoService);
 
     //NdnRtcUtils::performOnBackgroundThread([=]()->void{
-            NdnRtcUtils::createLibFace(host, port);
+            NdnUtils::createLibFace(host, port);
     //});
-    NdnRtcUtils::startBackgroundThread();
+    NdnUtils::startBackgroundThread();
 
     // Counter holds data used by the callbacks.
     //Consumer consumer(NdnRtcUtils::getLibFace()->getFaceWrapper());
-    FaceWrapper_ = NdnRtcUtils::getLibFace()->getFaceWrapper();
+    FaceWrapper_ = NdnUtils::getLibFace()->getFaceWrapper();
 }

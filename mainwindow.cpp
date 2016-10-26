@@ -13,7 +13,7 @@
 #define WIDTH 640
 #define HEIGHT 480
 
-#define _FRAME_RATE_ 20*1000    //20ms
+#define _FRAME_RATE_ 30*1000    //30ms
 
 MainWindow::MainWindow(QWidget *parent) :
     QMainWindow(parent),
@@ -60,6 +60,7 @@ MainWindow::showStream( int id )
     QImage *image = new QImage(tmp,WIDTH,HEIGHT,QImage::Format_RGB888);
     map<int,QLabel*>::iterator iter = labelMap.find(id);
     QLabel *label = NULL;
+    unsigned int rate, sleepTime;
 
     if(iter==labelMap.end())
     {
@@ -97,7 +98,7 @@ MainWindow::showStream( int id )
             if( NULL == controler->getConsumer(id)) break;
             if( consumer->getstatus() != Consumer::Status::STARTED) break;
             controler->getConsumer(id)->player_->lock();
-            controler->getConsumer(id)->player_->refresh();
+            rate = controler->getConsumer(id)->player_->refresh();
             controler->getConsumer(id)->player_->unlock();
             //return;
 
@@ -150,7 +151,8 @@ MainWindow::showStream( int id )
         //struct timeval t_end1;
         //gettimeofday(&t_end1, NULL);
 
-        usleep(_FRAME_RATE_);
+        sleepTime = rate > 30 ? 10*1000 : 30*1000;
+        usleep(sleepTime);
         //time_t t3 = time(NULL);
 //        struct timeval t_end2;
 //        gettimeofday(&t_end2, NULL);

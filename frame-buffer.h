@@ -57,7 +57,7 @@ public:
 
             bool operator() (const ptr_lib::shared_ptr<Slot> slot1, const ptr_lib::shared_ptr<Slot> slot2)
             {
-                return slot1->getNumber() > slot2->getNumber();
+                return slot1->getFrameNo() > slot2->getFrameNo();
             }
 /*
             bool operator < (Slot slot1, Slot slot2)
@@ -121,7 +121,7 @@ public:
         setNumber(FrameNumber number) { frameNumber_ = number; }
 
         FrameNumber
-        getNumber() const { return frameNumber_; }
+        getFrameNo() const { return frameNumber_; }
 
         State
         getState() const { return state_; }
@@ -219,6 +219,11 @@ public:
     void dataMissed(const ptr_lib::shared_ptr<const Interest>& interest );
 
     ptr_lib::shared_ptr<FrameBuffer::Slot> acquireData();
+
+    unsigned int acquireData( unsigned char* buf );
+
+    unsigned int getBufSize()
+    { return activeSlots_count_; }
 
 
     //bool status_;

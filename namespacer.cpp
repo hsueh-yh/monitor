@@ -129,14 +129,14 @@ Namespacer::getSegmentationNumbers(const ndn::Name &prefix,
         if (p+1 < prefix.size())
         {
             Name::Component packetNoComp = prefix.get(p+1);
-            packetNumber = NdnRtcUtils::frameNumber(packetNoComp);
+            packetNumber = NdnUtils::frameNumber(packetNoComp);
         }
 
         if (p+2 < prefix.size())
         {
             Name::Component segmentNoComp = prefix.get(p+2);
             segmentNumber = segmentNoComp.toNumber();
-            segmentNumber = NdnRtcUtils::frameNumber(segmentNoComp);
+            segmentNumber = NdnUtils::frameNumber(segmentNoComp);
         }
     }
 }
@@ -155,7 +155,7 @@ Namespacer::getPacketNumber(const ndn::Name &prefix,
         if (p+1 < prefix.size())
         {
             Name::Component packetNoComp = prefix.get(p+1);
-            packetNumber = NdnRtcUtils::frameNumber(packetNoComp);
+            packetNumber = NdnUtils::frameNumber(packetNoComp);
         }
     }
 }
@@ -177,7 +177,7 @@ Namespacer::getFrameNumber(const ndn::Name &prefix,
         if (p+1 < prefix.size())
         {
             Name::Component packetNoComp = prefix.get(p+1);
-            packetNumber = NdnRtcUtils::frameNumber(packetNoComp);
+            packetNumber = NdnUtils::frameNumber(packetNoComp);
         }
     }
 }
@@ -201,7 +201,7 @@ Namespacer::getSegmentNumber(const ndn::Name &prefix,
         {
             Name::Component segmentNoComp = prefix.get(p+2);
             segmentNumber = segmentNoComp.toNumber();
-            segmentNumber = NdnRtcUtils::segmentNumber(segmentNoComp);
+            segmentNumber = NdnUtils::segmentNumber(segmentNoComp);
         }
     }
 }
@@ -223,18 +223,18 @@ Namespacer::getPrefixMetaInfo(const ndn::Name &prefix,
         if (p+3 < prefix.size())
         {
             Name::Component packetNoComp = prefix.get(p+3);
-            prefixMetaInfo.totalSegmentNum_ = NdnRtcUtils::intFromComponent(packetNoComp);
+            prefixMetaInfo.totalSegmentNum_ = NdnUtils::intFromComponent(packetNoComp);
         }
 
         if (p+4 < prefix.size())
         {
             Name::Component segmentNoComp = prefix.get(p+4);
-            prefixMetaInfo.playbackNo_ = NdnRtcUtils::intFromComponent(segmentNoComp);
+            prefixMetaInfo.playbackNo_ = NdnUtils::intFromComponent(segmentNoComp);
         }
         if (p+5 < prefix.size())
         {
             Name::Component segmentNoComp = prefix.get(p+5);
-            prefixMetaInfo.deltaFrameNo_ = NdnRtcUtils::intFromComponent(segmentNoComp);
+            prefixMetaInfo.deltaFrameNo_ = NdnUtils::intFromComponent(segmentNoComp);
         }
     }
 }
@@ -253,7 +253,7 @@ Namespacer::getMetaNumber(const ndn::Name &prefix,
         if (p+1 < prefix.size())
         {
             Name::Component packetNoComp = prefix.get(p+2);
-            packetNumber = NdnRtcUtils::frameNumber(packetNoComp);
+            packetNumber = NdnUtils::frameNumber(packetNoComp);
         }
     }
 }

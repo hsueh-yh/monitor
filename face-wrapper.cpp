@@ -158,9 +158,9 @@ FaceProcessor::setupFaceAndTransport(const std::string host, const int port,
 
     if (host == "127.0.0.1" || host == "0.0.0.0" || host == "localhost")
     {
-        transport = getDefaultTransport(NdnRtcUtils::getIoService());
+        transport = getDefaultTransport(NdnUtils::getIoService());
 #ifdef USE_TS_FACE
-        ndnFace.reset(new ThreadsafeFace(NdnRtcUtils::getIoService(), transport, getDefaultConnectionInfo()));
+        ndnFace.reset(new ThreadsafeFace(NdnUtils::getIoService(), transport, getDefaultConnectionInfo()));
 #else
         ndnFace.reset(new Face(transport, getDefaultConnectionInfo()));
 #endif
@@ -169,8 +169,8 @@ FaceProcessor::setupFaceAndTransport(const std::string host, const int port,
     {
 #ifdef USE_TS_FACE
         connInfo.reset(new AsyncTcpTransport::ConnectionInfo(host.c_str(), port));
-        transport.reset(new AsyncTcpTransport(NdnRtcUtils::getIoService()));
-        ndnFace.reset(new ThreadsafeFace(NdnRtcUtils::getIoService(), transport, connInfo));
+        transport.reset(new AsyncTcpTransport(NdnUtils::getIoService()));
+        ndnFace.reset(new ThreadsafeFace(NdnUtils::getIoService(), transport, connInfo));
 #else
         connInfo.reset(new TcpTransport::ConnectionInfo(host.c_str(), port));
         transport.reset(new TcpTransport());
