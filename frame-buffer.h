@@ -118,6 +118,13 @@ public:
         getDataPtr() const { return dataPtr_; }
 
         void
+        setNdnDataPtr(const ndn::ptr_lib::shared_ptr<Data> dataPtr)
+        { ndnDataPtr_ = dataPtr; }
+
+        ndn::ptr_lib::shared_ptr<Data>
+        getNdnDataPtr() const { return ndnDataPtr_; }
+
+        void
         setNumber(FrameNumber number) { frameNumber_ = number; }
 
         FrameNumber
@@ -163,6 +170,7 @@ public:
         unsigned int payloadSize_;  // size of actual data payload
                                     // (without frame header)
         unsigned char* dataPtr_;    // pointer to the payload data
+        ndn::ptr_lib::shared_ptr<Data> ndnDataPtr_;
 
         State state_;
 
@@ -180,7 +188,7 @@ public:
 
     FrameBuffer():
         count_(0),
-        activeSlots_count_(0),
+        readySlots_count_(0),
         stat_(Started)
     {}
 
@@ -223,7 +231,7 @@ public:
     unsigned int acquireData( unsigned char* buf );
 
     unsigned int getBufSize()
-    { return activeSlots_count_; }
+    { return readySlots_count_; }
 
 
     //bool status_;
@@ -286,9 +294,9 @@ public:
 
     typedef ptr_lib::shared_ptr<Slot> SlotPtr;
 
-    typedef
-        priority_queue< SlotPtr, vector<SlotPtr>, Slot::Comparator/*greater<Slot::Comparator>*/ >
-    PlaybackQueue;
+//    typedef
+//        priority_queue< SlotPtr, vector<SlotPtr>, Slot::Comparator/*greater<Slot::Comparator>*/ >
+//    PlaybackQueue;
 
     int count_;
 
@@ -299,9 +307,9 @@ public:
 
     //std::vector<ptr_lib::shared_ptr<Slot> > issuedSlots_;
     std::map<unsigned int, ptr_lib::shared_ptr<Slot> > activeSlots_;
-    PlaybackQueue playbackQueue_;
+    //PlaybackQueue playbackQueue_;
 
-    int activeSlots_count_;
+    int readySlots_count_;
 
     double playbackRate = 30.0;
 };

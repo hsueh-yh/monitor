@@ -289,11 +289,11 @@ Player::refresh()
 }
 
 
-bool
+unsigned int
 Player::refresh( int a)
 {
     if( getState() == Stoped)
-        return false;
+        return 0;
 
     unsigned int bufsize;
     bufsize = frameBuffer_->acquireData( p_In_Frame );
@@ -318,9 +318,7 @@ Player::refresh( int a)
         unsigned char* yuv[3] = {yuv_frameBuf_,yuv_frameBuf_+ WIDTH*HEIGHT, yuv_frameBuf_ +WIDTH*HEIGHT*5/4};
 
         YUV420p_to_RGB24(yuv,bmp_frameBuf_,WIDTH,HEIGHT);
-
-        return true;
     }
 
-    return false;
+    return frameBuffer_->getBufSize();
 }

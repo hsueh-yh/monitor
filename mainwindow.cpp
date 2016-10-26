@@ -98,7 +98,7 @@ MainWindow::showStream( int id )
             if( NULL == controler->getConsumer(id)) break;
             if( consumer->getstatus() != Consumer::Status::STARTED) break;
             controler->getConsumer(id)->player_->lock();
-            rate = controler->getConsumer(id)->player_->refresh();
+            rate = controler->getConsumer(id)->player_->refresh(1);
             controler->getConsumer(id)->player_->unlock();
             //return;
 
@@ -151,7 +151,8 @@ MainWindow::showStream( int id )
         //struct timeval t_end1;
         //gettimeofday(&t_end1, NULL);
 
-        sleepTime = rate > 30 ? 10*1000 : 30*1000;
+        sleepTime = rate > 5 ? 10*1000 : 30*1000;
+        //cout << rate << endl;
         usleep(sleepTime);
         //time_t t3 = time(NULL);
 //        struct timeval t_end2;

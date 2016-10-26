@@ -16,7 +16,7 @@
 #include "name-components.h"
 #include "namespacer.h"
 
-#define __SHOW_CONSOLE_
+//#define __SHOW_CONSOLE_
 
 using namespace ndn::func_lib;
 
@@ -356,7 +356,7 @@ Pipeliner::onData(const ptr_lib::shared_ptr<const Interest>& interest,
     if( -1 != p )
     {
         reqCurPktNo_ = NdnUtils::frameNumber(data->getName().get(p+2));
-        cout << reqCurPktNo_ << "**********************"<<endl;
+        //cout << reqCurPktNo_ << "**********************"<<endl;
         reqLastNo_ = reqCurPktNo_;
         changetoState(Fetching);
         return;

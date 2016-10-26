@@ -44,7 +44,7 @@ public:
 
     void writeFile ();
 
-    bool refresh( int a );
+    unsigned int refresh( int a );
 
     unsigned int refresh();
 

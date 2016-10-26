@@ -300,11 +300,12 @@ FrameBuffer::interestIssued( ndn::Interest& interest )
 //        //cout << "activeSlots_count_ " << activeSlots_count_ << endl;
 //        return false;
 //    }
-    playbackQueue_.push(slot);
+    //playbackQueue_.push(slot);
     activeSlots_[pktNo] = slot;
-    activeSlots_count_++;
+    //readySlots_count_++;
     LOG(INFO) << "[FrameBuffer] Interest Issued " << slot->getPrefix().to_uri()
-                 << " ( remain " << activeSlots_count_ << " )"<< endl;
+                 << " ( Total:" << activeSlots_.size()
+                 << " Ready: " <<readySlots_count_ << " )"<< endl;
 
     return true;
 }
@@ -323,7 +324,26 @@ FrameBuffer::dataArrived(const ndn::ptr_lib::shared_ptr<Data>& data)
         return;
     }
 
-    setSlot(data, iter->second);
+    readySlots_count_++;
+
+    // set slot
+    ptr_lib::shared_ptr<FrameBuffer::Slot> slot = iter->second;
+    slot->lock();
+
+    slot->setNdnDataPtr(data);
+    slot->setDataPtr(data->getContent().buf());
+    slot->setNumber(frameNo);
+    slot->setPayloadSize(data->getContent().size());
+    slot->dataArrived();
+
+//    cout << "set Slot: No=" << slot->getFrameNo()
+//         << " name=" << slot->getPrefix().toUri()
+//         << " payload=" << slot->getPayloadSize()
+//         << " addr=" << (void*)slot->getDataPtr();
+//    NdnUtils::printMem("set Slot", slot->getDataPtr(),20);
+
+    slot->unlock();
+    //setSlot(data, iter->second);
 }
 
 void
@@ -343,7 +363,8 @@ FrameBuffer::dataMissed(const ptr_lib::shared_ptr<const Interest>& interest )
     slot->markMissed();
 
     LOG(INFO) << "[FrameBuffer] miss " << interest->getName().to_uri()
-                 << " ( remain " << activeSlots_count_ << " )"<< endl;
+              << " ( Total:" << activeSlots_.size()
+              << " Ready: " <<readySlots_count_ << " )"<< endl;
 }
 
 ptr_lib::shared_ptr<FrameBuffer::Slot>
@@ -351,39 +372,44 @@ FrameBuffer::acquireData()
 {
     std::lock_guard<std::recursive_mutex> scopedLock(syncMutex_);
 
-    if ( playbackQueue_.empty() )
+    if ( readySlots_count_ < 5 )
     {
-        LOG(INFO) << "[Player] empty" << activeSlots_count_ << endl;
+        LOG(INFO) << "[Player] empty"
+                  << " ( Total:" << activeSlots_.size()
+                  << " Ready: " <<readySlots_count_ << " )"<< endl;
         return NULL;
     }
 
     ptr_lib::shared_ptr<Slot>  slot;
-    slot = playbackQueue_.top();
+    //slot = playbackQueue_.top();
+    map<unsigned int, ptr_lib::shared_ptr<Slot> >::iterator iter;
+    iter = activeSlots_.begin();
+    slot = iter->second;
     //FrameBuffer::Slot*  tmp = priorityQueue_.front();
 
     if( slot->getState() != FrameBuffer::Slot::StateFetched )
     {
         if( slot->getFrameNo() < 3 )
             return NULL;
-        LOG(WARNING) << "[FrameBuffer] Skip " << slot->getPrefix()
-                     << " ( remain " << activeSlots_count_ << " )"<< endl;
-        playbackQueue_.pop();
-        activeSlots_count_--;
-        return NULL;
+       // LOG(WARNING) << "[FrameBuffer] Skip " << slot->getPrefix()
+        //             << " ( remain " << activeSlots_count_ << " )"<< endl;
+        //playbackQueue_.pop();
+        //activeSlots_count_--;
+        //return NULL;
     }
 
-    map<unsigned int, ptr_lib::shared_ptr<Slot> >::iterator iter;
-
-    iter = activeSlots_.find(slot->getFrameNo());
-    if( iter != activeSlots_.end() )
-        activeSlots_.erase(iter);
-
-    playbackQueue_.pop();
-    activeSlots_count_--;
+    activeSlots_.erase(iter);
+    readySlots_count_--;
 
     LOG(INFO) << "[FrameBuffer] pop " << slot->getPrefix()
-                 << " ( remain " << activeSlots_count_ << " )"<< endl;
-    //NdnUtils::printMem("pop",tmp->getDataPtr(),20);
+              << " ( Total:" << activeSlots_.size()
+              << " Ready: " <<readySlots_count_ << " )"<< endl;
+
+//    cout << "get Slot: No=" << slot->getFrameNo()
+//         << " name=" << slot->getPrefix().toUri()
+//         << " payload=" << slot->getPayloadSize()
+//         << " addr=" << (void*)slot->getDataPtr();
+//    NdnUtils::printMem("get Slot", slot->getDataPtr(),20);
     return slot;
 }
 
@@ -392,12 +418,14 @@ FrameBuffer::acquireData( unsigned char* buf )
 {
     std::lock_guard<std::recursive_mutex> scopedLock(syncMutex_);
 
-    if ( playbackQueue_.empty() )
+    if ( readySlots_count_ < 1 )
     {
-        LOG(INFO) << "[Player] empty" << activeSlots_count_ << endl;
+        LOG(INFO) << "[Player] empty"
+                  << " ( Total:" << activeSlots_.size()
+                  << " Ready: " <<readySlots_count_ << " )"<< endl;
         return 0;
     }
-    if ( playbackQueue_.size() < 5 )
+    if ( readySlots_count_ < 5 )
     {
         return 0;
     }
@@ -411,37 +439,28 @@ FrameBuffer::acquireData( unsigned char* buf )
 
     while(nalCounter <= 1)
     {
-        slot = playbackQueue_.top();
+        iter = activeSlots_.begin();
+        slot = iter->second;
         // this data is not fetched
         if( slot->getState() != FrameBuffer::Slot::StateFetched )
         {
             break;
-            if( slot->getFrameNo() < 10 ) // pps or sps, do not pop
-                return 0;
-            LOG(WARNING) << "[FrameBuffer] Skip " << slot->getPrefix()
-                         << " ( remain " << activeSlots_count_ << " )"<< endl;
-            playbackQueue_.pop();
-            activeSlots_count_--;
-            return 0;
         }
         slotbuf = slot->getDataPtr();
         if( 0 == slotbuf[0] && 0 == slotbuf[1] && 0 == slotbuf[2] && 1 == slotbuf[3])
             ++nalCounter;
         if( nalCounter > 1 )
             break;
-        iter = activeSlots_.find(slot->getFrameNo());
-        if( iter != activeSlots_.end() )
-            activeSlots_.erase(iter);
+        activeSlots_.erase(iter);
+        readySlots_count_--;
 
-        playbackQueue_.pop();
-        activeSlots_count_--;
-
-        NdnUtils::printMem("pop", slotbuf, 20);
+        //NdnUtils::printMem("pop", slotbuf, 20);
         memcpy(buf+bufsize,slot->getDataPtr(),slot->getPayloadSize());
         bufsize+=slot->getPayloadSize();
 
         LOG(INFO) << "[FrameBuffer] pop " << slot->getPrefix()
-                     << " ( remain " << activeSlots_count_ << " )"<< endl;
+                  << " ( Total:" << activeSlots_.size()
+                  << " Ready: " <<readySlots_count_ << " )"<< endl;
 
     }
 
@@ -461,19 +480,7 @@ FrameBuffer::setSlot(const ndn::ptr_lib::shared_ptr<Data>& data, ptr_lib::shared
     cout << endl;
     */
 
-    slot->lock();
 
-    slot->setDataPtr(data->getContent().buf());
-
-    //slot->setNumber(std::atoi(data->getName().get(1).toEscapedString()));
-    slot->setPayloadSize(data->getContent().size());
-    //slot->setPrefix(data->getName());
-    slot->dataArrived();
-    //NdnUtils::printMem("setSlot", slot->getDataPtr(),20);
-
-    slot->unlock();
-
-    //playbackQueue_.push(slot);
 
 }
 
