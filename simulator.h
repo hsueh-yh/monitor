@@ -101,8 +101,8 @@ class Simulator
 {
 public:
     Simulator():
-        p_alpha(0.6), p_min(5.0), p_max(100.0), p_quantity(100),  // pareto parameters
-        z_alpha(1.0), z_quantity(100),  // zipf parameters
+        p_alpha(0.6), p_min(10.0), p_max(20.0), p_quantity(100),  // pareto parameters
+        z_alpha(1.0), z_quantity(2),  // zipf parameters
         counter(0)
     {
 //        durations = pareto(p_alpha, p_x_min, p_quantity, p_min, p_max);
@@ -113,7 +113,7 @@ public:
     ~Simulator();
 
 
-    long getTimer()
+    long getDuration()
     {
         //cout << simulatorCounter+1<<endl;
 
@@ -148,15 +148,24 @@ public:
 #endif
         }
 
+        // /com/monitor/location1/stream0/video:localhost:6363
         stringstream ss;
         string str;
         //ss<<jobs[jobCounter >= z_quantity ? 0 : ++jobCounter];
-        ss<<jobs[jobCounter++];
-        ss>>str;
-        std::string destURI("/video");
-        destURI.append("/video");
+        //int targetId = jobs[jobCounter++];
+        int targetId = (z_quantity+1) - jobs[jobCounter++];
+        if( targetId <1 || targetId > z_quantity )
+        {
+            cout << "target error" << endl;
+            exit(1);
+        }
+        ss << targetId;
+        ss >> str;
+        std::string destURI("/com/monitor/location1");
+        destURI.append("/stream");
         destURI.append(str);
-        destURI.append(":localhost:6363");
+        destURI.append("/video");
+        destURI.append(":10.103.242.213:6273");
         return destURI;
     }
 

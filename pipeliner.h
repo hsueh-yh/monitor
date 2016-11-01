@@ -84,37 +84,18 @@ public:
 
     void init(ptr_lib::shared_ptr<FrameBuffer> frameBuffer, ptr_lib::shared_ptr<FaceWrapper> faceWrapper);
 
+    void fetchingLoop();
+
+    void stop();
+
     void express(Name& name);
 
     void express(Interest& interest);
 
     void requestFrame(PacketNumber frameNo);
 
-    void startFetching();
 
-    void stop();
-
-    void changetoState(Pipeliner::State stat);
-
-    Pipeliner::State getState()
-    { lock(); Pipeliner::State stat = state_; unlock(); return stat;  }
-
-    ptr_lib::shared_ptr<Interest>
-    getDefaultInterest(const Name& prefix, int64_t timeoutMs = 0);
-
-    //******************************************************************************
-    void onData(const ptr_lib::shared_ptr<const Interest>& interest, const ptr_lib::shared_ptr<Data>& data);
-
-    void onTimeout(const ptr_lib::shared_ptr<const Interest>& interest);
-
-
-    void
-    lock()  { syncMutex_.lock(); }
-
-    void
-    unlock() { syncMutex_.unlock(); }
-
-private:
+protected:
 
     Name basePrefix_;
 
@@ -130,6 +111,39 @@ private:
     unsigned int reqCurPktNo_, reqLastNo_;
     State state_;
     std::recursive_mutex syncMutex_;
+
+    void
+    lock()
+    { syncMutex_.lock(); }
+
+    void
+    unlock()
+    { syncMutex_.unlock(); }
+
+    void
+    switchToState(Pipeliner::State stat)
+    {
+        LOG(INFO) << "[Pipeliner] change state " <<  state_
+                  << " to " << stat << endl;
+        lock();
+        state_ = stat;
+        unlock();
+    }
+
+    Pipeliner::State
+    getState()
+    { lock(); Pipeliner::State stat = state_; unlock(); return stat;  }
+
+
+    ptr_lib::shared_ptr<Interest>
+    getDefaultInterest(const Name& prefix);
+
+
+    //******************************************************************************
+    void onData(const ptr_lib::shared_ptr<const Interest>& interest, const ptr_lib::shared_ptr<Data>& data);
+
+    void onTimeout(const ptr_lib::shared_ptr<const Interest>& interest);
+
 };
 
 

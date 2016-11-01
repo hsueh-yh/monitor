@@ -10,7 +10,7 @@
 class GLogger
 {
 public:
-    GLogger(char* program, char* logdir)
+    GLogger( const char* program, const char* logdir)
     {
         //google::InitGoogleLogging(program);
 
@@ -19,9 +19,13 @@ public:
         FLAGS_colorlogtostderr = true;    //color messages logged to stderr (if supported by terminal)
 
         FLAGS_log_dir = logdir;   // logger output file
+//        google::SetLogDestination(google::INFO,logdir);
+//        google::SetLogDestination(google::WARNING,logdir);
+//        google::SetLogDestination(google::GLOG_ERROR,logdir);
         FLAGS_minloglevel = google::INFO;   //Messages logged at a lower level than this don't
                                             //actually get logged anywhere
         FLAGS_stop_logging_if_full_disk = true;   //Stop attempting to log to disk if the disk is full
+        FLAGS_logbufsecs = 60;
 
         //FLAGS_v = 5;		//自定义VLOG(m)时，m值小于此处设置值的语句才有输出
         //FLAGS_max_log_size;     //每个日志文件最大大小（MB级别）

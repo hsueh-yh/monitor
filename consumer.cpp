@@ -23,9 +23,9 @@ Consumer::~Consumer ()
 //    player_.reset();
 //    pipeliner_.reset();
 //    frameBuffer_.reset();
-#ifdef __SHOW_CONSOLE_
-    cout << "[Consumer] dtor" << endl;
-#endif
+
+    LOG(INFO) << "[Consumer] dtor" << endl;
+    LOG(WARNING) << "[Consumer] dtor" << endl;
 }
 
 
@@ -72,7 +72,7 @@ Consumer::start()
     status_ = STARTED;
 
     //cout <<"<Pipeliner> count:"<< pipeliner_.use_count() << endl;
-    pipeliner_->startFetching();
+    pipeliner_->fetchingLoop();
 
 }
 
@@ -84,6 +84,12 @@ Consumer::stop()
     player_->stop();
     pipeliner_->stop();
     frameBuffer_->stop();
+
+    LOG(ERROR) << "[Consumer] Stop "
+               << "Player:" << player_.use_count()
+               << " Pipeliner:" << pipeliner_.use_count()
+               << " FrameBuffer:" << frameBuffer_.use_count()
+               << endl;
     //faceWrapper_->shutdown();
 
     /*

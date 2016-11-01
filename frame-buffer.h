@@ -195,9 +195,8 @@ public:
 
     ~FrameBuffer()
     {
-#ifdef __SHOW_CONSOLE_
-        cout << "[FrameBuffer] dtor" << endl;
-#endif
+        LOG(INFO) << "[FrameBuffer] dtor" << endl;
+        LOG(WARNING) << "[FrameBuffer] dtor" << endl;
     }
 
     void
@@ -209,6 +208,7 @@ public:
     void stop()
     {
         stat_ = Stoped;
+        LOG(INFO) << "[FrameBuffer] Stoping" << endl;
     }
 
     void

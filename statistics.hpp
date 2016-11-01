@@ -8,6 +8,7 @@
 class Statistics
 {
 public:
+
     static Statistics *getInstance();
 
     void addRequest();
@@ -35,8 +36,11 @@ private:
     int lostCounter_;
     double lostRate_;
 
-    int64_t delay_;
+    int64_t avgDelay_;
     double alpha_;
+
+    int counterStepSize_;
+    int delayCounter[100];
 
 };
 

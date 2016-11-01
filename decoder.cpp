@@ -30,6 +30,7 @@ bool Decoder::LoadDllFun()
 	avcdll->loadFunction((void**)&av_init_packet, "av_init_packet");
 	avcdll->loadFunction((void**)&avcodec_alloc_context3, "avcodec_alloc_context3");
 	avcdll->loadFunction((void**)&avcodec_find_decoder, "avcodec_find_decoder");
+    avcdll->loadFunction((void**)&avpicture_fill, "avpicture_fill");
 	avcdll->loadFunction((void**)&avcodec_open2, "avcodec_open2");
 	avcdll->loadFunction((void**)&avcodec_decode_video2, "avcodec_decode_video2");
 	avcdll->loadFunction((void**)&avcodec_close, "avcodec_close");

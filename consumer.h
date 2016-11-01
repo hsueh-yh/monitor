@@ -10,7 +10,6 @@
 #include <unistd.h>
 #include <thread>
 
-#include "util/CircularQueue.h"
 #include "utils.h"
 #include "object.h"
 #include "face-wrapper.h"

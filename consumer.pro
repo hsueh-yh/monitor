@@ -57,42 +57,18 @@ CONFIG += C++11
 FORMS    += mainwindow.ui \
     addstreamdialog.ui
 
-LIBS += -lboost_thread -lboost_system -lboost_chrono -lboost_regex -lndn-cpp -lpthread -lprotobuf -lsqlite3 -lcrypto -ldl
+LIBS +=  \
+    -lboost_thread  \
+    -lboost_system  \
+    -lboost_chrono  \
+    -lboost_regex  \
+    -lndn-cpp  \
+    -lpthread  \
+    -lprotobuf  \
+    -lsqlite3  \
+    -lcrypto  \
+    -lglog \
+    -ldl
 
 OTHER_FILES += \
     README
-
-
-INCLUDEPATH += $$PWD/include
-DEPENDPATH += $$PWD/include
-
-
-# include ffmpeg
-
-win32:CONFIG(release, debug|release): LIBS += -L$$PWD/lib/ffmpeg/release/ -lavutil
-else:win32:CONFIG(debug, debug|release): LIBS += -L$$PWD/lib/ffmpeg/debug/ -lavutil
-else:unix: LIBS += -L$$PWD/lib/ffmpeg/ -lavutil
-
-win32:CONFIG(release, debug|release): LIBS += -L$$PWD/lib/ffmpeg/release/ -lavcodec
-else:win32:CONFIG(debug, debug|release): LIBS += -L$$PWD/lib/ffmpeg/debug/ -lavcodec
-else:unix: LIBS += -L$$PWD/lib/ffmpeg/ -lavcodec
-
-win32:CONFIG(release, debug|release): LIBS += -L$$PWD/lib/ffmpeg/release/ -lpostproc
-else:win32:CONFIG(debug, debug|release): LIBS += -L$$PWD/lib/ffmpeg/debug/ -lpostproc
-else:unix: LIBS += -L$$PWD/lib/ffmpeg/ -lpostproc
-
-INCLUDEPATH += $$PWD/include/ffmpeg
-DEPENDPATH += $$PWD/include/ffmpeg
-
-
-# include glog
-
-win32:CONFIG(release, debug|release): LIBS += -L$$PWD/lib/glog/release/ -lglog
-else:win32:CONFIG(debug, debug|release): LIBS += -L$$PWD/lib/glog/debug/ -lglog
-else:unix: LIBS += -L$$PWD/lib/glog/ -lglog
-
-INCLUDEPATH += $$PWD/include/glog
-DEPENDPATH += $$PWD/include/glog
-
-
-#

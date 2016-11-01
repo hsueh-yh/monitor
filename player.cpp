@@ -82,42 +82,39 @@ getNextNal(unsigned char* &inpf, unsigned char* inpf_end, unsigned char* inBuf)
 }
 
 
-static void
-YUV420p_to_RGB24(unsigned char *yuv420[3], unsigned char *rgb24, int width, int height)
+static bool
+YV12ToBGR24_Native(unsigned char* pYUV,unsigned char* pBGR24,int width,int height)
 {
-    //  int begin = GetTickCount();
-    int R,G,B,Y,U,V;
-    int x,y;
-    int nWidth = width>>1; //色度信号宽度
-    for (y=0;y<height;y++)
-    {
-        for (x=0;x<width;x++)
-        {
-            Y = *(yuv420[0] + y*width + x);
-            U = *(yuv420[1] + ((y>>1)*nWidth) + (x>>1));
-            V = *(yuv420[2] + ((y>>1)*nWidth) + (x>>1));
-            R = Y + 1.402*(V-128);
-            G = Y - 0.34414*(U-128) - 0.71414*(V-128);
-            B = Y + 1.772*(U-128);
+    if (width < 1 || height < 1 || pYUV == NULL || pBGR24 == NULL)
+        return false;
+    const long len = width * height;
+    unsigned char* yData = pYUV;
+    unsigned char* vData = &yData[len];
+    unsigned char* uData = &vData[len >> 2];
 
-            //防止越界
-            if (R>255)R=255;
-            if (R<0)R=0;
-            if (G>255)G=255;
-            if (G<0)G=0;
-            if (B>255)B=255;
-            if (B<0)B=0;
+    int bgr[3];
+    int yIdx,uIdx,vIdx,idx;
+    for (int i = 0;i < height;i++){
+        for (int j = 0;j < width;j++){
+            yIdx = i * width + j;
+            vIdx = (i/2) * (width/2) + (j/2);
+            uIdx = vIdx;
 
-            *(rgb24 + ((height-y-1)*width + x)*3) = B;
-            *(rgb24 + ((height-y-1)*width + x)*3 + 1) = G;
-            *(rgb24 + ((height-y-1)*width + x)*3 + 2) = R;
-            //    *(rgb24 + (y*width + x)*3) = B;
-            //    *(rgb24 + (y*width + x)*3 + 1) = G;
-            //    *(rgb24 + (y*width + x)*3 + 2) = R;
+            bgr[0] = (int)(yData[yIdx] + 1.732446 * (uData[vIdx] - 128));                                    // b分量
+            bgr[1] = (int)(yData[yIdx] - 0.698001 * (uData[uIdx] - 128) - 0.703125 * (vData[vIdx] - 128));    // g分量
+            bgr[2] = (int)(yData[yIdx] + 1.370705 * (vData[uIdx] - 128));                                    // r分量
+
+            for (int k = 0;k < 3;k++){
+                idx = (i * width + j) * 3 + k;
+                if(bgr[k] >= 0 && bgr[k] <= 255)
+                    pBGR24[idx] = bgr[k];
+                else
+                    pBGR24[idx] = (bgr[k] < 0)?0:255;
+            }
         }
     }
+    return true;
 }
-
 
 
 Player::Player():
@@ -143,9 +140,8 @@ Player::~Player()
     //decoder_->StopDecoder();
     //decoder_->ReleaseConnection();
     //frameBuffer_.reset();
-#ifdef __SHOW_CONSOLE_
-    cout << "[Player] dtor" << endl;
-#endif
+    LOG(INFO) << "[Player] dtor" << endl;
+    LOG(WARNING) << "[Player] dtor" << endl;
 }
 
 
@@ -189,9 +185,9 @@ Player::stop()
         changetoState(Stoped);
     }
     unlock();
-#ifdef __SHOW_CONSOLE_
-    cout << "[Player] Stoping" << endl;
-#endif
+
+    LOG(INFO) << "[Player] Stoping" << endl;
+
     return;
 }
 
@@ -280,9 +276,7 @@ Player::refresh()
     {
        // LOG(INFO) << "[Player] play " << slot->getNumber() << endl;
 
-        unsigned char* yuv[3] = {yuv_frameBuf_,yuv_frameBuf_+ WIDTH*HEIGHT, yuv_frameBuf_ +WIDTH*HEIGHT*5/4};
-
-        YUV420p_to_RGB24(yuv,bmp_frameBuf_,WIDTH,HEIGHT);
+        YV12ToBGR24_Native(yuv_frameBuf_,bmp_frameBuf_,WIDTH,HEIGHT);
     }
 
     return frameBuffer_->getBufSize();
@@ -314,10 +308,7 @@ Player::refresh( int a)
     if ( outlen > 0 )
     {
        // LOG(INFO) << "[Player] play " << slot->getNumber() << endl;
-
-        unsigned char* yuv[3] = {yuv_frameBuf_,yuv_frameBuf_+ WIDTH*HEIGHT, yuv_frameBuf_ +WIDTH*HEIGHT*5/4};
-
-        YUV420p_to_RGB24(yuv,bmp_frameBuf_,WIDTH,HEIGHT);
+        YV12ToBGR24_Native(yuv_frameBuf_,bmp_frameBuf_,WIDTH,HEIGHT);
     }
 
     return frameBuffer_->getBufSize();

@@ -151,7 +151,13 @@ MainWindow::showStream( int id )
         //struct timeval t_end1;
         //gettimeofday(&t_end1, NULL);
 
-        sleepTime = rate > 5 ? 10*1000 : 30*1000;
+        if( rate < 5 )
+            rate = 25 * 1000;
+//        else if( rate >= 5 && rate < 10 )
+//            sleepTime = 1000;
+        else
+            sleepTime = 0;
+        //sleepTime = rate > 5 ? 10*1000 : 30*1000;
         //cout << rate << endl;
         usleep(sleepTime);
         //time_t t3 = time(NULL);
@@ -204,7 +210,7 @@ MainWindow::on_simulate_waiting( int simuId )
 
     stopStream(simuId);
 
-    long duration = simulator->getTimer();
+    long duration = simulator->getDuration();
 
     clock_t start;//, finish;
     start = clock();
@@ -224,7 +230,7 @@ MainWindow::on_simulate_waiting( int simuId )
          << "Waiting:   " << duration << "ms" << endl
          << "TimeStamp: " << lt_1 << endl
          << "***********************************************************"
-         << endl;
+         << endl << endl;
 
    // usleep(1000);
 
@@ -258,7 +264,7 @@ MainWindow::on_simulate_fetching( int id )
     std::string nextURI;
     long duration;
 
-    duration = simulator->getTimer();
+    duration = simulator->getDuration();
     nextURI = simulator->getNextURI();
 
     clock_t start, finish;
@@ -281,7 +287,7 @@ MainWindow::on_simulate_fetching( int id )
          << "Time     : " << duration << "ms" << endl
          << "TimeStamp: " << lt_1 << endl
          << "###########################################################"
-         << endl;
+         << endl << endl;
 
     //timer->disconnect();
     //cout << "disconnect wait"<<endl;
@@ -329,9 +335,7 @@ MainWindow::addStream( std::string stream_/*QString stream*/ )
     int consumerId = 1;
 
     //controler->createFace(host,port);
-
 //    consumerId = controler->addConsumer( prefix.toStdString() );
-
 //    controler->startConsumer(consumerId);
 
     consumerId = controler->addStream(prefix.toStdString());
@@ -366,7 +370,7 @@ MainWindow::stopStream(int id)
 
     if ( -1 == controler->stopConsumer(id))
     {
-        cout << "Stop Consumer failed! " << endl;
+        LOG(ERROR) << "Stop Consumer failed! consumerId=" << id << endl;
         return -1;
     }
     return 1;

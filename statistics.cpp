@@ -17,14 +17,26 @@ void Statistics::addRequest()
 void Statistics::addData(int64_t delay)
 {
     ++receiveCounter_;
-    if( delay_ == 0)
+    if( avgDelay_ == 0)
     {
-        delay_ = delay;
+        avgDelay_ = delay;
     }
     else
     {
-        delay_ = (double)delay_*(1-alpha_) + (double)delay*alpha_;
+        avgDelay_ = (double)avgDelay_*(1-alpha_) + (double)delay*alpha_;
     }
+
+    int idx = (delay/1000) / counterStepSize_;
+    if( idx >= 0 && idx <= 99 )
+    {
+        ++delayCounter[idx];
+        for( int j = 0; j < 100; ++j )
+            LOG_IF(INFO,delayCounter[j] > 0)
+                    << "Delay[" << j*counterStepSize_<<","<<((j+1)*counterStepSize_-1)<<"]"
+                    << " : " << delayCounter[j];
+    }
+    else
+        LOG(WARNING) << "[Statistics] Delay=" << delay << std::endl;
 }
 
 void Statistics::markMiss()
@@ -40,7 +52,7 @@ double Statistics::getLostRate()
 { return lostRate_; }
 
 int64_t Statistics::getDelay()
-{ return delay_; }
+{ return avgDelay_; }
 
 Statistics::Statistics():
     requestCounter_(0),
@@ -48,6 +60,10 @@ Statistics::Statistics():
     retransmissionCounter_(0),
     lostCounter_(0),
     lostRate_(0.0),
-    alpha_(1.0/4.0),
-    delay_(0)
-{}
+    alpha_(1.0/2.0),
+    counterStepSize_(5),
+    avgDelay_(0)
+{
+    for( int i = 0; i < 100; ++i )
+        delayCounter[i] = 0;
+}

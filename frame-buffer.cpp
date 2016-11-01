@@ -71,7 +71,10 @@ FrameBuffer::Slot::dataArrived ()
     arrivalTimeUsec_ = NdnUtils::microsecondTimestamp();
     uint64_t delay = arrivalTimeUsec_-requestTimeUsec_;
     statistic->addData(delay);
-    LOG(INFO) << "[FrameBuffer] Recieve Data " << prefix_.to_uri() <<  " Delay " << delay/1000
+    LOG(INFO) << "[FrameBuffer] Recieve Data " << prefix_.to_uri()
+              << " addr:" << hex << (void*)getDataPtr()
+              << " size:" << hex << (void*)getPayloadSize()
+              <<  " Delay " << dec << delay/1000
               << "ms ( average: " << statistic->getDelay()/1000 << "ms )" << endl;
 }
 
@@ -374,9 +377,9 @@ FrameBuffer::acquireData()
 
     if ( readySlots_count_ < 5 )
     {
-        LOG(INFO) << "[Player] empty"
-                  << " ( Total:" << activeSlots_.size()
-                  << " Ready: " <<readySlots_count_ << " )"<< endl;
+//        LOG(INFO) << "[Player] empty"
+//                  << " ( Total:" << activeSlots_.size()
+//                  << " Ready: " <<readySlots_count_ << " )"<< endl;
         return NULL;
     }
 
@@ -402,6 +405,8 @@ FrameBuffer::acquireData()
     readySlots_count_--;
 
     LOG(INFO) << "[FrameBuffer] pop " << slot->getPrefix()
+              << " addr:" << slot->getDataPtr()
+              << " size:" << slot->getPayloadSize()
               << " ( Total:" << activeSlots_.size()
               << " Ready: " <<readySlots_count_ << " )"<< endl;
 
@@ -420,9 +425,9 @@ FrameBuffer::acquireData( unsigned char* buf )
 
     if ( readySlots_count_ < 1 )
     {
-        LOG(INFO) << "[Player] empty"
-                  << " ( Total:" << activeSlots_.size()
-                  << " Ready: " <<readySlots_count_ << " )"<< endl;
+//        LOG(INFO) << "[Player] empty"
+//                  << " ( Total:" << activeSlots_.size()
+//                  << " Ready: " <<readySlots_count_ << " )"<< endl;
         return 0;
     }
     if ( readySlots_count_ < 5 )
@@ -441,26 +446,49 @@ FrameBuffer::acquireData( unsigned char* buf )
     {
         iter = activeSlots_.begin();
         slot = iter->second;
+        slot->lock();
+        if( !slot.get() )
+            break;
         // this data is not fetched
-        if( slot->getState() != FrameBuffer::Slot::StateFetched )
+        if( slot->getState() == FrameBuffer::Slot::StateFetched )
         {
-            break;
+            slotbuf = slot->getDataPtr();
+            //LOG(INFO) << "getDataPtr " << slot->getFrameNo() << " " << (void*)slotbuf << " " << slot->getPayloadSize();
+            if( (0 == slotbuf[0] && 0 == slotbuf[1] && 0 == slotbuf[2] && 1 == slotbuf[3])
+                    || ( 0 == slotbuf[0] && 0 == slotbuf[1] && 1 == slotbuf[2]) )
+            {
+                ++nalCounter;
+            }
+            if( nalCounter > 1 )
+            {
+                break;
+            }
+            activeSlots_.erase(iter);
+            readySlots_count_--;
+
+            //NdnUtils::printMem("pop", slotbuf, 20);
+
+            if( slotbuf!= 0 )
+                memcpy(buf+bufsize,slotbuf,slot->getPayloadSize());
+
+            bufsize+=slot->getPayloadSize();
+
+            LOG_IF(ERROR,slot->getPayloadSize()==0)
+                    << "[FrameBuffer] pop " << nalCounter
+                      << " " << slot->getPrefix()
+                      << " addr:" << hex << (void*)slot->getDataPtr()
+                      << " size:" << hex << (void*)slot->getPayloadSize()
+                      << " ( Total:" << dec<< activeSlots_.size()
+                      << " Ready: " <<readySlots_count_ << " )"<< endl;
+
+            LOG(INFO) << "[FrameBuffer] pop " << nalCounter
+                      << " " << slot->getPrefix()
+                      << " addr:" << hex << (void*)slot->getDataPtr()
+                      << " size:" << hex << (void*)slot->getPayloadSize()
+                      << " ( Total:" << dec<< activeSlots_.size()
+                      << " Ready: " <<readySlots_count_ << " )"<< endl;
         }
-        slotbuf = slot->getDataPtr();
-        if( 0 == slotbuf[0] && 0 == slotbuf[1] && 0 == slotbuf[2] && 1 == slotbuf[3])
-            ++nalCounter;
-        if( nalCounter > 1 )
-            break;
-        activeSlots_.erase(iter);
-        readySlots_count_--;
-
-        //NdnUtils::printMem("pop", slotbuf, 20);
-        memcpy(buf+bufsize,slot->getDataPtr(),slot->getPayloadSize());
-        bufsize+=slot->getPayloadSize();
-
-        LOG(INFO) << "[FrameBuffer] pop " << slot->getPrefix()
-                  << " ( Total:" << activeSlots_.size()
-                  << " Ready: " <<readySlots_count_ << " )"<< endl;
+        slot->unlock();
 
     }
 
