@@ -4,8 +4,8 @@
 
 //#define HOST "localhost"
 //#define HOST "10.103.242.213"
-#define HOST "10.103.243.176"
-//#define HOST "10.103.246.164"
+//#define HOST "10.103.243.176"
+#define HOST "10.103.246.164"
 //#define HOST "10.103.242.213" //zhangzhao
 #define PORT 6363
 
@@ -17,7 +17,6 @@ Controler::Controler():
     maxId_(0)
 {
     consumersMap_.clear();
-    consumersVec_.clear();
     hostSet_.clear();
     addFace(HOST,PORT);
 }
