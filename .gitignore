@@ -1,0 +1,14 @@
+*
+!.gitignore
+!README
+!Makefile
+!*.h
+!*.hpp
+!*.c
+!*.cpp
+
+!consumer.pro
+
+!/include/
+!/src/
+!/client/
