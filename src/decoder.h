@@ -67,8 +67,8 @@ private:
 	//	uint8_t *buf, int buf_size);
     int (*avpicture_fill)(AVPicture *picture, const uint8_t *ptr,
                        enum AVPixelFormat pix_fmt, int width, int height);
-//    int(*avcodec_decode_video2)(AVCodecContext *avctx, AVFrame *picture,
-//                                int *got_picture_ptr, AVPacket *avpkt);
+    int(*avcodec_decode_video2)(AVCodecContext *avctx, AVFrame *picture,
+                                int *got_picture_ptr, AVPacket *avpkt);
 	int(*avcodec_open2)(AVCodecContext *avctx, const AVCodec *codec, AVDictionary **options);
 	int(*avcodec_close)(AVCodecContext *avctx);
     void(*av_frame_unref)(AVFrame *frame);
