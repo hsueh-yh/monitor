@@ -14,7 +14,7 @@
 #include "frame-data.h"
 #include "logger.h"
 #include "name-components.h"
-#include "namespacer.h"
+#include "mtndn-namespace.h"
 
 //#define __SHOW_CONSOLE_
 
@@ -147,7 +147,7 @@ Pipeliner::~Pipeliner()
 {
 //    frameBuffer_.reset();
 //    faceWrapper_.reset();
-    LOG(INFO) << "[Pipeliner] dtor" << endl;
+    VLOG(LOG_TRACE) << "[Pipeliner] dtor" << endl;
     //fclose(pipelinerFIle_);
 }
 
@@ -156,11 +156,11 @@ int
 Pipeliner::init()
 {
     Name tmpname(consumer_->getPrefix());
-    LOG(INFO) << "Pipeliner streamName " << tmpname.to_uri() << std::endl;
-    streamName_ = tmpname;
+     streamName_ = tmpname;
     //window_.init(100/*,frameBuffer_*/);
     //switchToState(StateInactive);
     return RESULT_OK;
+    VLOG(LOG_TRACE) << "Pipeliner initialized: " << streamName_.to_uri() << std::endl;
 }
 
 int
@@ -169,7 +169,7 @@ Pipeliner::start()
     requestMeta();
     switchToState(StateWaitInitial);
 
-    LOG(INFO) << "[Pipeliner] Started" << endl;
+    VLOG(LOG_INFO) << "[Pipeliner] Started" << endl;
 
     return RESULT_OK;
 }
@@ -179,7 +179,7 @@ Pipeliner::stop()
 {
     switchToState(StateInactive);
     window_.reset();
-    LOG(INFO) << "[Pipeliner] Stopped" << endl;
+    VLOG(LOG_INFO) << "[Pipeliner] Stopped" << endl;
     return RESULT_OK;
 }
 
@@ -213,7 +213,7 @@ Pipeliner::fetchingLoop()
             break;
 
         default:
-            LOG(ERROR) << "[Pipeliner] State error" << endl;
+            VLOG(LOG_ERROR) << "[Pipeliner] State error" << endl;
             break;
         }
 
@@ -236,7 +236,7 @@ Pipeliner::express(const Interest &interest/*, int64_t priority*/)
             //bind(&Pipeliner::onTimeout, this, func_lib::_1));
 
     statistic->addRequest();
-    LOG(INFO) << "[Pipeliner] Express Interest " << interest.getName().to_uri() << endl;
+    VLOG(LOG_TRACE) << "Express Interest " << interest.getName().to_uri() << endl;
 
 #ifdef __SHOW_CONSOLE_
     cout << "Express : " << interest.getName().toUri() << endl;
@@ -253,7 +253,7 @@ Pipeliner::express(const Name &name/*, int64_t priority*/)
             //bind(&Pipeliner::onData, this, std::placeholders::_1, std::placeholders::_2),
             //bind(&Pipeliner::onTimeout, this, std::placeholders::_1));
     statistic->addRequest();
-    LOG(INFO) << "[Pipeliner] Express Interest " << name.to_uri() << endl;
+    VLOG(LOG_TRACE) << "Express Interest " << name.to_uri() << endl;
 
 #ifdef __SHOW_CONSOLE_
 //    time_t t = time(NULL);
@@ -275,8 +275,8 @@ Pipeliner::requestFrame(PacketNumber frameNo)
     }
     //LOG(INFO) << "Request " << frameNo << endl;
     Name packetPrefix(streamName_);
-    packetPrefix.append(NdnUtils::componentFromInt(frameNo));
-    //packetPrefix.appendTimestamp(NdnRtcUtils::microsecondTimestamp());
+    packetPrefix.append(MtNdnUtils::componentFromInt(frameNo));
+    //packetPrefix.appendTimestamp(MtNdnUtils::microsecondTimestamp());
     //ptr_lib::shared_ptr<Interest> frameInterest = getDefaultInterest(packetPrefix);
 
 //    ptr_lib::shared_ptr<FrameBuffer::Slot> slot;
@@ -339,7 +339,7 @@ Pipeliner::onData(const ptr_lib::shared_ptr<const Interest> &interest,
         int p = Namespacer::findComponent(data->getName(), NameComponents::NameComponentStreamMetainfo );
         if( -1 != p )
         {
-            reqCurPktNo_ = NdnUtils::frameNumber(data->getName().get(p+2));
+            reqCurPktNo_ = MtNdnUtils::frameNumber(data->getName().get(p+2));
             //cout << reqCurPktNo_ << "**********************"<<endl;
             reqLastNo_ = reqCurPktNo_;
             switchToState(StateFetching);
@@ -356,7 +356,7 @@ Pipeliner::onData(const ptr_lib::shared_ptr<const Interest> &interest,
     case StateBootstrap:
     case StateFetching:
     {
-        reqLastNo_ = NdnUtils::frameNumber(data->getName().get(-1));
+        reqLastNo_ = MtNdnUtils::frameNumber(data->getName().get(-1));
         unsigned int pktNo;
         Namespacer::getFrameNumber(data->getName(),pktNo);
 
@@ -364,7 +364,7 @@ Pipeliner::onData(const ptr_lib::shared_ptr<const Interest> &interest,
 
         if( frameBuffer_->getState() == FrameBuffer::Invalid)
             return;
-
+        //LOG(INFO) << "[Pipeliner] Received Data " << data->getName().to_uri() << " " << reqCurPktNo_ << " " << reqLastNo_ << std::endl;
         frameBuffer_->recvData(data);
         requestNextPkt();
     }
@@ -372,7 +372,7 @@ Pipeliner::onData(const ptr_lib::shared_ptr<const Interest> &interest,
 
     default:
     {
-        LOG(ERROR) << "[Pipeliner] State error" << endl;
+        VLOG(LOG_ERROR) << "[Pipeliner] State error" << endl;
     }
         break;
     }//switch
@@ -382,7 +382,7 @@ void
 Pipeliner::onTimeout(const ptr_lib::shared_ptr<const Interest> &interest)
 {
     statistic->markMiss();
-    LOG(WARNING) << "Timeout " << interest->getName().to_uri()
+    VLOG(LOG_INFO) << "Timeout " << interest->getName().to_uri()
                  << " ( Loss Rate = " << statistic->getLostRate() << " )"<< endl;
 
     PacketNumber pktNo;
@@ -410,7 +410,7 @@ Pipeliner::onTimeout(const ptr_lib::shared_ptr<const Interest> &interest)
 
     default:
     {
-        LOG(ERROR) << "[Pipeliner] State error" << endl;
+        VLOG(LOG_ERROR) << "[Pipeliner] State error" << endl;
     }
         break;
     }//switch
@@ -422,7 +422,7 @@ Pipeliner::requestMeta()
 {
     ndn::Name metaName( streamName_ );
     metaName.append(NameComponents::NameComponentStreamMetainfo);
-    metaName.append(NdnUtils::componentFromInt(NdnUtils::microsecondTimestamp()));
+    metaName.append(MtNdnUtils::componentFromInt(MtNdnUtils::microsecondTimestamp()));
 
     ndn::Interest metaInterest( metaName, 1000 );
     metaInterest.setMustBeFresh(true);

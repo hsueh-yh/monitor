@@ -4,13 +4,13 @@
 #include "mtndn-library.h"
 
 
-class MMNdnManager : public IMMNdnLibrary
+class MtNdnManager : public IMMNdnLibrary
 {
 public:
-    static MMNdnManager &getSharedInstance();
+    static MtNdnManager &getSharedInstance();
 
 //    void
-//    setObserver(INdnRtcLibraryObserver *observer);
+//    setObserver(IMtNdnLibraryObserver *observer);
 
     std::string
     addRemoteStream(std::string &remoteStreamPrefix,
@@ -37,13 +37,13 @@ public:
     switchThread(const std::string &streamPrefix,
                  const std::string &threadName);
 
-    ~MMNdnManager();
+    ~MtNdnManager();
 private:
     bool initialized_, failed_;
 
-    MMNdnManager();
-    MMNdnManager(MMNdnManager const&) = delete;
-    void operator=(MMNdnManager const&) = delete;
+    MtNdnManager();
+    MtNdnManager(MtNdnManager const&) = delete;
+    void operator=(MtNdnManager const&) = delete;
 
     int notifyObserverWithError(const char *format, ...) const;
     int notifyObserverWithState(const char *stateName,

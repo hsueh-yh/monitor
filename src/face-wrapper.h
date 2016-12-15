@@ -20,11 +20,11 @@
 #include <iostream>
 #include <chrono>
 
-#include "object.h"
-#include "utils.h"
-#include "defines.h"
+#include "mtndn-object.h"
+#include "mtndn-utils.h"
+#include "include/mtndn-defines.h"
 
-//namespace ndnrtc {
+//namespace mtndn {
 
 using namespace ndn;
 
@@ -84,7 +84,7 @@ private:
     ptr_lib::recursive_mutex faceMutex_;
 };
 
-class FaceProcessor : public NdnRtcComponent
+class FaceProcessor : public MtNdnComponent
 {
 public:
     FaceProcessor(const ptr_lib::shared_ptr<FaceWrapper> &faceWrapper);

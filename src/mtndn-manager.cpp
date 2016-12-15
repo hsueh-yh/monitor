@@ -1,8 +1,8 @@
 
 
 //
-//  ndnrtc-manager.cpp
-//  ndnrtc
+//  mtndn-manager.cpp
+//  mtndn
 //
 //  Copyright 2015 Regents of the University of California
 //  For licensing details see the LICENSE file.
@@ -22,11 +22,11 @@
 #include <boost/asio.hpp>
 
 #include "mtndn-manager.h"
-#include "namespacer.h"
+#include "mtndn-namespace.h"
 #include "video-consumer.h"
 #include "frame-data.h"
-#include "utils.h"
-#include "defines.h"
+#include "mtndn-utils.h"
+#include "include/mtndn-defines.h"
 
 //using namespace boost;
 
@@ -37,6 +37,7 @@ static boost::asio::io_service libIoService;
 static boost::asio::steady_timer recoveryCheckTimer(libIoService);
 
 void init();
+void reset();
 void cleanup();
 
 
@@ -48,7 +49,7 @@ static void initializer(int argc, char* *argv, char* *envp) {
     if (!initialized)
     {
         initialized = 1;
-        NdnUtils::setIoService(libIoService);
+        MtNdnUtils::setIoService(libIoService);
 
     }
 }
@@ -60,14 +61,14 @@ static void destructor(){
 
 //******************************************************************************
 //#pragma mark - construction/destruction
-MMNdnManager::MMNdnManager()
+MtNdnManager::MtNdnManager()
 {
     init();
     initialized_ = true;
     failed_ = false;
 }
 
-MMNdnManager::~MMNdnManager()
+MtNdnManager::~MtNdnManager()
 {
     cleanup();
     initialized_ = false;
@@ -75,14 +76,14 @@ MMNdnManager::~MMNdnManager()
 
 //******************************************************************************
 #pragma mark - public
-MMNdnManager &MMNdnManager::getSharedInstance()
+MtNdnManager &MtNdnManager::getSharedInstance()
 {
-    static MMNdnManager mtndnManager;
+    static MtNdnManager mtndnManager;
     return mtndnManager;
 }
 
 /*
-void MtNdnManager::setObserver(INdnRtcLibraryObserver *observer)
+void MtNdnManager::setObserver(IMtNdnLibraryObserver *observer)
 {
     LOG(INFO) << "Set library observer " << observer << std::endl;
 
@@ -92,18 +93,18 @@ void MtNdnManager::setObserver(INdnRtcLibraryObserver *observer)
 
 //******************************************************************************
 std::string
-MMNdnManager::addRemoteStream(std::string &remoteStreamPrefix,
+MtNdnManager::addRemoteStream(std::string &remoteStreamPrefix,
                               const std::string &threadName,
                               const MediaStreamParams &params,
                               const GeneralParams &generalParams,
                               const GeneralConsumerParams &consumerParams,
                               IExternalRenderer *const renderer)
 {
-    LOG(INFO) << "addRemoteStream" << std::endl;
-    NdnUtils::performOnBackgroundThread([=, &remoteStreamPrefix]()->void{
+    LOG(INFO) << "MMNdnManager::addRemoteStream " << remoteStreamPrefix << std::endl;
+    MtNdnUtils::performOnBackgroundThread([=, &remoteStreamPrefix]()->void{
         //Logger::getLogger(INFO).flush();
         //INFO = NdnUtils::getFullLogPath(generalParams, generalParams.logFile_);
-        NdnUtils::createLibFace(generalParams.host_,generalParams.portNum_);
+        MtNdnUtils::createLibFace(generalParams);
 
         ptr_lib::shared_ptr<Consumer> remoteStreamConsumer;
         ConsumerStreamMap::iterator it = ActiveStreamConsumers.find(remoteStreamPrefix);
@@ -129,7 +130,7 @@ MMNdnManager::addRemoteStream(std::string &remoteStreamPrefix,
             ConsumerSettings settings;
             settings.streamPrefix_ = remoteStreamPrefix;
             settings.streamParams_ = params;
-            settings.faceProcessor_ = NdnUtils::getLibFace();
+            settings.faceProcessor_ = MtNdnUtils::getLibFace();
 
             //remoteStreamConsumer->registerCallback(&LibraryInternalObserver);
 
@@ -166,7 +167,7 @@ MMNdnManager::addRemoteStream(std::string &remoteStreamPrefix,
 }
 
 std::string
-MMNdnManager::removeRemoteStream(const std::string &streamPrefix)
+MtNdnManager::removeRemoteStream(const std::string &streamPrefix)
 {
     std::string logFileName = "";
 
@@ -183,24 +184,26 @@ MMNdnManager::removeRemoteStream(const std::string &streamPrefix)
         //logFileName = it->second->getLogger()->getFileName();
         it->second->stop();
         {
-            NdnUtils::performOnBackgroundThread([&]()->void{
+            MtNdnUtils::performOnBackgroundThread([&]()->void{
                 ActiveStreamConsumers.erase(it);
             });
         }
 
         LOG(INFO) << "Stream removed successfully" << std::endl;
     }
+    LOG(INFO) << "Remove Remote Stream SUCCESS " << streamPrefix
+              << std::endl;
 
     return logFileName;
 }
 
 int
-MMNdnManager::setStreamObserver(const std::string &streamPrefix,
+MtNdnManager::setStreamObserver(const std::string &streamPrefix,
                                  IConsumerObserver *const observer)
 {
     int res = RESULT_ERR;
 
-    NdnUtils::performOnBackgroundThread([=, &res]()->void{
+    MtNdnUtils::performOnBackgroundThread([=, &res]()->void{
         LOG(INFO) << "Setting stream observer " << observer
         << " for stream " << streamPrefix << "..." << std::endl;
 
@@ -222,11 +225,11 @@ MMNdnManager::setStreamObserver(const std::string &streamPrefix,
 }
 
 int
-MMNdnManager::removeStreamObserver(const std::string &streamPrefix)
+MtNdnManager::removeStreamObserver(const std::string &streamPrefix)
 {
     int res = RESULT_ERR;
 
-    NdnUtils::performOnBackgroundThread([=, &res]()->void{
+    MtNdnUtils::performOnBackgroundThread([=, &res]()->void{
         LOG(INFO) << "Removing stream observer for prefix " << streamPrefix
         << "..." << std::endl;
 
@@ -248,7 +251,7 @@ MMNdnManager::removeStreamObserver(const std::string &streamPrefix)
 }
 
 std::string
-MMNdnManager::getStreamThread(const std::string &streamPrefix)
+MtNdnManager::getStreamThread(const std::string &streamPrefix)
 {
     /*
     ConsumerStreamMap::iterator it = ActiveStreamConsumers.find(streamPrefix);
@@ -264,7 +267,7 @@ MMNdnManager::getStreamThread(const std::string &streamPrefix)
 }
 
 int
-MMNdnManager::switchThread(const std::string &streamPrefix,
+MtNdnManager::switchThread(const std::string &streamPrefix,
                             const std::string &threadName)
 {
     /*
@@ -294,7 +297,7 @@ MMNdnManager::switchThread(const std::string &streamPrefix,
 
 //********************************************************************************
 #pragma mark - private
-int MMNdnManager::notifyObserverWithError(const char *format, ...) const
+int MtNdnManager::notifyObserverWithError(const char *format, ...) const
 {
     va_list args;
 
@@ -309,7 +312,7 @@ int MMNdnManager::notifyObserverWithError(const char *format, ...) const
     return RESULT_ERR;
 }
 
-int MMNdnManager::notifyObserverWithState(const char *stateName, const char *format, ...) const
+int MtNdnManager::notifyObserverWithState(const char *stateName, const char *format, ...) const
 {
     va_list args;
 
@@ -324,7 +327,7 @@ int MMNdnManager::notifyObserverWithState(const char *stateName, const char *for
     return RESULT_OK;
 }
 
-void MMNdnManager::notifyObserver(const char *state, const char *args) const
+void MtNdnManager::notifyObserver(const char *state, const char *args) const
 {
     //LibraryInternalObserver.onStateChanged(state, args);
 }
@@ -333,9 +336,15 @@ void MMNdnManager::notifyObserver(const char *state, const char *args) const
 void init()
 {
     //GLogger log("MtNdnLibrary","/home/xyh/workspace/MTNDN/logs");
-    LOG(INFO) << "MTNDN " << std::endl;
+    LOG(INFO) << "MTNDN initializing" << std::endl;
+    reset();
 
     //reset();
+}
+
+void reset()
+{
+    MtNdnUtils::startBackgroundThread();
 }
 
 void cleanup()
@@ -348,9 +357,9 @@ void cleanup()
     }
     LOG(INFO) << "Active consumers cleared" << std::endl;
 
-    NdnUtils::destroyLibFace();
+    MtNdnUtils::destroyLibFace();
 
-    NdnUtils::stopBackgroundThread();
+    MtNdnUtils::stopBackgroundThread();
     LOG(INFO) << "Bye" << std::endl;
     //Logger::releaseAsyncLogging();
 }

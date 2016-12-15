@@ -4,5 +4,5 @@
 
 IMMNdnLibrary& MMNdnLibrary::getSharedInstance()
 {
-    return MMNdnManager::getSharedInstance();
+    return MtNdnManager::getSharedInstance();
 }

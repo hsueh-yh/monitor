@@ -8,7 +8,7 @@ GLogger::GLogger( const char *program, const char *logdir):
     FLAGS_logtostderr = false;      //log messages go to stderr instead of logfiles
     FLAGS_alsologtostderr = true;    //log messages go to stderr in addition to logfiles
     FLAGS_colorlogtostderr = true;    //color messages logged to stderr (if supported by terminal)
-
+    FLAGS_v = 255;
     logdir_ = logdir;
     FLAGS_log_dir = logdir;   // logger output file
     //google::SetLogDestination(google::INFO,logdir);

@@ -80,7 +80,8 @@ public:
           *Discards frame by swithcing it to NotUsed state and
           *reseting all the attributes
          */
-        void discard();
+        void
+        discard();
 
         /**
           *Moves frame into Pending state and updaets following
@@ -89,13 +90,15 @@ public:
           *- interestName
           *- reqCounter
          */
-        void interestIssued();
+        void
+        interestIssued();
 
         /**
           *Moves frame into Missing state if it was in Pending
           *state before
          */
-        void markMissed();
+        void
+        markMissed();
 
         /**
           *Moves frame into Fetched state and updates following
@@ -143,6 +146,14 @@ public:
         State
         getStashedState() const
         { return stashedState_; }
+
+        int64_t
+        getCapTimestamp()
+        { return capMsTimestamp_; }
+
+        void
+        setCapTimestamp(int64_t capMsTimestamp)
+        { capMsTimestamp_ = capMsTimestamp; }
 
         int64_t
         getRequestTimeUsec()
@@ -194,7 +205,8 @@ public:
 
         State sstate_, stashedState_;
 
-        int64_t requestTimeUsec_, // local timestamp when the interest
+        int64_t capMsTimestamp_,  // frame captured timestamp
+                requestTimeUsec_, // local timestamp when the interest
                                   // for this frame was issued
                 arrivalTimeUsec_; // local timestamp when data for this
                                   // frame has arrived
@@ -280,7 +292,7 @@ public:
      *                       in this case, *packetData will be null).
      */
     void
-    acquireFrame(vector<uint8_t> &frame,
+    acquireFrame(vector<uint8_t> &frame, int64_t &ts,
                  PacketNumber &packetNo,
                  PacketNumber &sequencePacketNo,
                  PacketNumber &pairedPacketNo,
@@ -301,6 +313,33 @@ public:
     unsigned int
     getPlayableBufferSize()
     { return readySlots_count_; }
+
+    int64_t
+    getPlayableBufferDuration()
+    {
+        ptr_lib::lock_guard<ptr_lib::recursive_mutex> scopedLock(syncMutex_);
+        int64_t minTs=0x7fffffff, maxTs=0;
+        SlotPtr slot;
+        map_int_slotPtr::iterator it = activeSlots_.begin();
+        if( readySlots_count_ > 1 )
+            while( it != activeSlots_.end() )
+            {
+                slot = it->second;
+                if( slot->getState() >= Slot::StateFetched )
+                {
+                    VLOG(LOG_TRACE) << slot->getCapTimestamp() << std::endl;
+                    if(slot->getCapTimestamp() < minTs)
+                        minTs = slot->getCapTimestamp();
+                    if(slot->getCapTimestamp() > maxTs)
+                        maxTs = slot->getCapTimestamp();
+                }
+                ++it;
+            }
+        else
+            return 0;
+        VLOG(LOG_TRACE) << "duration " << maxTs << " - " << minTs << std::endl;
+        return maxTs - minTs;
+    }
 
     int64_t
     getInferredFrameDuration()
@@ -382,10 +421,12 @@ private:
     ptr_lib::recursive_mutex syncMutex_;
 
     //std::vector<ptr_lib::shared_ptr<Slot> > issuedSlots_;
+    typedef std::map<unsigned int, ptr_lib::shared_ptr<Slot> > map_int_slotPtr;
     std::map<unsigned int, ptr_lib::shared_ptr<Slot> > activeSlots_;
     //PlaybackQueue playbackQueue_;
 
-    std::list<ptr_lib::shared_ptr<Slot> > suspendSlots_;
+    std::list<SlotPtr> suspendSlots_;
+    SlotPtr playbackSlot_;
 
     int readySlots_count_ = 0;
 
@@ -413,7 +454,7 @@ private:
     {
         ptr_lib::shared_ptr<Slot> slot;
         slot.reset();
-        if( 0 != readySlots_count_ )
+        if( 0 <= readySlots_count_ )
             slot = activeSlots_.begin()->second;
 
         return slot;
@@ -423,6 +464,7 @@ private:
     suspendSlot( ptr_lib::shared_ptr<Slot> slot )
     {
         suspendSlots_.push_back(slot);
+        playbackSlot_ = slot;
     }
 
     void
@@ -430,6 +472,7 @@ private:
     {
         ptr_lib::shared_ptr<Slot> slot;
         std::list<ptr_lib::shared_ptr<Slot> >::iterator it,tmpit;
+        playbackSlot_.reset();
         it = suspendSlots_.begin();
         while( it != suspendSlots_.end() )
         {

@@ -32,7 +32,7 @@ VideoConsumer::init(const ConsumerSettings &settings,
         playout_->init(decoder_.get());
         //((VideoPlayout*)playout_.get())->onFrameSkipped_ = boost::bind(&VideoConsumer::onFrameSkipped, this, _1, _2, _3, _4, _5);
 
-        LOG(INFO) << "initialized" << std::endl;
+        LOG(INFO) << "VideoConsumer initialized" << std::endl;
 
         return RESULT_OK;
     }

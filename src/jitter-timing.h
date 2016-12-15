@@ -1,6 +1,6 @@
 //
 //  jitter-timing.h
-//  ndnrtc
+//  mtndn
 //
 //  Created by Peter Gusev on 5/8/14.
 //  Copyright 2013-2015 Regents of the University of California
@@ -14,7 +14,7 @@
 #include <boost/thread/condition_variable.hpp>
 #include <boost/thread/recursive_mutex.hpp>
 
-#include "object.h"
+#include "mtndn-object.h"
 #include "frame-data.h"
 
 
@@ -28,7 +28,7 @@
   *(extracting frame from the jitter buffer, rendering frame on the canvas,
   *etc.).
  */
-class JitterTiming : public NdnRtcComponent
+class JitterTiming : public MtNdnComponent
 {
 public:
     JitterTiming();
@@ -61,10 +61,10 @@ public:
 private:
     int framePlayoutTimeMs_ = 0;
     int processingTimeUsec_ = 0;
-    int64_t playoutTimestampUsec_ = 0;
+    int64_t prevPlayoutTsUsec_ = 0;
 
     void resetData();
 };
 
 
-#endif /*defined(__ndnrtc__jitter_timing__) */
+#endif /*defined(__mtndn__jitter_timing__) */

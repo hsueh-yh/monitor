@@ -1,6 +1,6 @@
 //
-//  ndnrtc-object.cpp
-//  ndnrtc
+//  mtndn-object.cpp
+//  mtndn
 //
 //  Copyright 2013 Regents of the University of California
 //  For licensing details see the LICENSE file.
@@ -11,34 +11,36 @@
 
 #include <stdarg.h>
 #include <boost/thread/lock_guard.hpp>
+#define BOOST_ASIO_DISABLE_STD_CHRONO
 #include <boost/chrono.hpp>
 
 
-#include "object.h"
-#include "utils.h"
+#include "mtndn-object.h"
+#include "mtndn-utils.h"
+#include "logger.h"
 
-using namespace std;
+//using namespace std;
 
 using namespace boost;
 
 //******************************************************************************
 /**
-  *@name NdnRtcComponent class
+  *@name MtNdnComponent class
  */
-NdnRtcComponent::NdnRtcComponent():
-    watchdogTimer_(NdnUtils::getIoService()),
+MtNdnComponent::MtNdnComponent(boost::asio::io_service &ioservice):
+    watchdogTimer_(ioservice/*MtNdnUtils::getIoService()*/),
     isJobScheduled_(false),
     isTimerCancelled_(false)
 {}
 
-NdnRtcComponent::NdnRtcComponent(INdnRtcComponentCallback *callback):
+MtNdnComponent::MtNdnComponent(IMtNdnComponentCallback *callback):
     callback_(callback),
-    watchdogTimer_(NdnUtils::getIoService()),
+    watchdogTimer_(MtNdnUtils::getIoService()),
     isJobScheduled_(false),
     isTimerCancelled_(false)
 {}
 
-NdnRtcComponent::~NdnRtcComponent()
+MtNdnComponent::~MtNdnComponent()
 {
     try {
         stopJob();
@@ -48,7 +50,8 @@ NdnRtcComponent::~NdnRtcComponent()
 }
 
 
-void NdnRtcComponent::onError(const char *errorMessage, const int errorCode)
+void
+MtNdnComponent::onError(const char *errorMessage, const int errorCode)
 {
     if (hasCallback())
     {
@@ -57,14 +60,14 @@ void NdnRtcComponent::onError(const char *errorMessage, const int errorCode)
     }
     else
     {
-		cout << "error" << endl;
+        std::cout << "error" << std::endl;
         //LogErrorC << "error occurred: " << string(errorMessage) << endl;
         //if (logger_) logger_->flush();
     }
 }
 
 thread
-NdnRtcComponent::startThread(boost::function<bool ()> threadFunc)
+MtNdnComponent::startThread(boost::function<bool ()> threadFunc)
 {
     thread threadObject = thread([threadFunc](){
         bool result = false;
@@ -88,7 +91,7 @@ NdnRtcComponent::startThread(boost::function<bool ()> threadFunc)
 }
 
 void
-NdnRtcComponent::stopThread(thread &threadObject)
+MtNdnComponent::stopThread(thread &threadObject)
 {
     threadObject.interrupt();
     
@@ -102,18 +105,19 @@ NdnRtcComponent::stopThread(thread &threadObject)
 }
 
 
-void NdnRtcComponent::scheduleJob(const unsigned int usecInterval,
+void
+MtNdnComponent::scheduleJob(const int id, const unsigned int usecInterval,
                                   boost::function<bool()> jobCallback)
 {
     boost::lock_guard<boost::recursive_mutex> scopedLock(this->jobMutex_);
-    
-    watchdogTimer_.expires_from_now(std::chrono::microseconds(usecInterval));
-    //watchdogTimer_.expires_from_now(boost::posix_time::milliseconds(usecInterval));
-    //watchdogTimer_.expires_from_now(boost::chrono::microseconds(usecInterval));
+
+    int64_t startTs = MtNdnUtils::microsecondTimestamp();
+    VLOG(LOG_WARN) << id << " start job " << startTs << std::endl;
+    watchdogTimer_.expires_from_now(boost::chrono::microseconds(usecInterval));
     isJobScheduled_ = true;
     isTimerCancelled_ = false;
     
-    watchdogTimer_.async_wait([this, usecInterval, jobCallback](const boost::system::error_code &code){
+    watchdogTimer_.async_wait([this, startTs, id, usecInterval, jobCallback](const boost::system::error_code &code){
         if (code != boost::asio::error::operation_aborted)
         {
             if (!isTimerCancelled_)
@@ -121,17 +125,20 @@ void NdnRtcComponent::scheduleJob(const unsigned int usecInterval,
                 isJobScheduled_ = false;
                 boost::lock_guard<boost::recursive_mutex> scopedLock(this->jobMutex_);
                 bool res = jobCallback();
+                int64_t cmpltTs = MtNdnUtils::microsecondTimestamp();
+                VLOG(LOG_WARN) << id << " cmplt job " << cmpltTs << " taking " << cmpltTs-startTs << std::endl;
                 if (res)
-                    this->scheduleJob(usecInterval, jobCallback);
+                    this->scheduleJob(id, usecInterval, jobCallback);
             }
         }
     });
 
 }
 
-void NdnRtcComponent::stopJob()
+void
+MtNdnComponent::stopJob()
 {
-    NdnUtils::performOnBackgroundThread([this]()->void{
+    MtNdnUtils::performOnBackgroundThread([this]()->void{
         boost::lock_guard<boost::recursive_mutex> scopedLock(jobMutex_);
         watchdogTimer_.cancel();
         isTimerCancelled_ = true;

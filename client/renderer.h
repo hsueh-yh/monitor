@@ -10,6 +10,8 @@ public:
     RendererInternal(QWidget *parent):
         renderBuffer_(nullptr),
         bufferSize_(0),
+        RGBbuf_(nullptr),
+        RGBbufSize_(0),
         parent_(parent),
         label_(new QLabel(parent_)),
         point_(0,0),
@@ -53,6 +55,9 @@ public:
 private:
     uint8_t *renderBuffer_;
     std::size_t bufferSize_;
+
+    uint8_t *RGBbuf_;
+    std::size_t RGBbufSize_;
 
     QWidget *parent_;
     QLabel *label_;

@@ -1,6 +1,6 @@
 #include "name-components.h"
-#include "namespacer.h"
-#include "utils.h"
+#include "mtndn-namespace.h"
+#include "mtndn-utils.h"
 
 // Name:  .../monitor/<location>/<streams>/video(audio)/<frameNumber>/<segmentNumber>/<PrefixMetaInfo>
 
@@ -9,7 +9,7 @@ const std::string NameComponents::NameComponentApp = "monitor";
 const std::string NameComponents::NameComponentStreamFrameVideo = "video";
 const std::string NameComponents::NameComponentStreamFrameAudio = "audio";
 const std::string NameComponents::NameComponentStreamMetainfo = "metainfo";
-const std::string NameComponents::NameComponentNalMetainfo = "naluType";
+const std::string NameComponents::NameComponentNalIdx = "naluType";
 //const std::string NameComponents::KeyComponent;
 //const std::string NameComponents::CertificateComponent;
 

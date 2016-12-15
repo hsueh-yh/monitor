@@ -1,6 +1,6 @@
 //
 //  jitter-timing.cpp
-//  ndnrtc
+//  mtndn
 //
 //  Created by Peter Gusev on 5/8/14.
 //  Copyright 2013-2015 Regents of the University of California
@@ -10,7 +10,7 @@
 #include <boost/thread/lock_guard.hpp>
 
 #include "jitter-timing.h"
-#include "utils.h"
+#include "mtndn-utils.h"
 #include "logger.h"
 
 using namespace std;
@@ -31,38 +31,36 @@ JitterTiming::~JitterTiming()
 void JitterTiming::flush()
 {
     resetData();
-    LOG(INFO) << "[JitterTiming] flushed" << std::endl;
+    VLOG(LOG_TRACE) << "[JitterTiming] flushed" << std::endl;
 }
 void JitterTiming::stop()
 {
     stopJob();
-    LOG(INFO) << "[JitterTiming] stopped" << std::endl;
+    VLOG(LOG_TRACE) << "[JitterTiming] stopped" << std::endl;
 }
 
 int64_t JitterTiming::startFramePlayout()
 {
-    int64_t processingStart = NdnUtils::microsecondTimestamp();
-    //LOG(INFO) << "[JitterTiming] [ proc start " << processingStart << endl;
+    int64_t processingStart = MtNdnUtils::microsecondTimestamp();
+    VLOG(LOG_TRACE) << "[JitterTiming] proc start " << processingStart << std::endl;
     
-    if (playoutTimestampUsec_ == 0)
+    if (prevPlayoutTsUsec_ == 0)
     {
-        playoutTimestampUsec_ = processingStart;
+        prevPlayoutTsUsec_ = processingStart;
     }
     else
     { // calculate processing delay from the previous iteration
-        int64_t prevIterationProcTimeUsec = processingStart -
-        playoutTimestampUsec_;
+        int64_t prevIterationProcTimeUsec = processingStart - prevPlayoutTsUsec_;
         
-        //LOG(INFO) << "[JitterTiming] . prev iter full time " << prevIterationProcTimeUsec << endl;
-        
+        VLOG(LOG_TRACE) << "[JitterTiming] prev iter full time " << prevIterationProcTimeUsec << std::endl;
+
         // substract frame playout delay
         if (prevIterationProcTimeUsec >= framePlayoutTimeMs_*1000)
             prevIterationProcTimeUsec -= framePlayoutTimeMs_*1000;
-        else
-            // should not occur!
+        else // should not occur!
         {
             /*
-            LOG(INFO) << "[JitterTiming] assertion failed: "
+            VLOG(LOG_TRACE) << "[JitterTiming] assertion failed: "
             << "prevIterationProcTimeUsec ("
             << prevIterationProcTimeUsec << ") < framePlayoutTimeMs_*1000"
             << "(" << framePlayoutTimeMs_*1000 << ")" << endl;
@@ -70,37 +68,38 @@ int64_t JitterTiming::startFramePlayout()
             assert(0);
         }
         
-        //LOG(INFO) << "[JitterTiming] . prev iter proc time " << prevIterationProcTimeUsec << endl;
+        VLOG(LOG_TRACE) << "[JitterTiming] prev iter proc time " << prevIterationProcTimeUsec << std::endl;
         
         // add this time to the average processing time
         processingTimeUsec_ += prevIterationProcTimeUsec;
-        //LOG(INFO) << "[JitterTiming] . total proc time " << processingTimeUsec_ << endl;
+
+        VLOG(LOG_TRACE) << "[JitterTiming] total proc time " << processingTimeUsec_ << std::endl;
         
-        playoutTimestampUsec_ = processingStart;
+        prevPlayoutTsUsec_ = processingStart;
     }
     
-    return playoutTimestampUsec_;
+    return prevPlayoutTsUsec_;
 }
 
 void JitterTiming::updatePlayoutTime(int framePlayoutTime, PacketNumber packetNo)
 {
-    //LOG(INFO) << "[JitterTiming] . packet " << packetNo << " playout time " << framePlayoutTime << endl;
+    VLOG(LOG_TRACE) << "[JitterTiming] packet " << packetNo << " playout time " << framePlayoutTime << std::endl;
     
     int playoutTimeUsec = framePlayoutTime*1000;
     if (playoutTimeUsec < 0) playoutTimeUsec = 0;
     
     if (processingTimeUsec_ >= 1000)
     {
-        //LOG(INFO) << "[JitterTiming] . absorb proc time " << processingTimeUsec_ << endl;
+        VLOG(LOG_TRACE) << "[JitterTiming] absorb proc time " << processingTimeUsec_ << std::endl;
         
         int processingUsec = (processingTimeUsec_/1000)*1000;
         
-        //LOG(INFO) << "[JitterTiming] . proc absorb part " << processingUsec << endl;
+        VLOG(LOG_TRACE) << "[JitterTiming] proc absorb part " << processingUsec << std::endl;
         
         if (processingUsec > playoutTimeUsec)
         {
-            //LOG(INFO) << "[JitterTiming] . skip frame. proc " << processingUsec
-            //<< " playout " << playoutTimeUsec << endl;
+            VLOG(LOG_TRACE) << "[JitterTiming] skip frame. proc " << processingUsec
+            << " playout " << playoutTimeUsec << std::endl;
             
             processingUsec = playoutTimeUsec;
             playoutTimeUsec = 0;
@@ -109,8 +108,8 @@ void JitterTiming::updatePlayoutTime(int framePlayoutTime, PacketNumber packetNo
             playoutTimeUsec -= processingUsec;
         
         processingTimeUsec_ = processingTimeUsec_ - processingUsec;
-        //LOG(INFO) << "[JitterTiming]. playout usec " << playoutTimeUsec
-        //<< " total proc " << processingTimeUsec_ << endl;
+        VLOG(LOG_TRACE) << "[JitterTiming] playout usec " << playoutTimeUsec
+                  << "us, total proc " << processingTimeUsec_ << "us" << std::endl;
     }
     
     framePlayoutTimeMs_ = playoutTimeUsec/1000;
@@ -119,10 +118,12 @@ void JitterTiming::updatePlayoutTime(int framePlayoutTime, PacketNumber packetNo
 void JitterTiming::run(boost::function<void()> callback)
 {
     assert(framePlayoutTimeMs_ >= 0);
-    
-    LOG(INFO) << "[JitterTiming] . timer wait " << framePlayoutTimeMs_ << endl;
-    
-    scheduleJob(framePlayoutTimeMs_*1000, [this, callback]()->bool{
+    //int64_t now = MtNdnUtils::microsecondTimestamp();
+    VLOG(LOG_TRACE) << "[JitterTiming] timer wait " << framePlayoutTimeMs_ << "ms ... "
+              << MtNdnUtils::microsecondTimestamp() << std::endl;
+    //std::cout << "jt " << now << std::endl;
+    //LOG(WARNING) << "[JT] " << MtNdnUtils::microsecondTimestamp();
+    scheduleJob(2, framePlayoutTimeMs_*1000, [this, callback]()->bool{
         callback();
         return false;
     });
@@ -133,5 +134,5 @@ void JitterTiming::resetData()
 {
     framePlayoutTimeMs_ = 0;
     processingTimeUsec_ = 0;
-    playoutTimestampUsec_ = 0;
+    prevPlayoutTsUsec_ = 0;
 }

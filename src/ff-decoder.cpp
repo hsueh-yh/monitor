@@ -1,7 +1,7 @@
 
-#include "decoder.h"
+#include "ff-decoder.h"
 #include "logger.h"
-#include "utils.h"
+#include "mtndn-utils.h"
 
 Decoder::Decoder(void)
     : pdecoder(NULL)
@@ -161,18 +161,19 @@ int Decoder::decode( AVPacket &encodedImage )
     av_init_packet(&encodedImage);
 
     //NdnUtils::printMem("ffdecoderMem", encodedImage.data, 20);
-    LOG(INFO) << m_width << " " << m_height << " "
-              << pdecContext->refcounted_frames << endl;
 
     ret = avcodec_decode_video2(pdecContext, pDecodedFrame, &got_frame, &encodedImage);
 
-    if ( got_frame!=0 && callback_ != nullptr )
+    if ( got_frame!=0 )
     {
+        /*
         LOG(INFO) << "AVFrame: "
                   << pDecodedFrame->linesize[0] << " "
                   << pDecodedFrame->linesize[1] << " "
                   << pDecodedFrame->linesize[2] << " "
                   << std::endl;
+        */
+        if( callback_ != nullptr )
         callback_->onDecoded(*pDecodedFrame);
     }
 

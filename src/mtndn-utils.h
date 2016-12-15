@@ -1,6 +1,6 @@
 //
-//  ndnrtc-utils.h
-//  ndnrtc
+//  mtndn-mtndn-utils.h
+//  mtndn
 //
 //  Copyright 2013 Regents of the University of California
 //  For licensing details see the LICENSE file.
@@ -20,6 +20,8 @@
 
 #include <sstream>
 
+#include "include/params.h"
+
 #define STR(exp) (#exp)
 
 using namespace boost;
@@ -28,7 +30,7 @@ using namespace ndn;
 
 class FaceProcessor;
 
-class NdnUtils {
+class MtNdnUtils {
 
 public:
     static unsigned int getSegmentsNumber(unsigned int segmentSize, unsigned int dataSize);
@@ -54,7 +56,7 @@ public:
     static void performOnBackgroundThread(boost::function<void(void)> dispatchBlock,
                                            boost::function<void(void)> onCompletion = boost::function<void(void)>());
 
-    static void createLibFace(const std::string host, const int port/*const new_api::GeneralParams &params*/);
+    static void createLibFace(const GeneralParams &generalParams);
     static ptr_lib::shared_ptr<FaceProcessor> getLibFace();
     static void destroyLibFace();
 

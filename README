@@ -13,4 +13,4 @@
     controler.cpp->line:4, #define HOST
 
 5.终端打印调试信息: (打印Pareto,zipf随机数, 查看发送的Interest和收到的Data, 显示的帧)
-    common.h->line:4, #define  __SHOW_CONSOLE_
+    mtndn-common.h->line:4, #define  __SHOW_CONSOLE_

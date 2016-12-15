@@ -15,7 +15,7 @@
 #include <ndn-cpp/name.hpp>
 #include <ndn-cpp/data.hpp>
 
-#include "common.h"
+#include "mtndn-common.h"
 #include "frame-buffer.h"
 #include "face-wrapper.h"
 #include "statistics.h"

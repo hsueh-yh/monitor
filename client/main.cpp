@@ -9,8 +9,7 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 
-#include "controler.h"
-#include "logger.h"
+#include "include/logger.h"
 
 
 std::string createLogDir( const char *root )

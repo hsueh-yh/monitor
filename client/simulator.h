@@ -3,7 +3,10 @@
 #include <math.h>
 #include <time.h>
 #include <iostream>
-#include "src/common.h"
+#include <sstream>
+//#include "mtndn-common.h"
+
+using namespace std;
 
 #ifndef _SIMULATOR_H_
 #define _SIMULATOR_H_

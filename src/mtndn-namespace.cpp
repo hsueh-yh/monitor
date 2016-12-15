@@ -1,5 +1,5 @@
 #include <stdarg.h>
-#include "namespacer.h"
+#include "mtndn-namespace.h"
 
 
 // Name:  .../monitor/<location>/<streams>/video(audio)/<frameNumber>/<segmentNumber>/<PrefixMetaInfo>
@@ -129,14 +129,14 @@ Namespacer::getSegmentationNumbers(const ndn::Name &prefix,
         if (p+1 < prefix.size())
         {
             Name::Component packetNoComp = prefix.get(p+1);
-            packetNumber = NdnUtils::frameNumber(packetNoComp);
+            packetNumber = MtNdnUtils::frameNumber(packetNoComp);
         }
 
         if (p+2 < prefix.size())
         {
             Name::Component segmentNoComp = prefix.get(p+2);
             segmentNumber = segmentNoComp.toNumber();
-            segmentNumber = NdnUtils::frameNumber(segmentNoComp);
+            segmentNumber = MtNdnUtils::frameNumber(segmentNoComp);
         }
     }
 }
@@ -155,7 +155,7 @@ Namespacer::getPacketNumber(const ndn::Name &prefix,
         if (p+1 < prefix.size())
         {
             Name::Component packetNoComp = prefix.get(p+1);
-            packetNumber = NdnUtils::frameNumber(packetNoComp);
+            packetNumber = MtNdnUtils::frameNumber(packetNoComp);
         }
     }
 }
@@ -177,7 +177,7 @@ Namespacer::getFrameNumber(const ndn::Name &prefix,
         if (p+1 < prefix.size())
         {
             Name::Component packetNoComp = prefix.get(p+1);
-            packetNumber = NdnUtils::frameNumber(packetNoComp);
+            packetNumber = MtNdnUtils::frameNumber(packetNoComp);
         }
     }
 }
@@ -201,7 +201,7 @@ Namespacer::getSegmentNumber(const ndn::Name &prefix,
         {
             Name::Component segmentNoComp = prefix.get(p+2);
             segmentNumber = segmentNoComp.toNumber();
-            segmentNumber = NdnUtils::segmentNumber(segmentNoComp);
+            segmentNumber = MtNdnUtils::segmentNumber(segmentNoComp);
         }
     }
 }
@@ -223,18 +223,18 @@ Namespacer::getPrefixMetaInfo(const ndn::Name &prefix,
         if (p+3 < prefix.size())
         {
             Name::Component packetNoComp = prefix.get(p+3);
-            prefixMetaInfo.totalSegmentNum_ = NdnUtils::intFromComponent(packetNoComp);
+            prefixMetaInfo.totalSegmentNum_ = MtNdnUtils::intFromComponent(packetNoComp);
         }
 
         if (p+4 < prefix.size())
         {
             Name::Component segmentNoComp = prefix.get(p+4);
-            prefixMetaInfo.playbackNo_ = NdnUtils::intFromComponent(segmentNoComp);
+            prefixMetaInfo.playbackNo_ = MtNdnUtils::intFromComponent(segmentNoComp);
         }
         if (p+5 < prefix.size())
         {
             Name::Component segmentNoComp = prefix.get(p+5);
-            prefixMetaInfo.deltaFrameNo_ = NdnUtils::intFromComponent(segmentNoComp);
+            prefixMetaInfo.deltaFrameNo_ = MtNdnUtils::intFromComponent(segmentNoComp);
         }
     }
 }
@@ -253,7 +253,7 @@ Namespacer::getMetaNumber(const ndn::Name &prefix,
         if (p+1 < prefix.size())
         {
             Name::Component packetNoComp = prefix.get(p+2);
-            packetNumber = NdnUtils::frameNumber(packetNoComp);
+            packetNumber = MtNdnUtils::frameNumber(packetNoComp);
         }
     }
 }

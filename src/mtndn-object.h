@@ -1,6 +1,6 @@
 //
-//  ndnrtc-object.h
-//  ndnrtc
+//  mtndn-mtndn-object.h
+//  mtndn
 //
 //  Copyright 2013 Regents of the University of California
 //  For licensing details see the LICENSE file.
@@ -18,30 +18,31 @@
 #include <boost/asio/steady_timer.hpp>
 #include <boost/thread/recursive_mutex.hpp>
 #include <boost/enable_shared_from_this.hpp>
-#include <boost/atomic.hpp>
+
+#include "mtndn-utils.h"
 
 
-class INdnRtcComponentCallback {
+class IMtNdnComponentCallback {
 public:
-    virtual ~INdnRtcComponentCallback(){}
+    virtual ~IMtNdnComponentCallback(){}
     virtual void onError(const char *errorMessage,
                             const int errorCode = -1) = 0;
 };
         
-class NdnRtcComponent :
-		public INdnRtcComponentCallback,
-        public boost::enable_shared_from_this<NdnRtcComponent>
+class MtNdnComponent :
+        public IMtNdnComponentCallback,
+        public boost::enable_shared_from_this<MtNdnComponent>
 {
 public:
     // construction/desctruction
-    NdnRtcComponent();
+    MtNdnComponent(boost::asio::io_service &ioservice = MtNdnUtils::getIoService());
 
-    NdnRtcComponent(INdnRtcComponentCallback *callback);
+    MtNdnComponent(IMtNdnComponentCallback *callback);
 
-    virtual ~NdnRtcComponent();
+    virtual ~MtNdnComponent();
 
 
-    virtual void registerCallback(INdnRtcComponentCallback *callback)
+    virtual void registerCallback(IMtNdnComponentCallback *callback)
     { callback_ = callback; }
 
     virtual void deregisterCallback()
@@ -54,7 +55,7 @@ protected:
     boost::atomic<bool> isJobScheduled_;
     boost::mutex callbackMutex_;
     boost::recursive_mutex jobMutex_;
-    INdnRtcComponentCallback *callback_ = nullptr;
+    IMtNdnComponentCallback *callback_ = nullptr;
             
 
     // protected methods go here
@@ -66,7 +67,7 @@ protected:
     stopThread(boost::thread &thread);
 
     void
-    scheduleJob(const unsigned int usecInterval,
+    scheduleJob(const int id, const unsigned int usecInterval,
                         boost::function<bool()> jobCallback);
     void
     stopJob();

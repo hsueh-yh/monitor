@@ -1,6 +1,6 @@
 //
 //  playout.h
-//  ndnrtc
+//  mtndn
 //
 //  Copyright 2013 Regents of the University of California
 //  For licensing details see the LICENSE file.
@@ -12,7 +12,7 @@
 #ifndef _playout_
 #define _playout_
 
-#include "object.h"
+#include "mtndn-object.h"
 #include "frame-buffer.h"
 #include "jitter-timing.h"
 
@@ -26,7 +26,7 @@ class Consumer;
   *routine each time playout timer fires. Necessary information is
   *provided as arguments to the method.
  */
-class Playout : public NdnRtcComponent
+class Playout : public MtNdnComponent
 {
 public:
     static const int BufferCheckInterval;
@@ -52,7 +52,7 @@ public:
     { playbackAdjustment_ = playbackAdjustment; }
 
 protected:
-    int consumerId_;
+
     bool isRunning_;
 
     bool isInferredPlayback_;
@@ -95,8 +95,9 @@ protected:
     bool
     processPlayout();
 
+    // update playout time if previous was inffered
     void
-    updatePlaybackAdjustment();
+    updatePlaybackAdjustment(int64_t ts);
 
     int
     playbackDelayAdjustment(int playbackDelay);
@@ -104,11 +105,10 @@ protected:
 /*
     int
     avSyncAdjustment(int64_t nowTimestamp, int playbackDelay);
-
+*/
     void
     checkBuffer();
-*/
 
 };
 
-#endif /*defined(__ndnrtc__playout__) */
+#endif /*defined(__mtndn__playout__) */

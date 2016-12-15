@@ -18,7 +18,7 @@
 class MMNdnLibrary {
 public:
     /**
-      *Returns a reference to the singleton instance of NdnRtcLirary class
+      *Returns a reference to the singleton instance of MtNdnLirary class
      */
     static IMMNdnLibrary &getSharedInstance();
 

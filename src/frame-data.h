@@ -1,6 +1,6 @@
 //
 //  frame-data.h
-//  ndnrtc
+//  mtndn
 //
 //  Copyright 2013 Regents of the University of California
 //  For licensing details see the LICENSE file.
@@ -13,7 +13,7 @@
 
 #include <ndn-cpp/name.hpp>
 
-#include "common.h"
+#include "mtndn-common.h"
 
 
 /**

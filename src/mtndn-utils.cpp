@@ -1,6 +1,6 @@
 //
-//  ndnrtc-utils.cpp
-//  ndnrtc
+//  mtndn-utils.cpp
+//  mtndn
 //
 //  Copyright 2013 Regents of the University of California
 //  For licensing details see the LICENSE file.
@@ -17,6 +17,7 @@
 #include <boost/asio.hpp>
 
 #include "face-wrapper.h"
+#include "logger.h"
 
 using namespace std;
 
@@ -77,7 +78,7 @@ typedef struct _SlidingAverage {
 
 //********************************************************************************
 
-static boost::asio::io_service *NdnRtcIoService;
+static boost::asio::io_service *MtNdnIoService;
 static ptr_lib::shared_ptr<FaceProcessor> LibraryFace;
 
 /*
@@ -92,62 +93,80 @@ static VoiceEngine *VoiceEngineInstance = NULL;
 */
 
 static boost::thread backgroundThread;
+//boost::thread_group bkgrp;
+static boost::thread backgroundThread1;
 static boost::shared_ptr<boost::asio::io_service::work> backgroundWork;
 
 static ptr_lib::shared_ptr<KeyChain> DefaultKeyChain(new KeyChain());
 
 //void initVE();
 void resetThread();
+void resetThread1();
 
 //******************************************************************************
-void NdnUtils::setIoService(boost::asio::io_service &ioService)
+void
+MtNdnUtils::setIoService(boost::asio::io_service &ioService)
 {
-    NdnRtcIoService = &ioService;
+    MtNdnIoService = &ioService;
 }
 
-boost::asio::io_service &NdnUtils::getIoService()
+boost::asio::io_service &
+MtNdnUtils::getIoService()
 {
-    return *NdnRtcIoService;
+    return *MtNdnIoService;
 }
 
-void NdnUtils::startBackgroundThread()
+void
+MtNdnUtils::startBackgroundThread()
 {
-    if (!NdnRtcIoService)
+    VLOG(LOG_DEBUG) << "startBackgroundThread "
+                 << boost::this_thread::get_id() << std::endl;
+    if (!MtNdnIoService)
         return;
 
     if (!backgroundWork.get() &&
         backgroundThread.get_id() == boost::thread::id())
     {
-        backgroundWork.reset(new boost::asio::io_service::work(*NdnRtcIoService));
+        backgroundWork.reset(new boost::asio::io_service::work(*MtNdnIoService));
         resetThread();
+        resetThread1();
     }
 }
 
-void NdnUtils::stopBackgroundThread()
+void
+MtNdnUtils::stopBackgroundThread()
 {
     if (backgroundWork.get())
     {
         backgroundWork.reset();
-        (*NdnRtcIoService).stop();
+        (*MtNdnIoService).stop();
         backgroundThread = boost::thread();
 
         if (!isBackgroundThread())
             backgroundThread.try_join_for(boost::chrono::milliseconds(500));
+        VLOG(LOG_DEBUG) << "stopBackgroundThread "
+                     << boost::this_thread::get_id() << std::endl;
     }
 }
 
-bool NdnUtils::isBackgroundThread()
+bool
+MtNdnUtils::isBackgroundThread()
 {
     return (boost::this_thread::get_id() == backgroundThread.get_id());
 }
 
-void NdnUtils::dispatchOnBackgroundThread(boost::function<void(void)> dispatchBlock,
+void
+MtNdnUtils::dispatchOnBackgroundThread(boost::function<void(void)> dispatchBlock,
                                         boost::function<void(void)> onCompletion)
 {
     if (backgroundWork.get())
     {
-        (*NdnRtcIoService).dispatch([=]{
+        (*MtNdnIoService).dispatch([=]{
+            VLOG(LOG_TRACE) << "dispatchOnBackgroundThread "
+                         << boost::this_thread::get_id() << std::endl;
             dispatchBlock();
+            VLOG(LOG_TRACE) << "dispatchOnBackgroundThread done "
+                         << boost::this_thread::get_id() << std::endl;
             if (onCompletion)
                 onCompletion();
         });
@@ -158,14 +177,19 @@ void NdnUtils::dispatchOnBackgroundThread(boost::function<void(void)> dispatchBl
     }
 }
 
-void NdnUtils::performOnBackgroundThread(boost::function<void(void)> dispatchBlock,
+void
+MtNdnUtils::performOnBackgroundThread(boost::function<void(void)> dispatchBlock,
                                              boost::function<void(void)> onCompletion)
 {
     if (backgroundWork.get())
     {
         if (boost::this_thread::get_id() == backgroundThread.get_id())
         {
+            VLOG(LOG_DEBUG) << "performOnBackgroundThread dispatch "
+                         << boost::this_thread::get_id() << std::endl;
             dispatchBlock();
+            VLOG(LOG_DEBUG) << "performOnBackgroundThread dispatch done "
+                         << boost::this_thread::get_id() << std::endl;
             if (onCompletion)
                 onCompletion();
         }
@@ -175,8 +199,13 @@ void NdnUtils::performOnBackgroundThread(boost::function<void(void)> dispatchBlo
             boost::unique_lock<boost::mutex> lock(m);
             boost::condition_variable isDone;
 
-            (*NdnRtcIoService).post([dispatchBlock, onCompletion, &isDone]{
+            (*MtNdnIoService).post([dispatchBlock, onCompletion, &isDone]{
+                VLOG(LOG_DEBUG) << "performOnBackgroundThread post "
+                             << boost::this_thread::get_id() << std::endl;
                 dispatchBlock();
+
+                VLOG(LOG_DEBUG) << "performOnBackgroundThread post done "
+                             << boost::this_thread::get_id() << std::endl;
                 if (onCompletion)
                     onCompletion();
                 isDone.notify_one();
@@ -187,61 +216,67 @@ void NdnUtils::performOnBackgroundThread(boost::function<void(void)> dispatchBlo
     }
     else
     {
-        throw std::runtime_error("this is not supposed to happen. bg thread is dead already");
+        throw std::runtime_error(" this is not supposed to happen. bg thread is dead already");
     }
 }
 
-void NdnUtils::createLibFace(const std::string host, const int port/*const new_api::GeneralParams &generalParams*/)
+void
+MtNdnUtils::createLibFace(const GeneralParams &generalParams)
 {
     //std::cout<<"creating libFace..." << std::endl;
     if (!LibraryFace.get() ||
         (LibraryFace.get() &&LibraryFace->getTransport()->getIsConnected() == false))
     {
-        //LogInfo(LIB_LOG) << "Creating library Face..." << std::endl;
+        //LogWARNING(LIB_LOG) << "Creating library Face..." << std::endl;
 
-        LibraryFace = FaceProcessor::createFaceProcessor(host,port,DefaultKeyChain);
-                //(generalParams.host_, generalParams.portNum_, NdnRtcNamespace::defaultKeyChain());
+        LibraryFace = FaceProcessor::createFaceProcessor(generalParams.host_,generalParams.portNum_,DefaultKeyChain);
+                //(generalParams.host_, generalParams.portNum_, MtNdnNamespace::defaultKeyChain());
 
         //std::cout<<"starting libFace..." << std::endl;
-        LibraryFace->startProcessing(10);
+        LibraryFace->startProcessing();
 
-        //LogInfo(LIB_LOG) << "Library Face created" << std::endl;
+        //LogWARNING(LIB_LOG) << "Library Face created" << std::endl;
     }
 }
 
-ptr_lib::shared_ptr<FaceProcessor> NdnUtils::getLibFace()
+ptr_lib::shared_ptr<FaceProcessor>
+MtNdnUtils::getLibFace()
 {
     return LibraryFace;
 }
 
-void NdnUtils::destroyLibFace()
+void
+MtNdnUtils::destroyLibFace()
 {
     if (LibraryFace.get())
     {
-        //LogInfo(LIB_LOG) << "Stopping library Face..." << std::endl;
+        //LogWARNING(LIB_LOG) << "Stopping library Face..." << std::endl;
         LibraryFace->stopProcessing();
         LibraryFace.reset();
-        //LogInfo(LIB_LOG) << "Library face stopped" << std::endl;
+        //LogWARNING(LIB_LOG) << "Library face stopped" << std::endl;
     }
 }
 
 //******************************************************************************
 
-uint32_t NdnUtils::generateNonceValue()
+uint32_t
+MtNdnUtils::generateNonceValue()
 {
     uint32_t nonce = (uint32_t)std::rand();
 
     return nonce;
 }
 
-Blob NdnUtils::nonceToBlob(const uint32_t nonceValue)
+Blob
+MtNdnUtils::nonceToBlob(const uint32_t nonceValue)
 {
     uint32_t beValue = htobe32(nonceValue);
     Blob b((uint8_t *)&beValue, sizeof(uint32_t));
     return b;
 }
 
-uint32_t NdnUtils::blobToNonce(const ndn::Blob &blob)
+uint32_t
+MtNdnUtils::blobToNonce(const ndn::Blob &blob)
 {
     if (blob.size() < sizeof(uint32_t))
         return 0;
@@ -251,12 +286,14 @@ uint32_t NdnUtils::blobToNonce(const ndn::Blob &blob)
 }
 
 
-unsigned int NdnUtils::getSegmentsNumber(unsigned int segmentSize, unsigned int dataSize)
+unsigned int
+MtNdnUtils::getSegmentsNumber(unsigned int segmentSize, unsigned int dataSize)
 {
     return (unsigned int)ceil((float)dataSize/(float)segmentSize);
 }
 
-int NdnUtils::segmentNumber(const Name::Component &segmentNoComponent)
+int
+MtNdnUtils::segmentNumber(const Name::Component &segmentNoComponent)
 {
     std::vector<unsigned char> bytes = *segmentNoComponent.getValue();
     int bytesLength = segmentNoComponent.getValue().size();
@@ -271,12 +308,14 @@ int NdnUtils::segmentNumber(const Name::Component &segmentNoComponent)
     return result;
 }
 
-int NdnUtils::frameNumber(const Name::Component &frameNoComponent)
+int
+MtNdnUtils::frameNumber(const Name::Component &frameNoComponent)
 {
-    return NdnUtils::intFromComponent(frameNoComponent);
+    return MtNdnUtils::intFromComponent(frameNoComponent);
 }
 
-int NdnUtils::intFromComponent(const Name::Component &comp)
+int
+MtNdnUtils::intFromComponent(const Name::Component &comp)
 {
     std::vector<unsigned char> bytes = *comp.getValue();
     int valueLength = comp.getValue().size();
@@ -295,7 +334,8 @@ int NdnUtils::intFromComponent(const Name::Component &comp)
     return result;
 }
 
-Name::Component NdnUtils::componentFromInt(unsigned int number)
+Name::Component
+MtNdnUtils::componentFromInt(unsigned int number)
 {
     stringstream ss;
 
@@ -307,28 +347,32 @@ Name::Component NdnUtils::componentFromInt(unsigned int number)
 }
 
 // monotonic clock
-int64_t NdnUtils::millisecondTimestamp()
+int64_t
+MtNdnUtils::millisecondTimestamp()
 {
     milliseconds msec = duration_cast<milliseconds>(steady_clock::now().time_since_epoch());
     return msec.count();
 }
 
 // monotonic clock
-int64_t NdnUtils::microsecondTimestamp()
+int64_t
+MtNdnUtils::microsecondTimestamp()
 {
     microseconds usec = duration_cast<microseconds>(steady_clock::now().time_since_epoch());
     return usec.count();
 }
 
 // monotonic clock
-int64_t NdnUtils::nanosecondTimestamp()
+int64_t
+MtNdnUtils::nanosecondTimestamp()
 {
     boost::chrono::nanoseconds nsec = boost::chrono::steady_clock::now().time_since_epoch();
     return nsec.count();
 }
 
 // system clock
-double NdnUtils::unixTimestamp()
+double
+MtNdnUtils::unixTimestamp()
 {
     auto now = boost::chrono::system_clock::now().time_since_epoch();
     boost::chrono::duration<double> sec = now;
@@ -336,13 +380,15 @@ double NdnUtils::unixTimestamp()
 }
 
 // system clock
-int64_t NdnUtils::millisecSinceEpoch()
+int64_t
+MtNdnUtils::millisecSinceEpoch()
 {
     milliseconds msec = duration_cast<milliseconds>(system_clock::now().time_since_epoch());
     return msec.count();
 }
 
-void NdnUtils::printMem( char msg[], const unsigned char *startBuf, std::size_t size )
+void
+MtNdnUtils::printMem( char msg[], const unsigned char *startBuf, std::size_t size )
 {
     unsigned char *buf = const_cast<unsigned char*>(startBuf);
     printf("\n[%s] size = %ld   addr:[ %p ~ %p ]\n",
@@ -364,7 +410,7 @@ void NdnUtils::printMem( char msg[], const unsigned char *startBuf, std::size_t 
 /*
  *
 //******************************************************************************
-unsigned int NdnRtcUtils::setupFrequencyMeter(unsigned int granularity)
+unsigned int MtNdnUtils::setupFrequencyMeter(unsigned int granularity)
 {
     FrequencyMeter meter = {1000./(double)granularity, 0, 0., 0, 0};
     meter.avgEstimatorId_ = setupSlidingAverageEstimator(granularity);
@@ -374,7 +420,7 @@ unsigned int NdnRtcUtils::setupFrequencyMeter(unsigned int granularity)
     return freqMeters_.size()-1;
 }
 
-void NdnRtcUtils::frequencyMeterTick(unsigned int meterId)
+void MtNdnUtils::frequencyMeterTick(unsigned int meterId)
 {
     if (meterId >= freqMeters_.size())
         return;
@@ -399,7 +445,7 @@ void NdnRtcUtils::frequencyMeterTick(unsigned int meterId)
         }
 }
 
-double NdnRtcUtils::currentFrequencyMeterValue(unsigned int meterId)
+double MtNdnUtils::currentFrequencyMeterValue(unsigned int meterId)
 {
     if (meterId >= freqMeters_.size())
         return 0.;
@@ -409,7 +455,7 @@ double NdnRtcUtils::currentFrequencyMeterValue(unsigned int meterId)
     return currentSlidingAverageValue(meter.avgEstimatorId_);
 }
 
-void NdnRtcUtils::releaseFrequencyMeter(unsigned int meterId)
+void MtNdnUtils::releaseFrequencyMeter(unsigned int meterId)
 {
     if (meterId >= freqMeters_.size())
         return;
@@ -418,17 +464,17 @@ void NdnRtcUtils::releaseFrequencyMeter(unsigned int meterId)
 }
 
 //******************************************************************************
-unsigned int NdnRtcUtils::setupDataRateMeter(unsigned int granularity)
+unsigned int MtNdnUtils::setupDataRateMeter(unsigned int granularity)
 {
     DataRateMeter meter = {1000./(double)granularity, 0, 0., 0, 0};
-    meter.avgEstimatorId_ = NdnRtcUtils::setupSlidingAverageEstimator(10);
+    meter.avgEstimatorId_ = MtNdnUtils::setupSlidingAverageEstimator(10);
 
     dataMeters_.push_back(meter);
 
     return dataMeters_.size()-1;
 }
 
-void NdnRtcUtils::dataRateMeterMoreData(unsigned int meterId,
+void MtNdnUtils::dataRateMeterMoreData(unsigned int meterId,
                                         unsigned int dataSize)
 {
     if (meterId >= dataMeters_.size())
@@ -454,7 +500,7 @@ void NdnRtcUtils::dataRateMeterMoreData(unsigned int meterId,
         }
 }
 
-double NdnRtcUtils::currentDataRateMeterValue(unsigned int meterId)
+double MtNdnUtils::currentDataRateMeterValue(unsigned int meterId)
 {
     if (meterId >= dataMeters_.size())
         return 0.;
@@ -463,7 +509,7 @@ double NdnRtcUtils::currentDataRateMeterValue(unsigned int meterId)
     return currentSlidingAverageValue(meter.avgEstimatorId_);
 }
 
-void NdnRtcUtils::releaseDataRateMeter(unsigned int meterId)
+void MtNdnUtils::releaseDataRateMeter(unsigned int meterId)
 {
     if (meterId >- dataMeters_.size())
         return;
@@ -472,7 +518,7 @@ void NdnRtcUtils::releaseDataRateMeter(unsigned int meterId)
 }
 
 //******************************************************************************
-unsigned int NdnRtcUtils::setupMeanEstimator(unsigned int sampleSize,
+unsigned int MtNdnUtils::setupMeanEstimator(unsigned int sampleSize,
                                              double startValue)
 {
     MeanEstimator meanEstimator = {sampleSize, 0, startValue, startValue, startValue, 0., 0., startValue, 0.};
@@ -482,7 +528,7 @@ unsigned int NdnRtcUtils::setupMeanEstimator(unsigned int sampleSize,
     return meanEstimators_.size()-1;
 }
 
-void NdnRtcUtils::meanEstimatorNewValue(unsigned int estimatorId, double value)
+void MtNdnUtils::meanEstimatorNewValue(unsigned int estimatorId, double value)
 {
     if (estimatorId >= meanEstimators_.size())
         return ;
@@ -524,7 +570,7 @@ void NdnRtcUtils::meanEstimatorNewValue(unsigned int estimatorId, double value)
     estimator.prevValue_ = value;
 }
 
-double NdnRtcUtils::currentMeanEstimation(unsigned int estimatorId)
+double MtNdnUtils::currentMeanEstimation(unsigned int estimatorId)
 {
     if (estimatorId >= meanEstimators_.size())
         return 0;
@@ -534,7 +580,7 @@ double NdnRtcUtils::currentMeanEstimation(unsigned int estimatorId)
     return estimator.currentMean_;
 }
 
-double NdnRtcUtils::currentDeviationEstimation(unsigned int estimatorId)
+double MtNdnUtils::currentDeviationEstimation(unsigned int estimatorId)
 {
     if (estimatorId >= meanEstimators_.size())
         return 0;
@@ -544,7 +590,7 @@ double NdnRtcUtils::currentDeviationEstimation(unsigned int estimatorId)
     return estimator.currentDeviation_;
 }
 
-void NdnRtcUtils::releaseMeanEstimator(unsigned int estimatorId)
+void MtNdnUtils::releaseMeanEstimator(unsigned int estimatorId)
 {
     if (estimatorId >= meanEstimators_.size())
         return ;
@@ -552,7 +598,7 @@ void NdnRtcUtils::releaseMeanEstimator(unsigned int estimatorId)
     // nothing
 }
 
-void NdnRtcUtils::resetMeanEstimator(unsigned int estimatorId)
+void MtNdnUtils::resetMeanEstimator(unsigned int estimatorId)
 {
     if (estimatorId >= meanEstimators_.size())
         return ;
@@ -565,7 +611,7 @@ void NdnRtcUtils::resetMeanEstimator(unsigned int estimatorId)
 }
 
 //******************************************************************************
-unsigned int NdnRtcUtils::setupSlidingAverageEstimator(unsigned int sampleSize)
+unsigned int MtNdnUtils::setupSlidingAverageEstimator(unsigned int sampleSize)
 {
     SlidingAverage slidingAverage;
 
@@ -583,7 +629,7 @@ unsigned int NdnRtcUtils::setupSlidingAverageEstimator(unsigned int sampleSize)
     return slidingAverageEstimators_.size()-1;
 }
 
-double NdnRtcUtils::slidingAverageEstimatorNewValue(unsigned int estimatorId, double value)
+double MtNdnUtils::slidingAverageEstimatorNewValue(unsigned int estimatorId, double value)
 {
     if (estimatorId >= slidingAverageEstimators_.size())
         return 0.;
@@ -612,7 +658,7 @@ double NdnRtcUtils::slidingAverageEstimatorNewValue(unsigned int estimatorId, do
     return oldValue;
 }
 
-double NdnRtcUtils::currentSlidingAverageValue(unsigned int estimatorId)
+double MtNdnUtils::currentSlidingAverageValue(unsigned int estimatorId)
 {
     if (estimatorId >= slidingAverageEstimators_.size())
         return 0;
@@ -621,7 +667,7 @@ double NdnRtcUtils::currentSlidingAverageValue(unsigned int estimatorId)
     return estimator.currentAverage_;
 }
 
-double NdnRtcUtils::currentSlidingDeviationValue(unsigned int estimatorId)
+double MtNdnUtils::currentSlidingDeviationValue(unsigned int estimatorId)
 {
     if (estimatorId >= slidingAverageEstimators_.size())
         return 0;
@@ -630,7 +676,7 @@ double NdnRtcUtils::currentSlidingDeviationValue(unsigned int estimatorId)
     return estimator.currentDeviation_;
 }
 
-void NdnRtcUtils::resetSlidingAverageEstimator(unsigned int estimatorID)
+void MtNdnUtils::resetSlidingAverageEstimator(unsigned int estimatorID)
 {
     if (estimatorID >= slidingAverageEstimators_.size())
         return ;
@@ -643,14 +689,14 @@ void NdnRtcUtils::resetSlidingAverageEstimator(unsigned int estimatorID)
     memset(estimator.sample_, 0, sizeof(double)*estimator.sampleSize_);
 }
 
-void NdnRtcUtils::releaseAverageEstimator(unsigned int estimatorID)
+void MtNdnUtils::releaseAverageEstimator(unsigned int estimatorID)
 {
     // nothing
 }
 
 //******************************************************************************
 unsigned int
-NdnRtcUtils::setupFilter(double coeff)
+MtNdnUtils::setupFilter(double coeff)
 {
     Filter filter = {coeff, 0.};
     filters_.push_back(filter);
@@ -658,7 +704,7 @@ NdnRtcUtils::setupFilter(double coeff)
 }
 
 void
-NdnRtcUtils::filterNewValue(unsigned int filterId, double value)
+MtNdnUtils::filterNewValue(unsigned int filterId, double value)
 {
     if (filterId < filters_.size())
     {
@@ -672,7 +718,7 @@ NdnRtcUtils::filterNewValue(unsigned int filterId, double value)
 }
 
 double
-NdnRtcUtils::currentFilteredValue(unsigned int filterId)
+MtNdnUtils::currentFilteredValue(unsigned int filterId)
 {
     if (filterId < filters_.size())
         return filters_[filterId].filteredValue_;
@@ -681,19 +727,19 @@ NdnRtcUtils::currentFilteredValue(unsigned int filterId)
 }
 
 void
-NdnRtcUtils::releaseFilter(unsigned int filterId)
+MtNdnUtils::releaseFilter(unsigned int filterId)
 {
     // do nothing
 }
 
 //******************************************************************************
 unsigned int
-NdnRtcUtils::setupInclineEstimator(unsigned int sampleSize)
+MtNdnUtils::setupInclineEstimator(unsigned int sampleSize)
 {
     InclineEstimator ie;
     ie.sampleSize_ = sampleSize;
     ie.nValues_ = 0;
-    ie.avgEstimatorId_ = NdnRtcUtils::setupSlidingAverageEstimator(sampleSize);
+    ie.avgEstimatorId_ = MtNdnUtils::setupSlidingAverageEstimator(sampleSize);
     ie.lastValue_ = 0.;
     ie.skipCounter_ = 0;
     inclineEstimators_.push_back(ie);
@@ -702,7 +748,7 @@ NdnRtcUtils::setupInclineEstimator(unsigned int sampleSize)
 }
 
 void
-NdnRtcUtils::inclineEstimatorNewValue(unsigned int estimatorId, double value)
+MtNdnUtils::inclineEstimatorNewValue(unsigned int estimatorId, double value)
 {
     if (estimatorId < inclineEstimators_.size())
     {
@@ -723,7 +769,7 @@ NdnRtcUtils::inclineEstimatorNewValue(unsigned int estimatorId, double value)
 }
 
 double
-NdnRtcUtils::currentIncline(unsigned int estimatorId)
+MtNdnUtils::currentIncline(unsigned int estimatorId)
 {
     if (estimatorId < inclineEstimators_.size())
     {
@@ -734,13 +780,13 @@ NdnRtcUtils::currentIncline(unsigned int estimatorId)
     return 0.;
 }
 
-void NdnRtcUtils::releaseInclineEstimator(unsigned int estimatorId)
+void MtNdnUtils::releaseInclineEstimator(unsigned int estimatorId)
 {
     // tbd
 }
 
 //******************************************************************************
-string NdnRtcUtils::stringFromFrameType(const WebRtcVideoFrameType &frameType)
+string MtNdnUtils::stringFromFrameType(const WebRtcVideoFrameType &frameType)
 {
     switch (frameType) {
         case webrtc::kDeltaFrame:
@@ -758,20 +804,20 @@ string NdnRtcUtils::stringFromFrameType(const WebRtcVideoFrameType &frameType)
     }
 }
 
-unsigned int NdnRtcUtils::toFrames(unsigned int intervalMs,
+unsigned int MtNdnUtils::toFrames(unsigned int intervalMs,
                                    double fps)
 {
     return (unsigned int)ceil(fps*(double)intervalMs/1000.);
 }
 
-unsigned int NdnRtcUtils::toTimeMs(unsigned int frames,
+unsigned int MtNdnUtils::toTimeMs(unsigned int frames,
                                    double fps)
 {
     return (unsigned int)ceil((double)frames/fps*1000.);
 }
 
 
-std::string NdnRtcUtils::getFullLogPath(const new_api::GeneralParams &generalParams,
+std::string MtNdnUtils::getFullLogPath(const new_api::GeneralParams &generalParams,
                                   const std::string &fileName)
 {
     static char logPath[PATH_MAX];
@@ -779,7 +825,7 @@ std::string NdnRtcUtils::getFullLogPath(const new_api::GeneralParams &generalPar
 }
 
 
-std::string NdnRtcUtils::toString(const char *format, ...)
+std::string MtNdnUtils::toString(const char *format, ...)
 {
     std::string str = "";
 
@@ -813,15 +859,46 @@ void resetThread()
             {
                 ThreadRecovery = false;
             }
+            VLOG(LOG_DEBUG) << "resetThread0 "
+                         << boost::this_thread::get_id() << std::endl;
 
-            NdnRtcIoService->run();
+            MtNdnIoService->run();
+            VLOG(LOG_DEBUG) << "resetThread0 ioservice.run OVER "
+                         << boost::this_thread::get_id() << std::endl;
         }
         catch (std::exception &e) // fatal
         {
-            NdnRtcIoService->reset();
-            //NdnRtcManager::getSharedInstance().fatalException(e);
+            MtNdnIoService->reset();
+            //MtNdnManager::getSharedInstance().fatalException(e);
             ThreadRecovery = true;
             resetThread();
+        }
+    });
+
+}
+
+void resetThread1()
+{
+    backgroundThread1 = boost::thread([](){
+        try
+        {
+            if (ThreadRecovery)
+            {
+                ThreadRecovery = false;
+            }
+            VLOG(LOG_DEBUG) << "resetThread1 "
+                         << boost::this_thread::get_id() << std::endl;
+
+            MtNdnIoService->run();
+            VLOG(LOG_DEBUG) << "resetThread1 ioservice.run OVER "
+                         << boost::this_thread::get_id() << std::endl;
+        }
+        catch (std::exception &e) // fatal
+        {
+            MtNdnIoService->reset();
+            //MtNdnManager::getSharedInstance().fatalException(e);
+            ThreadRecovery = true;
+            resetThread1();
         }
     });
 

@@ -116,10 +116,10 @@ public:
     /**
       *Sets library observer
       *@param observer Pointer to the observer object
-      *@see INdnRtcLibraryObserver
+      *@see IMtNdnLibraryObserver
      */
 //    virtual void
-//    setObserver(INdnRtcLibraryObserver *observer) = 0;
+//    setObserver(IMtNdnLibraryObserver *observer) = 0;
 
     /**
       *Adds new remote stream and starts fetching from its' first thread

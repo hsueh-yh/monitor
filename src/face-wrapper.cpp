@@ -1,6 +1,6 @@
 //
 //  face-wrapper.cpp
-//  ndnrtc
+//  mtndn
 //
 //  Created by Peter Gusev on 2/11/14.
 //  Copyright 2013-2015 Regents of the University of California
@@ -23,8 +23,8 @@
 
 
 #include "face-wrapper.h"
-//#include "object.h"
-//#include "ndnrtc-utils.h"
+//#include "mtndn-object.h"
+//#include "mtndn-utils.h"
 
 using namespace ndn;
 
@@ -158,9 +158,9 @@ FaceProcessor::setupFaceAndTransport(const std::string host, const int port,
 
     if (host == "127.0.0.1" || host == "0.0.0.0" || host == "localhost")
     {
-        transport = getDefaultTransport(NdnUtils::getIoService());
+        transport = getDefaultTransport(MtNdnUtils::getIoService());
 #ifdef USE_TS_FACE
-        ndnFace.reset(new ThreadsafeFace(NdnUtils::getIoService(), transport, getDefaultConnectionInfo()));
+        ndnFace.reset(new ThreadsafeFace(MtNdnUtils::getIoService(), transport, getDefaultConnectionInfo()));
 #else
         ndnFace.reset(new Face(transport, getDefaultConnectionInfo()));
 #endif
@@ -169,8 +169,8 @@ FaceProcessor::setupFaceAndTransport(const std::string host, const int port,
     {
 #ifdef USE_TS_FACE
         connInfo.reset(new AsyncTcpTransport::ConnectionInfo(host.c_str(), port));
-        transport.reset(new AsyncTcpTransport(NdnUtils::getIoService()));
-        ndnFace.reset(new ThreadsafeFace(NdnUtils::getIoService(), transport, connInfo));
+        transport.reset(new AsyncTcpTransport(MtNdnUtils::getIoService()));
+        ndnFace.reset(new ThreadsafeFace(MtNdnUtils::getIoService(), transport, connInfo));
 #else
         connInfo.reset(new TcpTransport::ConnectionInfo(host.c_str(), port));
         transport.reset(new TcpTransport());
@@ -204,8 +204,8 @@ FaceProcessor::createFaceProcessor(const std::string host, const int port,
             face->setCommandSigningInfo(*keyChain, keyChain->getDefaultCertificateName());
     }
     //std::cout << face.use_count() << std::endl;
-    //NdnRtcComponent *cp = new NdnRtcComponent();
-    //std::cout << "NdnRtcComponent" << std::endl;
+    //MtNdnComponent *cp = new MtNdnComponent();
+    //std::cout << "MtNdnComponent" << std::endl;
 //    std::cout << "new FaceProcessor..." << std::endl;
     FaceProcessor *f = new FaceProcessor(face);
     //std::cout << "reset FaceProcessor..." << std::endl;
@@ -247,7 +247,7 @@ FaceProcessor::startProcessing(unsigned int usecInterval)
 
 #ifndef US_TS_FACE
 
-        scheduleJob (usecInterval, [this]()->bool{
+        scheduleJob (0,usecInterval, [this]()->bool{
             try
             {
                 faceWrapper_->processEvents();

@@ -34,12 +34,11 @@ Consumer::init(const ConsumerSettings &settings,
 {
     settings_ = settings;
     streamPrefix_ = settings_.streamPrefix_;
-    LOG(INFO) << "streamPrefix_: " << streamPrefix_ << std::endl;
+    //LOG(INFO) << "streamPrefix_: " << streamPrefix_ << std::endl;
     frameBuffer_.reset(new FrameBuffer());
     frameBuffer_->init();
 
     pipeliner_.reset(new Pipeliner(this));
-    pipeliner_->init();
     pipeliner_->registerCallback(this);
 
     renderer_->init();
@@ -75,11 +74,16 @@ Consumer::start()
 int
 Consumer::stop()
 {
-    NdnUtils::performOnBackgroundThread([this]()->void{
+    MtNdnUtils::performOnBackgroundThread([this]()->void{
             isConsuming_ = false;
             pipeliner_->stop();
             playout_->stop();
-               renderer_->stopRendering();
+            renderer_->stopRendering();
+            std::vector<boost::thread>::iterator iter = playoutThread_.begin();
+            while( iter != playoutThread_.end() )
+            {
+                stopThread(*iter);
+            }
     });
 
     LOG(INFO) << "Consumer stop \n" << std::endl;
@@ -91,13 +95,11 @@ int
 Consumer::stop( int tmp )
 {
     status_ = STOPED;
-    player_->stop();
 
     pipeliner_->stop();
     frameBuffer_->stop();
 
     LOG(ERROR) << "[Consumer] Stop "
-               << "Player:" << player_.use_count()
                << " Pipeliner:" << pipeliner_.use_count()
                << " FrameBuffer:" << frameBuffer_.use_count()
                << endl;
@@ -165,8 +167,26 @@ Consumer::onBufferingEnded()
     if (!playout_->isRunning())
     {
         int adjustment = 0;
-
         playout_->start(adjustment);
+
+        /*
+        playoutThread_.push_back(startThread([this,adjustment]()->int{
+            playout_->start(adjustment);
+            try
+            {
+                VLOG(LOG_DEBUG) << "playoutThread "
+                             << boost::this_thread::get_id() << std::endl;
+
+                MtNdnUtils::getIoService().run();
+                VLOG(LOG_DEBUG) << "playoutThread ioservice.run OVER "
+                             << boost::this_thread::get_id() << std::endl;
+            }
+            catch (std::exception &e) // fatal
+            {
+                throw std::runtime_error(e.what());
+            }
+        }));
+        */
     }
 }
 

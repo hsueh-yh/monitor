@@ -1,9 +1,9 @@
 #ifndef VIDEODECODER_H
 #define VIDEODECODER_H
 
-#include "decoder.h"
+#include "ff-decoder.h"
 #include "renderer.h"
-#include "object.h"
+#include "mtndn-object.h"
 #include "params.h"
 
 
@@ -18,7 +18,7 @@ public:
 
 class VideoDecoder: public IEncodedFrameConsumer,
                     public DecodedImageCallback,
-                    public NdnRtcComponent
+                    public MtNdnComponent
 {
 public:
     VideoDecoder();

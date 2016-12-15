@@ -8,8 +8,8 @@
 
 #include "name-components.h"
 #include "frame-data.h"
-#include "common.h"
-#include "utils.h"
+#include "mtndn-common.h"
+#include "mtndn-utils.h"
 
 class Namespacer {
 public:

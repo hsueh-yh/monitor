@@ -10,12 +10,11 @@
 #include <unistd.h>
 #include <thread>
 
-#include "utils.h"
-#include "object.h"
+#include "mtndn-utils.h"
+#include "mtndn-object.h"
 #include "face-wrapper.h"
 #include "frame-buffer.h"
 #include "pipeliner.h"
-#include "player.h"
 #include "playout.h"
 #include "statistics.h"
 #include "params.h"
@@ -39,7 +38,7 @@ public:
 
 
 class Consumer: public IPipelinerCallback,
-                public NdnRtcComponent
+                public MtNdnComponent
 {
 public:
 
@@ -76,7 +75,7 @@ public:
     const std::string
     getPrefix() const
     {
-        LOG(INFO) << "getPrefix " << streamPrefix_ << std::endl;
+        //LOG(INFO) << "getPrefix " << streamPrefix_ << std::endl;
         return streamPrefix_;
     }
 
@@ -132,7 +131,6 @@ public:
     ptr_lib::shared_ptr<FaceWrapper> faceWrapper_;
     ptr_lib::shared_ptr<FrameBuffer> frameBuffer_;
     ptr_lib::shared_ptr<Pipeliner> pipeliner_;
-    ptr_lib::shared_ptr<Player> player_;
     ptr_lib::shared_ptr<Playout> playout_;
     static Statistics statistic;
 
@@ -150,6 +148,7 @@ protected:
     Status status_;
 
     ptr_lib::shared_ptr<IRenderer> renderer_;
+    std::vector<boost::thread> playoutThread_;
 
     ptr_lib::mutex observerMutex_;
     IConsumerObserver *observer_;
