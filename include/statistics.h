@@ -3,7 +3,7 @@
 
 #include <iostream>
 #include <string>
-#include "logger.h"
+#include "glogger.h"
 
 class Statistics
 {

@@ -12,7 +12,7 @@
 #include "pipeliner.h"
 #include "consumer.h"
 #include "frame-data.h"
-#include "logger.h"
+#include "glogger.h"
 #include "name-components.h"
 #include "mtndn-namespace.h"
 

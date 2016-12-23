@@ -18,8 +18,8 @@ SOURCES += \
     src/ff-decoder.cpp \
     src/frame-buffer.cpp \
     src/frame-data.cpp \
+    src/glogger.cpp \
     src/jitter-timing.cpp \
-    src/logger.cpp \
     src/mtndn-library.cpp \
     src/mtndn-manager.cpp \
     src/mtndn-namespace.cpp \
@@ -41,8 +41,8 @@ SOURCES += \
     client/renderer.cpp
 
 HEADERS  += \
+    include/glogger.h \
     include/interfaces.h \
-    include/logger.h \
     include/mtndn-defines.h \
     include/mtndn-library.h \
     include/name-components.h \

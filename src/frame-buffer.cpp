@@ -10,7 +10,7 @@
 #include "mtndn-utils.h"
 #include "frame-buffer.h"
 #include "statistics.h"
-#include "logger.h"
+#include "glogger.h"
 #include "mtndn-namespace.h"
 #include "simple-log.h"
 

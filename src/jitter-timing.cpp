@@ -11,7 +11,7 @@
 
 #include "jitter-timing.h"
 #include "mtndn-utils.h"
-#include "logger.h"
+#include "glogger.h"
 
 using namespace std;
 

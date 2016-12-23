@@ -1,4 +1,4 @@
-#include "logger.h"
+#include "glogger.h"
 
 //将信息输出到单独的文件和 LOG(ERROR)
 static void SignalHandle(const char *data, int size)

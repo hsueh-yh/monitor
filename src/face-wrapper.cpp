@@ -20,7 +20,7 @@
 #include <ndn-cpp/transport/unix-transport.hpp>
 #endif
 
-#include "logger.h"
+#include "glogger.h"
 
 #include "face-wrapper.h"
 //#include "mtndn-object.h"

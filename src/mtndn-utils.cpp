@@ -17,7 +17,7 @@
 #include <boost/asio.hpp>
 
 #include "face-wrapper.h"
-#include "logger.h"
+#include "glogger.h"
 
 using namespace std;
 

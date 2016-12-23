@@ -1,6 +1,6 @@
 
 #include "ff-decoder.h"
-#include "logger.h"
+#include "glogger.h"
 #include "mtndn-utils.h"
 
 Decoder::Decoder(void)

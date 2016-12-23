@@ -2,7 +2,7 @@
 #include "ui_mainwindow.h"
 #include "simulator.h"
 #include "myTimer.h"
-#include "logger.h"
+#include "glogger.h"
 #include "renderer.h"
 
 #include <thread>

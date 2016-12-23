@@ -1,6 +1,6 @@
 #include "video-decoder.h"
 #include "include/mtndn-defines.h"
-#include "logger.h"
+#include "glogger.h"
 #include "mtndn-utils.h"
 
 
