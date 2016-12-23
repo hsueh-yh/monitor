@@ -15,10 +15,12 @@
 #include "consumer.h"
 #include "logger.h"
 
+
+
 using namespace std;
 
 const int Playout::BufferCheckInterval = 2000;
-
+std::string PLAYOUT_LOG = "playout.log";
 //boost::asio::io_service ioservice;
 
 //******************************************************************************
@@ -29,8 +31,10 @@ Playout::Playout(Consumer *consumer):
     isRunning_(false),
     consumer_(consumer),
     //consumerId_(consumer_->getId()),
-    vdata_(nullptr)
+    vec_data_(nullptr)
 {
+    setDescription(MtNdnUtils::formatString("%s-Playout",
+                                            getDescription().c_str()));
     jitterTiming_->flush();
     
     if (consumer_)
@@ -74,8 +78,8 @@ Playout::start(int initialAdjustment)
     MtNdnUtils::dispatchOnBackgroundThread([this](){
         processPlayout();
     });
-    
-    VLOG(LOG_INFO) << "[Playout] started" << endl;
+    LogTraceC << " started" << endl;
+
     return 0;
 }
 
@@ -89,7 +93,7 @@ Playout::stop()
         isRunning_ = false;
         jitterTiming_->stop();
         
-        VLOG(LOG_INFO) << "[Playout] stopped" << endl;
+        VLOG(LOG_INFO) << getDescription() << " stopped" << endl;
     }
     else
         return -1;
@@ -99,15 +103,29 @@ Playout::stop()
         delete data_;
         data_ = nullptr;
     }*/
-    if (vdata_)
+    if (vec_data_)
     {
-        delete vdata_;
-        vdata_ = nullptr;
+        delete vec_data_;
+        vec_data_ = nullptr;
     }
     
     return 0;
 }
 
+void
+Playout::setLogger(ndnlog::new_api::Logger *logger)
+{
+    jitterTiming_->setLogger(logger);
+    ILoggingObject::setLogger(logger);
+}
+
+void
+Playout::setDescription(const std::string &desc)
+{
+    ILoggingObject::setDescription(desc);
+    jitterTiming_->setDescription(MtNdnUtils::formatString("%sTiming",
+                                                       getDescription().c_str()));
+}
 //******************************************************************************
 //private
 bool
@@ -131,13 +149,13 @@ Playout::processPlayout()
                 delete data_;
                 data_ = nullptr;
             }*/
-            if( vdata_ )
+            if( vec_data_ )
             {
-                delete vdata_;
-                vdata_ = nullptr;
+                delete vec_data_;
+                vec_data_ = nullptr;
             }
             
-            PacketNumber packetNo, sequencePacketNo, pairedPacketNo;
+            PacketNumber playbackPacketNo, sequencePacketNo, pairedPacketNo;
             double assembledLevel = 0;
             bool isKey, packetValid = false;
             bool skipped = false, missed = false,
@@ -147,18 +165,18 @@ Playout::processPlayout()
             //                          pairedPacketNo, isKey, assembledLevel);
             //VLOG(LOG_TRACE) << "acquire frame" << endl;
             //vector<uint8_t> vdata_;
-            vdata_ = new vector<uint8_t>();
-            int64_t ts;
-            frameBuffer_->acquireFrame( *vdata_,
-                                        ts,
-                                        packetNo,
+            vec_data_ = new vector<uint8_t>();
+            int64_t playbackTimeStampMs;
+            frameBuffer_->acquireFrame( *vec_data_,
+                                        playbackTimeStampMs,
+                                        playbackPacketNo,
                                         sequencePacketNo,
                                         pairedPacketNo,
                                         isKey,
                                         assembledLevel);
 
-            uint8_t *data_ = vdata_->data();
-            unsigned int dataLength = vdata_->size();
+            uint8_t *data_ = vec_data_->data();
+            unsigned int dataSize = vec_data_->size();
 
             /*
              * VLOG(LOG_TRACE)
@@ -172,13 +190,14 @@ Playout::processPlayout()
             << assembledLevel << " "
             << std::endl;
             */
+
             noData = (data_ == nullptr);
             incomplete = (assembledLevel < 1.);
             
             //******************************************************************
             // next call is overriden by specific playout mechanism - either
             // video or audio. the rest of the code is similar for both cases
-            if (playbackPacket(now, data_, dataLength, packetNo, sequencePacketNo,
+            if (playbackPacket(now, *vec_data_, playbackPacketNo, sequencePacketNo,
                                pairedPacketNo, isKey, assembledLevel))
             {
                 packetValid = true;
@@ -186,24 +205,27 @@ Playout::processPlayout()
 
             if (data_)
             {
-                updatePlaybackAdjustment(ts);
-                //VLOG(LOG_TRACE) << "[Playout] latest" << std::endl;
-                lastPacketTs_ = (ts != -1 ? ts : 0);
+                updatePlaybackAdjustment(playbackTimeStampMs);
+                //VLOG(LOG_TRACE) << getDescription() << " latest" << std::endl;
+                lastPacketTs_ = (playbackTimeStampMs != -1 ? playbackTimeStampMs : 0);
             }
             
             //******************************************************************
             // get playout time (delay) for the rendered frame
             int playbackDelay = frameBuffer_->releaseAcquiredFrame(isInferredPlayback_);
-            VLOG(LOG_TRACE) << "nextPlaybackDelay " << playbackDelay
+            VLOG(LOG_TRACE) << getDescription() << " nextPlaybackDelay " << playbackDelay
                       << (isInferredPlayback_ ? ", inferred" : ", NOT inferred")
                       << std::endl;
+            LogTraceC << "NextPlayback Delay " << playbackDelay
+                      << (isInferredPlayback_ ? ", inferred" : ", NOT inferred");
+                      //<< std::endl;
 
             int adjustment = playbackDelayAdjustment(playbackDelay);
             
             if (playbackDelay < 0)
             {
                 // should never happen
-                VLOG(LOG_WARN) << "[Playout] playback delay below zero: " << playbackDelay << endl;
+                LogWarnC << getDescription() << " playback delay below zero: " << playbackDelay << endl;
                 playbackDelay = 0;
             }
 
@@ -261,7 +283,7 @@ Playout::playbackDelayAdjustment(int playbackDelay)
         playbackAdjustment_ = 0;
     }
     
-    VLOG(LOG_TRACE) << "[Playout] updated total adj is " << playbackAdjustment_ << std::endl;
+    LogTraceC << getDescription() << " updated total adj is " << playbackAdjustment_ << std::endl;
     
     return adjustment;
 }
@@ -293,7 +315,7 @@ Playout::avSyncAdjustment(int64_t nowTimestamp, int playbackDelay)
 void
 Playout::checkBuffer()
 {
-    VLOG(LOG_TRACE) << "[Playout] checkBuffer " << std::endl;
+    //VLOG(LOG_TRACE) << "[Playout] checkBuffer " << std::endl;
     int64_t timestamp = MtNdnUtils::millisecondTimestamp();
     if (timestamp - bufferCheckTs_ > BufferCheckInterval)
     {
@@ -305,11 +327,11 @@ Playout::checkBuffer()
         int playableDuration = consumer_->getFrameBuffer()->getPlayableBufferDuration();
         int adjustment = targetBufferSize - playableDuration;
         
-        VLOG(LOG_TRACE) << "[Playout] buffer size " << playableDuration << std::endl;
+        VLOG(LOG_TRACE) << getDescription() << " buffer size " << playableDuration << std::endl;
         
         if (abs(adjustment) > 30 && adjustment < 0)
         {
-            VLOG(LOG_TRACE) << "bf adj. "
+            VLOG(LOG_TRACE) << getDescription() << " bf adj. "
             << abs(adjustment) << " ms excess" << std::endl;
             
             playbackAdjustment_ += adjustment;

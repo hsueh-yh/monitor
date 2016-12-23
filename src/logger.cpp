@@ -1,5 +1,16 @@
 #include "logger.h"
 
+//将信息输出到单独的文件和 LOG(ERROR)
+static void SignalHandle(const char *data, int size)
+{
+    std::string dumpPath = "./logs/glog_dump.log";
+    std::ofstream fs(dumpPath.c_str(),std::ios::app);
+    std::string str = std::string(data,size);
+    fs<<str;
+    fs.close();
+    LOG(ERROR)<<str;
+}
+
 GLogger::GLogger( const char *program, const char *logdir):
         logdir_(logdir)
 {
@@ -26,24 +37,10 @@ GLogger::GLogger( const char *program, const char *logdir):
     google::InitGoogleLogging(program);
     google::InstallFailureSignalHandler();
     //默认捕捉 SIGSEGV 信号信息输出会输出到 stderr，可以通过下面的方法自定义输出方式：
-    //google::InstallFailureWriter(&SignalHandle);
+    google::InstallFailureWriter(&SignalHandle);
 
 }
 GLogger::~GLogger()
 {
     google::ShutdownGoogleLogging();
 }
-
-    //将信息输出到单独的文件和 LOG(ERROR)
-/*   static void SignalHandle(const char *data, int size)
-    {
-        std::string dumpPath(logdir_);
-        dumpPath.append("/glog_dump.log");
-        std::ofstream fs(dumpPath.c_str(),std::ios::app);
-        std::string str = std::string(data,size);
-        fs<<str;
-        fs.close();
-        LOG(ERROR)<<str;
-    }
-*/
-

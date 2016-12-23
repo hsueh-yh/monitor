@@ -12,6 +12,7 @@
 #include "statistics.h"
 #include "logger.h"
 #include "mtndn-namespace.h"
+#include "simple-log.h"
 
 
 ////////////////////////////////////////////////////////////////
@@ -79,7 +80,6 @@ FrameBuffer::Slot::dataArrived ()
               << " size:" << hex << (void*)getPayloadSize()
               <<  " Delay " << dec << delay/1000
               << "ms ( average: " << statistic->getDelay()/1000 << "ms )" << endl;
-
 }
 
 
@@ -313,6 +313,9 @@ FrameBuffer::interestIssued( ndn::Interest &interest )
                  << " ( Total:" << activeSlots_.size()
                  << " Ready: " <<readySlots_count_ << " )"<< endl;
 
+    LogTraceC << "ISSUE " << slot->getPrefix().to_uri()
+              << " ( Total:" << activeSlots_.size()
+              << " Ready: " <<readySlots_count_ << " )"<< endl;
     return true;
 }
 
@@ -355,6 +358,7 @@ FrameBuffer::recvData(const ndn::ptr_lib::shared_ptr<Data> &data)
 //    NdnUtils::printMem("set Slot", slot->getDataPtr(),20);
 
     //setSlot(data, iter->second);
+    LogTraceC << "RCVE " << data->getName().to_uri() << std::endl;
 }
 
 void
@@ -378,54 +382,9 @@ FrameBuffer::dataMissed(const ptr_lib::shared_ptr<const Interest> &interest )
     VLOG(LOG_INFO) << "miss " << interest->getName().to_uri()
               << " ( Total:" << activeSlots_.size()
               << " Ready: " <<readySlots_count_ << " )"<< endl;
-}
-
-ptr_lib::shared_ptr<FrameBuffer::Slot>
-FrameBuffer::acquireFrame()
-{
-    std::lock_guard<std::recursive_mutex> scopedLock(syncMutex_);
-
-    if ( readySlots_count_ < 5 )
-    {
-//        LOG(INFO) << "[Player] empty"
-//                  << " ( Total:" << activeSlots_.size()
-//                  << " Ready: " <<readySlots_count_ << " )"<< endl;
-        return NULL;
-    }
-
-    ptr_lib::shared_ptr<Slot>  slot;
-    //slot = playbackQueue_.top();
-    map<unsigned int, ptr_lib::shared_ptr<Slot> >::iterator iter;
-    iter = activeSlots_.begin();
-    slot = iter->second;
-    //FrameBuffer::Slot * tmp = priorityQueue_.front();
-
-    if( slot->getState() != FrameBuffer::Slot::StateFetched )
-    {
-        if( slot->getFrameNo() < 3 )
-            return NULL;
-       // LOG(WARNING) << "Skip " << slot->getPrefix()
-        //             << " ( remain " << activeSlots_count_ << " )"<< endl;
-        //playbackQueue_.pop();
-        //activeSlots_count_--;
-        //return NULL;
-    }
-
-    activeSlots_.erase(iter);
-    readySlots_count_--;
-
-    VLOG(LOG_INFO) << "POP " << slot->getPrefix()
-              << " addr:" << slot->getDataPtr()
-              << " size:" << slot->getPayloadSize()
+    LogTraceC << "miss " << interest->getName().to_uri()
               << " ( Total:" << activeSlots_.size()
               << " Ready: " <<readySlots_count_ << " )"<< endl;
-
-//    cout << "get Slot: No=" << slot->getFrameNo()
-//         << " name=" << slot->getPrefix().toUri()
-//         << " payload=" << slot->getPayloadSize()
-//         << " addr=" << (void*)slot->getDataPtr();
-//    NdnUtils::printMem("get Slot", slot->getDataPtr(),20);
-    return slot;
 }
 
 void
@@ -438,7 +397,7 @@ FrameBuffer::acquireFrame( vector<uint8_t> &dest_,
 {
     ptr_lib::lock_guard<ptr_lib::recursive_mutex> scopedLock(syncMutex_);
 
-    if( readySlots_count_ <= 0 )
+    if( readySlots_count_ <= 3 )
         return;
 
     ptr_lib::shared_ptr<Slot> slot;
@@ -488,6 +447,12 @@ FrameBuffer::acquireFrame( vector<uint8_t> &dest_,
             isKey = true;
 
             //NdnUtils::printMem("pop", slotbuf, 20);
+            LogTraceC << "POP " << nalCounter
+                      << " " << slot->getPrefix()
+                      << " addr:" << hex << (void*)slot->getDataPtr()
+                      << " size:" << dec << (void*)slot->getPayloadSize()
+                      << " ( Total:" << dec<< activeSlots_.size()
+                      << " Ready: " <<readySlots_count_ << " )"<< endl;
 
             VLOG(LOG_INFO)
                 << "POP " << nalCounter
@@ -517,7 +482,7 @@ FrameBuffer::releaseAcquiredFrame(bool& isInferredPlayback)
     ptr_lib::lock_guard<ptr_lib::recursive_mutex> scopedLock(syncMutex_);
 
     int duration = -1;
-    if( readySlots_count_ <= 0 )
+    if( readySlots_count_ <= 0 || !(playbackSlot_.get()) )
     {
         duration = 30;
         isInferredPlayback = true;

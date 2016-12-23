@@ -24,8 +24,7 @@ private:
 
     bool
     playbackPacket( int64_t packetTsLocal,
-                    unsigned char *data,
-                    unsigned int size,
+                    vector<uint8_t> &data,
                     PacketNumber playbackPacketNo,
                     PacketNumber sequencePacketNo,
                     PacketNumber pairedPacketNo,

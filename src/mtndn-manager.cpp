@@ -27,7 +27,9 @@
 #include "frame-data.h"
 #include "mtndn-utils.h"
 #include "include/mtndn-defines.h"
+#include "simple-log.h"
 
+using namespace ndnlog::new_api;
 //using namespace boost;
 
 typedef std::map<std::string, ptr_lib::shared_ptr<Consumer>> ConsumerStreamMap;
@@ -92,6 +94,7 @@ void MtNdnManager::setObserver(IMtNdnLibraryObserver *observer)
 */
 
 //******************************************************************************
+static int id = 0;
 std::string
 MtNdnManager::addRemoteStream(std::string &remoteStreamPrefix,
                               const std::string &threadName,
@@ -100,10 +103,12 @@ MtNdnManager::addRemoteStream(std::string &remoteStreamPrefix,
                               const GeneralConsumerParams &consumerParams,
                               IExternalRenderer *const renderer)
 {
-    LOG(INFO) << "MMNdnManager::addRemoteStream " << remoteStreamPrefix << std::endl;
+    VLOG(LOG_INFO) << "MMNdnManager::addRemoteStream " << remoteStreamPrefix << std::endl;
     MtNdnUtils::performOnBackgroundThread([=, &remoteStreamPrefix]()->void{
         //Logger::getLogger(INFO).flush();
         //INFO = NdnUtils::getFullLogPath(generalParams, generalParams.logFile_);
+        int threadNum = MtNdnUtils::addBackgroundThread();
+        VLOG(LOG_INFO) << "bkg Thread " << threadNum << std::endl;
         MtNdnUtils::createLibFace(generalParams);
 
         ptr_lib::shared_ptr<Consumer> remoteStreamConsumer;
@@ -111,7 +116,7 @@ MtNdnManager::addRemoteStream(std::string &remoteStreamPrefix,
 
         if (it != ActiveStreamConsumers.end() && it->second->getIsConsuming())
         {
-            LOG(INFO) << "Stream was already added" << std::endl;
+            VLOG(LOG_INFO) << "Stream was already added" << std::endl;
 
             remoteStreamPrefix = "";
         }
@@ -136,21 +141,23 @@ MtNdnManager::addRemoteStream(std::string &remoteStreamPrefix,
 
             if (RESULT_FAIL(remoteStreamConsumer->init(settings, threadName)))
             {
-                LOG(INFO) << "Failed to initialize fetching from stream" << std::endl;
+                VLOG(LOG_INFO) << "Failed to initialize fetching from stream" << std::endl;
                 remoteStreamPrefix = "";
             }
             else
             {
                 /*
                 std::string username = Namespacer::getUserName(remoteSessionPrefix);
-                std::string logFile = NdnUtils::getFullLogPath(generalParams,
-                                              NdnUtils::toString("consumer-%s-%s.log",
-                                                                    username.c_str(),
+                std::string logFile = MtNdnUtils::getFullLogPath(generalParams,
+                                              MtNdnUtils::formatString("consumer-%s.log",
                                                                     params.streamName_.c_str()));
-
+                */
+                std::string logFile = MtNdnUtils::getFullLogPath(generalParams,
+                                              MtNdnUtils::formatString("consumer-%d.log",id++));
+                LOG(INFO) << "logpath " << logFile << std::endl;
                 remoteStreamConsumer->setLogger(new Logger(generalParams.loggingLevel_,
                                                            logFile));
-                */
+
                 if (RESULT_FAIL(remoteStreamConsumer->start()))
                     remoteStreamPrefix = "";
                 else
@@ -335,6 +342,7 @@ void MtNdnManager::notifyObserver(const char *state, const char *args) const
 //******************************************************************************
 void init()
 {
+    Logger::initAsyncLogging();
     //GLogger log("MtNdnLibrary","/home/xyh/workspace/MTNDN/logs");
     LOG(INFO) << "MTNDN initializing" << std::endl;
     reset();

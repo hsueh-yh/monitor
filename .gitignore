@@ -7,7 +7,7 @@
 !*.c
 !*.cpp
 
-!consumer.pro
+!monitor.pro
 
 !/include/
 !/src/

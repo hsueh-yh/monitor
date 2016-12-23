@@ -48,6 +48,7 @@ public:
     static void setIoService(boost::asio::io_service &ioService);
     static boost::asio::io_service &getIoService();
     static void startBackgroundThread();
+    static int addBackgroundThread();
     static void stopBackgroundThread();
     static bool isBackgroundThread();
     static void dispatchOnBackgroundThread(boost::function<void(void)> dispatchBlock,
@@ -108,14 +109,6 @@ public:
     static Blob nonceToBlob(const uint32_t nonceValue);
     static uint32_t blobToNonce(const Blob &blob);
 
-    template <typename T>
-    static std::string toString(T t)
-    {
-        std::ostringstream ss;
-        ss << t;
-        return ss.str();
-    }
-
     static void printMem(char msg[], const unsigned char *startBuf, std::size_t size );
 /*
     static std::string stringFromFrameType(const WebRtcVideoFrameType &frameType);
@@ -124,11 +117,12 @@ public:
                                  double fps);
     static unsigned int toTimeMs(unsigned int frames,
                                  double fps);
-
-    static std::string getFullLogPath(const new_api::GeneralParams &generalParams,
-                                      const std::string &fileName);
-    static std::string toString(const char *format, ...);
 //*/
+    static std::string getFullLogPath(const GeneralParams &generalParams,
+                                      const std::string &fileName);
+
+    static std::string formatString(const char *format, ...);
+
 
 };
 

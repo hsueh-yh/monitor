@@ -29,6 +29,7 @@ VideoConsumer::init(const ConsumerSettings &settings,
         //decoder_->init(((VideoThreadParams*)getCurrentThreadParameters())->coderParams_);
 
         playout_.reset(new VideoPlayout(this));
+        playout_->setLogger(logger_);
         playout_->init(decoder_.get());
         //((VideoPlayout*)playout_.get())->onFrameSkipped_ = boost::bind(&VideoConsumer::onFrameSkipped, this, _1, _2, _3, _4, _5);
 

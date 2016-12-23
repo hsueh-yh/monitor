@@ -23,12 +23,13 @@
 
 #include "frame-data.h"
 #include "statistics.h"
+#include "simple-log.h"
 
 using namespace std;
 using namespace ndn;
 
 
-class FrameBuffer
+class FrameBuffer : public ndnlog::new_api::ILoggingObject
 {
 public:
 
@@ -269,14 +270,6 @@ public:
     void
     dataMissed(const ptr_lib::shared_ptr<const Interest> &interest );
 
-    ptr_lib::shared_ptr<FrameBuffer::Slot>
-    acquireFrame();
-
-    unsigned int
-    acquireFrame(unsigned char*)
-    {return 0;}
-
-
     /**
      * Acquires current top slot from the playback queue for playback.
      * Acquired slot will be locked unless corresponding
@@ -327,7 +320,6 @@ public:
                 slot = it->second;
                 if( slot->getState() >= Slot::StateFetched )
                 {
-                    VLOG(LOG_TRACE) << slot->getCapTimestamp() << std::endl;
                     if(slot->getCapTimestamp() < minTs)
                         minTs = slot->getCapTimestamp();
                     if(slot->getCapTimestamp() > maxTs)
@@ -337,7 +329,7 @@ public:
             }
         else
             return 0;
-        VLOG(LOG_TRACE) << "duration " << maxTs << " - " << minTs << std::endl;
+        //VLOG(LOG_TRACE) << "duration " << maxTs << " - " << minTs << std::endl;
         return maxTs - minTs;
     }
 
@@ -443,6 +435,16 @@ private:
     unlock()
     { syncMutex_.unlock(); }
 
+    void
+    reset()
+    {
+        playbackSlot_ = nullptr;
+        readySlots_count_ = 0;
+        playbackRate_ = 30.0;
+        suspendSlots_.clear();
+        activeSlots_.clear();
+    }
+
     /**
      * @brief peek the first slot to decode
      * @param
@@ -481,8 +483,9 @@ private:
             // remove from activeSlots
             if( isRemove )
             {
+                if( slot->getState() == Slot::StateFetched )
+                    readySlots_count_--;
                 activeSlots_.erase(slot->getFrameNo());
-                readySlots_count_ --;
             }
             tmpit = it++;
             suspendSlots_.erase(tmpit);

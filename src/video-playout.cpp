@@ -20,9 +20,8 @@ VideoPlayout::start(int playbackAdjustment)
 }
 
 bool
-VideoPlayout::playbackPacket( int64_t packetTsLocal,
-                              unsigned char *data,
-                              unsigned int size,
+VideoPlayout::playbackPacket(int64_t packetTsLocal,
+                              vector<uint8_t> &data,
                               PacketNumber playbackPacketNo,
                               PacketNumber sequencePacketNo,
                               PacketNumber pairedPacketNo,
@@ -165,11 +164,12 @@ VideoPlayout::playbackPacket( int64_t packetTsLocal,
         }
 */
 
-        VLOG(LOG_INFO)
-        << "PlayBackPacket"
-        << " PktNo " << playbackPacketNo
-        << " size " << size
-        << " data= " << (void*)data
+        LogTraceC
+        << "PlayBackPacket "
+        << consumer_->getPrefix()
+        << "/" << playbackPacketNo
+        << " size " << data.size()
+        << " data " << (void*)data.data()
         << " pktTsLoc " << packetTsLocal
         //<< " seqPktNo " << sequencePacketNo
         //<< " pPktNo " << pairedPacketNo
@@ -177,12 +177,16 @@ VideoPlayout::playbackPacket( int64_t packetTsLocal,
         //<< " asbLevel " << assembledLevel
         << std::endl;
 
-        AVPacket frame;
-        //av_init_packet(&frame);
-        frame.data = data;
-        frame.size = size;
-        //LOG(INFO) << "Playback size=" << size << " data=" << (void*)data << std::endl;
-        ((IEncodedFrameConsumer*)encodedFrameConsumer_)->onEncodedFrameDelivered(frame, MtNdnUtils::unixTimestamp());
+        if( !data.empty() )
+        {
+            AVPacket frame;
+            //av_init_packet(&frame);
+            frame.data = data.data();
+            frame.size = data.size();
+            ((IEncodedFrameConsumer*)encodedFrameConsumer_)->onEncodedFrameDelivered(
+                        frame,
+                        MtNdnUtils::unixTimestamp());
+        }
 
     }// if frameConsumer_
 

@@ -40,4 +40,32 @@ public:
 };
 
 
+/*
+class IGLoggerObject
+{
+public:
+    IGLoggerObject():logger_(0), isLoggerCreated_(false){}
+    IGLoggerObject(const NdnLoggerDetailLevel& logLevel,
+                   const std::string& logFile);
+    virtual ~ILoggingObject()
+    {}
+
+    void
+    setDescription( const std::string description )
+    { description_ = description; }
+
+    std::string
+    getDescription() const
+    { return description_; }
+
+    virtual bool
+    isLoggingEnabled() const
+    { return true; }
+
+protected:
+    bool isLoggerCreated_ = false;
+    std::string description_ = "<no-description>";
+};
+*/
+
 #endif // LOGGER_H_

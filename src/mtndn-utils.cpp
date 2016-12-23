@@ -93,8 +93,8 @@ static VoiceEngine *VoiceEngineInstance = NULL;
 */
 
 static boost::thread backgroundThread;
-//boost::thread_group bkgrp;
 static boost::thread backgroundThread1;
+static boost::thread_group backgroundThreadGroup;
 static boost::shared_ptr<boost::asio::io_service::work> backgroundWork;
 
 static ptr_lib::shared_ptr<KeyChain> DefaultKeyChain(new KeyChain());
@@ -102,6 +102,7 @@ static ptr_lib::shared_ptr<KeyChain> DefaultKeyChain(new KeyChain());
 //void initVE();
 void resetThread();
 void resetThread1();
+void startNewThread();
 
 //******************************************************************************
 void
@@ -129,8 +130,25 @@ MtNdnUtils::startBackgroundThread()
     {
         backgroundWork.reset(new boost::asio::io_service::work(*MtNdnIoService));
         resetThread();
-        resetThread1();
+        //resetThread1();
     }
+}
+
+int
+MtNdnUtils::addBackgroundThread()
+{
+    VLOG(LOG_DEBUG) << "addBackgroundThread "
+                 << boost::this_thread::get_id() << std::endl;
+    if (!MtNdnIoService)
+        return -1;
+
+    if ( !backgroundWork.get() )
+    {
+        backgroundWork.reset(new boost::asio::io_service::work(*MtNdnIoService));
+    }
+    startNewThread();
+
+    return backgroundThreadGroup.size();
 }
 
 void
@@ -815,17 +833,18 @@ unsigned int MtNdnUtils::toTimeMs(unsigned int frames,
 {
     return (unsigned int)ceil((double)frames/fps*1000.);
 }
+*/
 
-
-std::string MtNdnUtils::getFullLogPath(const new_api::GeneralParams &generalParams,
+std::string MtNdnUtils::getFullLogPath(const /*new_api::*/GeneralParams &generalParams,
                                   const std::string &fileName)
 {
     static char logPath[PATH_MAX];
-    return ((generalParams.logPath_ == "")?std::string(getwd(logPath)):generalParams.logPath_) + "/" + fileName;
+    return ((generalParams.logPath_ == "")  ? std::string(getwd(logPath))
+                                            : generalParams.logPath_) + "/" + fileName;
 }
 
 
-std::string MtNdnUtils::toString(const char *format, ...)
+std::string MtNdnUtils::formatString(const char *format, ...)
 {
     std::string str = "";
 
@@ -846,7 +865,7 @@ std::string MtNdnUtils::toString(const char *format, ...)
 
     return str;
 }
-*/
+
 //******************************************************************************
 
 static bool ThreadRecovery = false;
@@ -904,4 +923,32 @@ void resetThread1()
 
 }
 
+void startNewThread()
+{
+    boost::thread *bkgThread = new boost::thread([](){
+        try
+        {
+            if (ThreadRecovery)
+            {
+                ThreadRecovery = false;
+            }
+            VLOG(LOG_DEBUG) << "startNewThread "
+                         << boost::this_thread::get_id() << std::endl;
+
+            MtNdnIoService->run();
+            VLOG(LOG_DEBUG) << "startNewThread ioservice.run OVER "
+                         << boost::this_thread::get_id() << std::endl;
+        }
+        catch (std::exception &e) // fatal
+        {
+            MtNdnIoService->reset();
+            //MtNdnManager::getSharedInstance().fatalException(e);
+            ThreadRecovery = true;
+            startNewThread();
+        }
+    });
+
+    backgroundThreadGroup.add_thread(bkgThread);
+
+}
 

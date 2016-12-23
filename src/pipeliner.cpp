@@ -16,6 +16,8 @@
 #include "name-components.h"
 #include "mtndn-namespace.h"
 
+#include <boost/thread.hpp>
+
 //#define __SHOW_CONSOLE_
 
 using namespace ndn::func_lib;
@@ -156,9 +158,9 @@ int
 Pipeliner::init()
 {
     Name tmpname(consumer_->getPrefix());
-     streamName_ = tmpname;
-    //window_.init(100/*,frameBuffer_*/);
-    //switchToState(StateInactive);
+    streamName_ = tmpname;
+    window_.init(30/*,frameBuffer_*/);
+    switchToState(StateInactive);
     return RESULT_OK;
     VLOG(LOG_TRACE) << "Pipeliner initialized: " << streamName_.to_uri() << std::endl;
 }
@@ -184,48 +186,6 @@ Pipeliner::stop()
 }
 
 void
-Pipeliner::fetchingLoop()
-{
-    Name packetPrefix;
-    while( getState() != StateInactive )
-    {
-        switch(state_)
-        {
-        case StateWaitInitial:
-            requestMeta();
-            switchToState(StateBootstrap);
-            break;
-
-        case StateBootstrap:
-            usleep(10*1000);
-            continue;
-            break;
-
-        case StateFetching:
-            if( reqCurPktNo_ == reqLastNo_+1 )
-            {
-                usleep(30*1000);
-                requestFrame(reqCurPktNo_++);
-            }
-            else
-            while( reqCurPktNo_ <= reqLastNo_ )
-                requestFrame(reqCurPktNo_++);
-            break;
-
-        default:
-            VLOG(LOG_ERROR) << "[Pipeliner] State error" << endl;
-            break;
-        }
-
-//        requestFrame(frameNo);
-//        frameNo++;
-
-        usleep(30*1000);
-    }
-    //cout << "[Pipeliner] stop fetching" << endl;
-}
-
-void
 Pipeliner::express(const Interest &interest/*, int64_t priority*/)
 {
     face_->expressInterest(
@@ -236,7 +196,8 @@ Pipeliner::express(const Interest &interest/*, int64_t priority*/)
             //bind(&Pipeliner::onTimeout, this, func_lib::_1));
 
     statistic->addRequest();
-    VLOG(LOG_TRACE) << "Express Interest " << interest.getName().to_uri() << endl;
+    LogTraceC << "Express " << interest.getName().to_uri() << std::endl;
+    //VLOG(LOG_TRACE) << "Express Interest " << interest.getName().to_uri() << endl;
 
 #ifdef __SHOW_CONSOLE_
     cout << "Express : " << interest.getName().toUri() << endl;
@@ -253,7 +214,8 @@ Pipeliner::express(const Name &name/*, int64_t priority*/)
             //bind(&Pipeliner::onData, this, std::placeholders::_1, std::placeholders::_2),
             //bind(&Pipeliner::onTimeout, this, std::placeholders::_1));
     statistic->addRequest();
-    VLOG(LOG_TRACE) << "Express Interest " << name.to_uri() << endl;
+    LogTraceC << "Express " << name.to_uri() << std::endl;
+    //VLOG(LOG_TRACE) << "Express Interest " << name.to_uri() << endl;
 
 #ifdef __SHOW_CONSOLE_
 //    time_t t = time(NULL);
@@ -265,13 +227,15 @@ Pipeliner::express(const Name &name/*, int64_t priority*/)
 #endif
 }
 
-void
+bool
 Pipeliner::requestFrame(PacketNumber frameNo)
 {
     if( !window_.canAskForData(frameNo) )
     {
         //cout << "Windown: " << window_.getCurrentWindowSize() << endl;
-        usleep(10*1000);
+        //usleep(10*1000);
+        //std::cout << "request frame1 " << window_.getCurrentWindowSize() << std::endl;
+        return false;
     }
     //LOG(INFO) << "Request " << frameNo << endl;
     Name packetPrefix(streamName_);
@@ -290,10 +254,12 @@ Pipeliner::requestFrame(PacketNumber frameNo)
     //frameBuffer_->lock();
     ndn::Interest interest(packetPrefix);
 
-    while( !frameBuffer_->interestIssued(interest))
+    if( !frameBuffer_->interestIssued(interest))
     {
-        usleep(10*1000);
+        //usleep(10*1000);
         //cout << ".";
+
+        LOG(ERROR) << "FrameBuffer::interestIssued false " << std::endl;
     }
 
     //frameBuffer_->activeSlots_.insert(std::pair<int,ptr_lib::shared_ptr<FrameBuffer::Slot>>(frameNo,slot));
@@ -303,6 +269,7 @@ Pipeliner::requestFrame(PacketNumber frameNo)
 
     //express(frameInterest);
     express(interest);
+    return true;
 }
 
 ptr_lib::shared_ptr<Interest>
@@ -322,6 +289,7 @@ Pipeliner::onData(const ptr_lib::shared_ptr<const Interest> &interest,
         const ptr_lib::shared_ptr<Data> &data)
 {
     //LOG(INFO) << "Recieve Data " << data->getName().to_uri() << endl;
+    LogTraceC << "Recieve Data " << data->getName().to_uri() << std::endl;
 
 #ifdef __SHOW_CONSOLE_
     cout << "Got Data: "<< data->getName().toUri()
@@ -435,8 +403,14 @@ Pipeliner::requestNextPkt()
 {
     if( reqCurPktNo_ == reqLastNo_+1 )
     {
-        usleep(30*1000);
-        requestFrame(reqCurPktNo_++);
+        //usleep(30*1000);
+        scheduleJob(30*1000, [this]()->bool{
+            bool res = requestFrame(reqCurPktNo_++);
+            return (!res); // if not requeste, do it again
+        });
+        //scheduleJob(30*1000, bind(&Pipeliner::requestFrame, this, reqCurPktNo_));
+        //++reqCurPktNo_;
+        //requestFrame(reqCurPktNo_++);
     }
     else
     {

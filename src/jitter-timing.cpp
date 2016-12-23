@@ -31,18 +31,18 @@ JitterTiming::~JitterTiming()
 void JitterTiming::flush()
 {
     resetData();
-    VLOG(LOG_TRACE) << "[JitterTiming] flushed" << std::endl;
+    LogTraceC << "flushed" << std::endl;
 }
 void JitterTiming::stop()
 {
     stopJob();
-    VLOG(LOG_TRACE) << "[JitterTiming] stopped" << std::endl;
+    LogTraceC << "stopped" << std::endl;
 }
 
 int64_t JitterTiming::startFramePlayout()
 {
     int64_t processingStart = MtNdnUtils::microsecondTimestamp();
-    VLOG(LOG_TRACE) << "[JitterTiming] proc start " << processingStart << std::endl;
+    LogTraceC << "proc start " << processingStart;// << std::endl;
     
     if (prevPlayoutTsUsec_ == 0)
     {
@@ -52,7 +52,7 @@ int64_t JitterTiming::startFramePlayout()
     { // calculate processing delay from the previous iteration
         int64_t prevIterationProcTimeUsec = processingStart - prevPlayoutTsUsec_;
         
-        VLOG(LOG_TRACE) << "[JitterTiming] prev iter full time " << prevIterationProcTimeUsec << std::endl;
+        LogTraceC << " prev iter full time " << prevIterationProcTimeUsec;// << std::endl;
 
         // substract frame playout delay
         if (prevIterationProcTimeUsec >= framePlayoutTimeMs_*1000)
@@ -60,20 +60,21 @@ int64_t JitterTiming::startFramePlayout()
         else // should not occur!
         {
             /*
-            VLOG(LOG_TRACE) << "[JitterTiming] assertion failed: "
+            LogTraceC << "[JitterTiming] assertion failed: "
             << "prevIterationProcTimeUsec ("
             << prevIterationProcTimeUsec << ") < framePlayoutTimeMs_*1000"
             << "(" << framePlayoutTimeMs_*1000 << ")" << endl;
             */
+            logger_->flush();
             assert(0);
         }
         
-        VLOG(LOG_TRACE) << "[JitterTiming] prev iter proc time " << prevIterationProcTimeUsec << std::endl;
+        LogTraceC << " prev iter proc time " << prevIterationProcTimeUsec;// << std::endl;
         
         // add this time to the average processing time
         processingTimeUsec_ += prevIterationProcTimeUsec;
 
-        VLOG(LOG_TRACE) << "[JitterTiming] total proc time " << processingTimeUsec_ << std::endl;
+        LogTraceC << " total proc time " << processingTimeUsec_ << std::endl;
         
         prevPlayoutTsUsec_ = processingStart;
     }
@@ -83,23 +84,23 @@ int64_t JitterTiming::startFramePlayout()
 
 void JitterTiming::updatePlayoutTime(int framePlayoutTime, PacketNumber packetNo)
 {
-    VLOG(LOG_TRACE) << "[JitterTiming] packet " << packetNo << " playout time " << framePlayoutTime << std::endl;
+    LogTraceC << " packet " << packetNo << " playout time " << framePlayoutTime;// << std::endl;
     
     int playoutTimeUsec = framePlayoutTime*1000;
     if (playoutTimeUsec < 0) playoutTimeUsec = 0;
     
     if (processingTimeUsec_ >= 1000)
     {
-        VLOG(LOG_TRACE) << "[JitterTiming] absorb proc time " << processingTimeUsec_ << std::endl;
+        LogTraceC << " absorb proc time " << processingTimeUsec_;// << std::endl;
         
         int processingUsec = (processingTimeUsec_/1000)*1000;
         
-        VLOG(LOG_TRACE) << "[JitterTiming] proc absorb part " << processingUsec << std::endl;
+        LogTraceC << " proc absorb part " << processingUsec;// << std::endl;
         
         if (processingUsec > playoutTimeUsec)
         {
-            VLOG(LOG_TRACE) << "[JitterTiming] skip frame. proc " << processingUsec
-            << " playout " << playoutTimeUsec << std::endl;
+            LogTraceC << " skip frame. proc " << processingUsec
+            << " playout " << playoutTimeUsec;// << std::endl;
             
             processingUsec = playoutTimeUsec;
             playoutTimeUsec = 0;
@@ -108,7 +109,7 @@ void JitterTiming::updatePlayoutTime(int framePlayoutTime, PacketNumber packetNo
             playoutTimeUsec -= processingUsec;
         
         processingTimeUsec_ = processingTimeUsec_ - processingUsec;
-        VLOG(LOG_TRACE) << "[JitterTiming] playout usec " << playoutTimeUsec
+        LogTraceC << " playout usec " << playoutTimeUsec
                   << "us, total proc " << processingTimeUsec_ << "us" << std::endl;
     }
     
@@ -119,11 +120,11 @@ void JitterTiming::run(boost::function<void()> callback)
 {
     assert(framePlayoutTimeMs_ >= 0);
     //int64_t now = MtNdnUtils::microsecondTimestamp();
-    VLOG(LOG_TRACE) << "[JitterTiming] timer wait " << framePlayoutTimeMs_ << "ms ... "
+    LogTraceC << " timer wait " << framePlayoutTimeMs_ << "ms ... "
               << MtNdnUtils::microsecondTimestamp() << std::endl;
     //std::cout << "jt " << now << std::endl;
     //LOG(WARNING) << "[JT] " << MtNdnUtils::microsecondTimestamp();
-    scheduleJob(2, framePlayoutTimeMs_*1000, [this, callback]()->bool{
+    scheduleJob(framePlayoutTimeMs_*1000, [this, callback]()->bool{
         callback();
         return false;
     });

@@ -79,7 +79,7 @@ private:
     const FrameBuffer *frameBuffer_;
 };
 
-class Pipeliner
+class Pipeliner : public MtNdnComponent
 {
 public:
 
@@ -102,9 +102,6 @@ public:
     int
     start();
 
-    void
-    fetchingLoop();
-
     int
     stop();
 
@@ -114,8 +111,7 @@ public:
     void
     express(const Interest &interest);
 
-    void
-    requestFrame(PacketNumber frameNo);
+    bool requestFrame(PacketNumber frameNo);
 
     void
     registerCallback(IPipelinerCallback* callback)
@@ -149,8 +145,8 @@ protected:
         if( oldState != newState )
         {
             state_ = newState;
-            LOG(INFO) << "[Pipeliner] change state " <<  state_
-                      << " to " << newState << endl;
+            LOG(INFO) << "[Pipeliner] change state " <<  state2string(state_)
+                      << " to " << state2string(newState) << endl;
         }
         if (callback_)
             callback_->onStateChanged(oldState, state_);
@@ -176,6 +172,29 @@ protected:
 
     void
     requestNextPkt();
+
+    std::string state2string( State state )
+    {
+        std::string str = "";
+        switch(state)
+        {
+        case StateInactive:
+            str = "Inactive";
+            break;
+        case StateWaitInitial:
+            str = "StateWaitInitial";
+            break;
+        case StateBootstrap:
+            str = "StateBootstrap";
+            break;
+        case StateFetching:
+            str = "StateFetching";
+            break;
+        default:
+            break;
+        }
+        return str;
+    }
 
 };
 

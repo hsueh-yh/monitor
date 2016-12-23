@@ -19,6 +19,9 @@
 
 #define _FRAME_RATE_ 30*1000    //30ms
 
+static std::string name[4];
+static int nameidx = 0;
+
 MainWindow::MainWindow(QWidget *parent) :
     QMainWindow(parent),
     ui(new Ui::MainWindow),
@@ -28,6 +31,10 @@ MainWindow::MainWindow(QWidget *parent) :
     mytimer_(NULL)
 {
     ui->setupUi(this);
+    name[0] = "/com/monitor/location1/stream0/video";
+    name[1] = "/com/monitor/location1/stream1/video";
+    name[2] = "/com/monitor/location1/stream2/video";
+    name[3] = "/com/monitor/location1/stream3/video";
 }
 
 MainWindow::~MainWindow()
@@ -46,17 +53,20 @@ MainWindow::closeEvent(QCloseEvent *event)
     event->accept();
 }
 
+
 void
 MainWindow::on_start_btn_clicked()
 {
     manager_ = &(MMNdnLibrary::getSharedInstance());
-    std::string remoteStreamPrefix = "/com/monitor/location1/stream0/video";
-    std::string threadName = "/com/monitor/location1/stream0/video";
+    std::string remoteStreamPrefix = name[nameidx];//"/com/monitor/location1/stream0/video";
+    std::string threadName = name[nameidx];//"/com/monitor/location1/stream0/video";
     MediaStreamParams params;
     params.type_ = MediaStreamParams::MediaStreamTypeVideo;
     params.streamName_ = remoteStreamPrefix;
 
     GeneralParams generalParams;
+    generalParams.loggingLevel_ = ndnlog::NdnLoggerDetailLevelAll;
+    generalParams.logPath_ = "";
     generalParams.prefix_ = remoteStreamPrefix;
     generalParams.host_ = "10.103.246.164";
     generalParams.portNum_ = 6363;
@@ -77,6 +87,7 @@ MainWindow::on_start_btn_clicked()
                              generalParams,
                              consumerParams,
                              renderer);
+    ++nameidx;
 }
 
 void
@@ -219,12 +230,47 @@ MainWindow::refreshRenderer()
     //int rNo = renderer_.size();
     mapRenderer::iterator iter = map_str_renderer_.begin();
     RendererInternal *renderer;
-    for( ; iter != map_str_renderer_.end(); ++iter )
+    int idx = 0, x = 0, y = 0, width = 0, height = 0;
+    for( ; iter != map_str_renderer_.end(); ++iter, ++idx )
     {
-        renderer = iter->second;
-        QPoint point(0,0);
-        int width = 640;//this->ui->labelWidget->width();
-        int height = 480;//this->ui->labelWidget->height();
-        renderer->refresh(this, point, width, height );
+
+        if( calLabelParam( idx, x, y, width, height ) )
+        {
+            renderer = iter->second;
+            QPoint point(x,y);
+            //int width = 640;//this->ui->labelWidget->width();
+            //int height = 480;//this->ui->labelWidget->height();
+            renderer->refresh(this, point, width, height );
+        }
+        else
+            return -1;
     }
+}
+
+bool
+MainWindow::calLabelParam( int idx, int &x, int &y, int &width, int &height )
+{
+    int totalNum = 0;
+
+    totalNum = map_str_renderer_.size();
+    //num = consumerSmltId;
+
+    int base_ = ceil(sqrt(totalNum));
+    if (base_ == 0)
+        return false;
+
+    width = ( ui->labelWidget->width() )/base_;
+    height = ( ui->labelWidget->height() )/base_;
+
+    x = ( (idx) % base_ )  *width;
+    y = ( (idx) / base_ )  *height;
+
+//            cout    << endl
+//                    << width << "*" << height << endl
+//                    << x << "*" << y << endl
+//                    << ( (id%base_) -1 ) << "*" << ( (id-1) / base_ ) << endl
+//                    << id << "*"  << base_
+//                    << endl;
+
+    return true;
 }

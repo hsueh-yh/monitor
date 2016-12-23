@@ -23,6 +23,8 @@
 
 using namespace boost;
 
+static int componentIdCounter_ = 0;
+
 //******************************************************************************
 /**
   *@name MtNdnComponent class
@@ -30,7 +32,8 @@ using namespace boost;
 MtNdnComponent::MtNdnComponent(boost::asio::io_service &ioservice):
     watchdogTimer_(ioservice/*MtNdnUtils::getIoService()*/),
     isJobScheduled_(false),
-    isTimerCancelled_(false)
+    isTimerCancelled_(false),
+    componentId_(componentIdCounter_++)
 {}
 
 MtNdnComponent::MtNdnComponent(IMtNdnComponentCallback *callback):
@@ -64,6 +67,20 @@ MtNdnComponent::onError(const char *errorMessage, const int errorCode)
         //LogErrorC << "error occurred: " << string(errorMessage) << endl;
         //if (logger_) logger_->flush();
     }
+}
+
+std::string
+MtNdnComponent::getDescription() const
+{
+    if (description_ == "")
+    {
+        std::stringstream ss;
+        ss << "MtNdnObject"
+           /*<< std::hex << this*/;
+        return ss.str();
+    }
+
+    return description_;
 }
 
 thread
@@ -106,18 +123,18 @@ MtNdnComponent::stopThread(thread &threadObject)
 
 
 void
-MtNdnComponent::scheduleJob(const int id, const unsigned int usecInterval,
+MtNdnComponent::scheduleJob(const unsigned int usecInterval,
                                   boost::function<bool()> jobCallback)
 {
     boost::lock_guard<boost::recursive_mutex> scopedLock(this->jobMutex_);
 
     int64_t startTs = MtNdnUtils::microsecondTimestamp();
-    VLOG(LOG_WARN) << id << " start job " << startTs << std::endl;
+    VLOG(LOG_WARN) << getDescription() << " start job " << startTs << std::endl;
     watchdogTimer_.expires_from_now(boost::chrono::microseconds(usecInterval));
     isJobScheduled_ = true;
     isTimerCancelled_ = false;
     
-    watchdogTimer_.async_wait([this, startTs, id, usecInterval, jobCallback](const boost::system::error_code &code){
+    watchdogTimer_.async_wait([this, startTs, usecInterval, jobCallback](const boost::system::error_code &code){
         if (code != boost::asio::error::operation_aborted)
         {
             if (!isTimerCancelled_)
@@ -126,9 +143,9 @@ MtNdnComponent::scheduleJob(const int id, const unsigned int usecInterval,
                 boost::lock_guard<boost::recursive_mutex> scopedLock(this->jobMutex_);
                 bool res = jobCallback();
                 int64_t cmpltTs = MtNdnUtils::microsecondTimestamp();
-                VLOG(LOG_WARN) << id << " cmplt job " << cmpltTs << " taking " << cmpltTs-startTs << std::endl;
+                VLOG(LOG_WARN) << getDescription() << " cmplt job " << cmpltTs << " taking " << cmpltTs-startTs << std::endl;
                 if (res)
-                    this->scheduleJob(id, usecInterval, jobCallback);
+                    this->scheduleJob(usecInterval, jobCallback);
             }
         }
     });

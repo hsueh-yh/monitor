@@ -43,6 +43,12 @@ public:
     virtual int
     stop();
 
+    void
+    setLogger(ndnlog::new_api::Logger* logger);
+
+    void
+    setDescription(const std::string& desc);
+
     bool
     isRunning()
     { return isRunning_; }
@@ -69,7 +75,7 @@ protected:
 
     void *encodedFrameConsumer_;
     //unsigned char *data_;
-    vector<uint8_t> *vdata_;
+    vector<uint8_t> *vec_data_;
 
     /**
       *This method should be overriden by derived classes for
@@ -85,8 +91,7 @@ protected:
      */
     virtual bool
     playbackPacket( int64_t packetTsLocal,
-                    unsigned char *data,
-                    unsigned int size,
+                    vector<uint8_t> &data,
                     PacketNumber playbackPacketNo,
                     PacketNumber sequencePacketNo,
                     PacketNumber pairedPacketNo,

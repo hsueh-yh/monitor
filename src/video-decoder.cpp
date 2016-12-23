@@ -11,6 +11,11 @@ VideoDecoder::VideoDecoder() :
     decoder_()
 {
     decoder_.reset(new Decoder());
+    std::stringstream ss;
+    ss << componentId_;
+    setDescription(ss.str());
+    setDescription("VideoDecoder");
+    LOG(INFO) << getDescription() << std::endl;
 }
 
 //********************************************************************************
@@ -39,11 +44,13 @@ void VideoDecoder::reset()
 #pragma mark - intefaces realization DecodedImageCallback
 void VideoDecoder::onDecoded(const AVFrame &decodedImage)
 {
-    VLOG(LOG_TRACE) << "decode done "
+    /*
+    VLOG(LOG_TRACE) << "decode Frame "
               << decodedImage.width
               << "*"
               << decodedImage.height
               << std::endl;
+              */
     if (decodedFrameConsumer_)
         decodedFrameConsumer_->onDeliverFrame(decodedImage, capturedTimestamp_);
 
@@ -56,10 +63,11 @@ void VideoDecoder::onEncodedFrameDelivered(AVPacket &encodedImage,
                                            double timestamp,
                                            bool completeFrame)
 {
-    if (frameCount_ == 0)
+    //if (frameCount_ == 0)
     {
         VLOG(LOG_TRACE)
-        << "start decode "
+        << getDescription()
+        << " start decode "
         << frameCount_ << " "
         << encodedImage.size << " "
         << hex << (void*)encodedImage.data << dec
@@ -72,7 +80,7 @@ void VideoDecoder::onEncodedFrameDelivered(AVPacket &encodedImage,
     capturedTimestamp_ = timestamp;
     frameCount_++;
 
-    VLOG(LOG_TRACE) << "decoding ... " << std::endl;
+    //VLOG(LOG_TRACE) << "decoding ... " << std::endl;
     int ret = decoder_->decode(encodedImage);
 
     VLOG_IF(LOG_WARN, ret < 0) << "decode ERROR errcode=" << ret << std::endl;

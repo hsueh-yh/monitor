@@ -99,6 +99,14 @@ public:
     getGeneralParameters() const
     { return generalParams_; }
 
+    //  ILoggingObject
+    //***********************************************************
+    virtual void
+    setLogger(ndnlog::new_api::Logger* logger);
+
+    virtual void
+    setDescription(const std::string& desc);
+
     //  IPipelinerCallback
     //***********************************************************
     virtual void

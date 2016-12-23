@@ -66,6 +66,9 @@ private:
     int
     refreshRenderer();
 
+    bool
+    calLabelParam(int idx, int &x, int &y, int &width, int &height);
+
 
 private slots:
     //  on button

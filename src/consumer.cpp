@@ -36,9 +36,15 @@ Consumer::init(const ConsumerSettings &settings,
     streamPrefix_ = settings_.streamPrefix_;
     //LOG(INFO) << "streamPrefix_: " << streamPrefix_ << std::endl;
     frameBuffer_.reset(new FrameBuffer());
+    frameBuffer_->setLogger(logger_);
+    frameBuffer_->setDescription(MtNdnUtils::formatString("%s-Buffer",
+                                                       getDescription().c_str()));
     frameBuffer_->init();
 
     pipeliner_.reset(new Pipeliner(this));
+    pipeliner_->setLogger(logger_);
+    pipeliner_->setDescription(MtNdnUtils::formatString("%s-Pipeliner",
+                                                     getDescription().c_str()));
     pipeliner_->registerCallback(this);
 
     renderer_->init();
@@ -154,6 +160,27 @@ Consumer::onStateChanged(const int &oldState, const int &newState)
 
         observer_->onStatusChanged(status);
     }
+}
+
+void
+Consumer::setLogger(ndnlog::new_api::Logger *logger)
+{
+    if (frameBuffer_.get())
+        frameBuffer_->setLogger(logger);
+
+    if (pipeliner_.get())
+        pipeliner_->setLogger(logger);
+
+    if (playout_.get())
+        playout_->setLogger(logger);
+
+    ILoggingObject::setLogger(logger);
+}
+
+void
+Consumer::setDescription(const std::string &desc)
+{
+    ILoggingObject::setDescription(desc);
 }
 
 void

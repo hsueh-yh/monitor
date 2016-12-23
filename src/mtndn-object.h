@@ -19,7 +19,10 @@
 #include <boost/thread/recursive_mutex.hpp>
 #include <boost/enable_shared_from_this.hpp>
 
+#include <sstream>
+
 #include "mtndn-utils.h"
+#include "simple-log.h"
 
 
 class IMtNdnComponentCallback {
@@ -30,6 +33,7 @@ public:
 };
         
 class MtNdnComponent :
+        public ndnlog::new_api::ILoggingObject,
         public IMtNdnComponentCallback,
         public boost::enable_shared_from_this<MtNdnComponent>
 {
@@ -47,16 +51,28 @@ public:
 
     virtual void deregisterCallback()
     { callback_ = NULL; }
-            
+
+    //////////////////////////////////////////////////////////////////////
+    // IMtNdnComponentCallback
     virtual void onError(const char *errorMessage, const int errorCode);
 
+    //////////////////////////////////////////////////////////////////////
+    // ILoggingObject
+
+    virtual std::string
+    getDescription() const;
+
+    virtual bool
+    isLoggingEnabled() const
+    { return true; }
 
 protected:
     boost::atomic<bool> isJobScheduled_;
     boost::mutex callbackMutex_;
     boost::recursive_mutex jobMutex_;
     IMtNdnComponentCallback *callback_ = nullptr;
-            
+
+    int componentId_;
 
     // protected methods go here
     bool hasCallback() { return callback_ != NULL; }
@@ -67,8 +83,8 @@ protected:
     stopThread(boost::thread &thread);
 
     void
-    scheduleJob(const int id, const unsigned int usecInterval,
-                        boost::function<bool()> jobCallback);
+    scheduleJob(const unsigned int usecInterval,
+                boost::function<bool()> jobCallback);
     void
     stopJob();
 

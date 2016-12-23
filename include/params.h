@@ -4,6 +4,25 @@
 #include <sstream>
 #include <vector>
 
+namespace ndnlog {
+    typedef enum _NdnLoggerLevel {
+        NdnLoggerLevelTrace = 0,
+        NdnLoggerLevelDebug = 1,
+        NdnLoggerLevelStat = 2,
+        NdnLoggerLevelInfo = 3,
+        NdnLoggerLevelWarning = 4,
+        NdnLoggerLevelError = 5
+    } NdnLoggerLevel;
+
+    typedef enum _NdnLoggerDetailLevel {
+        NdnLoggerDetailLevelNone = NdnLoggerLevelError+1,
+        NdnLoggerDetailLevelDefault = NdnLoggerLevelInfo,
+        NdnLoggerDetailLevelStat = NdnLoggerLevelStat,
+        NdnLoggerDetailLevelDebug = NdnLoggerLevelDebug,
+        NdnLoggerDetailLevelAll = NdnLoggerLevelTrace
+    } NdnLoggerDetailLevel;
+}
+
 class Params {
 public:
     virtual ~Params(){}
@@ -130,7 +149,7 @@ public:
 class GeneralParams : public Params {
 public:
     // general
-    //ndnlog::NdnLoggerDetailLevel loggingLevel_ = ndnlog::NdnLoggerDetailLevelNone;
+    ndnlog::NdnLoggerDetailLevel loggingLevel_ = ndnlog::NdnLoggerDetailLevelAll;
     std::string logFile_ = "";
     std::string logPath_ = "";
 

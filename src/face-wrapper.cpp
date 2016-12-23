@@ -20,7 +20,7 @@
 #include <ndn-cpp/transport/unix-transport.hpp>
 #endif
 
-
+#include "logger.h"
 
 #include "face-wrapper.h"
 //#include "mtndn-object.h"
@@ -221,9 +221,16 @@ FaceProcessor::createFaceProcessor(const std::string host, const int port,
 //******************************************************************************
 FaceProcessor::FaceProcessor(const ptr_lib::shared_ptr<FaceWrapper> &faceWrapper):
                             isProcessing_(false),
-                            usecInterval_(100),
+                            usecInterval_(10000),
                             faceWrapper_(faceWrapper)
 {
+    /*
+    std::stringstream ss;
+    ss << componentId_;
+    setDescription(ss.str());
+    setDescription("FaceProcessor");
+    LOG(INFO) << getDescription() << std::endl;
+    */
     //std::cout << "new FaceProcessor..." << std::endl;
 }
 
@@ -247,7 +254,7 @@ FaceProcessor::startProcessing(unsigned int usecInterval)
 
 #ifndef US_TS_FACE
 
-        scheduleJob (0,usecInterval, [this]()->bool{
+        scheduleJob (usecInterval, [this]()->bool{
             try
             {
                 faceWrapper_->processEvents();

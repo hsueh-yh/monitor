@@ -2,8 +2,10 @@
 #define RENDERER_H_
 
 #include "interfaces.h"
+#include <sstream>
 
 #include <QLabel>
+static int logIdx = 0;
 
 class RendererInternal : public IExternalRenderer{
 public:
@@ -16,10 +18,25 @@ public:
         label_(new QLabel(parent_)),
         point_(0,0),
         width_(0),height_(0)
-    {}
+    {
+        logFile_ = "renderer";
+        std::stringstream ss;
+        ss << logIdx;
+        ++logIdx;
+        logFile_.append(ss.str());
+        logFile_.append(".log");
+        std::cout << "renderer log to " << logFile_ << std::endl;
+    }
 
     ~RendererInternal()
-    {}
+    {
+        if( label_ )
+            delete label_;
+        if( renderBuffer_ )
+            free(renderBuffer_);
+        if( RGBbuf_ )
+            free (RGBbuf_);
+    }
 
 
     void refresh(QWidget *parent, QPoint point, int width, int height)
@@ -63,6 +80,11 @@ private:
     QLabel *label_;
     QPoint point_;
     int width_, height_;
+
+    QImage image;
+    QPixmap pixmap;
+
+    std::string logFile_;
 
     bool
     YV12ToBGR24_Native(const uint8_t *pYUV,uint8_t *pBGR24,int width,int height)
