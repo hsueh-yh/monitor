@@ -195,25 +195,6 @@ Consumer::onBufferingEnded()
     {
         int adjustment = 0;
         playout_->start(adjustment);
-
-        /*
-        playoutThread_.push_back(startThread([this,adjustment]()->int{
-            playout_->start(adjustment);
-            try
-            {
-                VLOG(LOG_DEBUG) << "playoutThread "
-                             << boost::this_thread::get_id() << std::endl;
-
-                MtNdnUtils::getIoService().run();
-                VLOG(LOG_DEBUG) << "playoutThread ioservice.run OVER "
-                             << boost::this_thread::get_id() << std::endl;
-            }
-            catch (std::exception &e) // fatal
-            {
-                throw std::runtime_error(e.what());
-            }
-        }));
-        */
     }
 }
 

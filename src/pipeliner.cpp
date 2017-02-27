@@ -168,9 +168,11 @@ Pipeliner::init()
 int
 Pipeliner::start()
 {
-    requestMeta();
-    switchToState(StateWaitInitial);
-
+    //requestMeta();
+    switchToState(StateFetching);
+    unsigned int delay = 5*1000;
+    scheduleJob(delay,boost::bind(&Pipeliner::request,this,delay));
+    //request();
     VLOG(LOG_INFO) << "[Pipeliner] Started" << endl;
 
     return RESULT_OK;
@@ -228,7 +230,7 @@ Pipeliner::express(const Name &name/*, int64_t priority*/)
 }
 
 bool
-Pipeliner::requestFrame(PacketNumber frameNo)
+Pipeliner::requestFrame(PacketNumber frameNo, bool isExpressInterest)
 {
     if( !window_.canAskForData(frameNo) )
     {
@@ -253,6 +255,7 @@ Pipeliner::requestFrame(PacketNumber frameNo)
 
     //frameBuffer_->lock();
     ndn::Interest interest(packetPrefix);
+    interest.setInterestLifetimeMilliseconds(2*10*1000);
 
     if( !frameBuffer_->interestIssued(interest))
     {
@@ -268,7 +271,8 @@ Pipeliner::requestFrame(PacketNumber frameNo)
     //slot->unlock();
 
     //express(frameInterest);
-    express(interest);
+    if(isExpressInterest)
+        express(interest);
     return true;
 }
 
@@ -311,7 +315,10 @@ Pipeliner::onData(const ptr_lib::shared_ptr<const Interest> &interest,
             //cout << reqCurPktNo_ << "**********************"<<endl;
             reqLastNo_ = reqCurPktNo_;
             switchToState(StateFetching);
-            requestNextPkt();
+            Interest interest(streamName_);
+            interest.setInterestLifetimeMilliseconds(6*10*1000);
+            express(interest);
+            //requestNextPkt();
         }
         else
         {
@@ -334,7 +341,9 @@ Pipeliner::onData(const ptr_lib::shared_ptr<const Interest> &interest,
             return;
         //LOG(INFO) << "[Pipeliner] Received Data " << data->getName().to_uri() << " " << reqCurPktNo_ << " " << reqLastNo_ << std::endl;
         frameBuffer_->recvData(data);
-        requestNextPkt();
+        //requestNextPkt();
+        if( callback_)
+            callback_->onBufferingEnded();
     }
         break;
 
@@ -362,7 +371,7 @@ Pipeliner::onTimeout(const ptr_lib::shared_ptr<const Interest> &interest)
     case StateInactive:
     case StateWaitInitial:
     {
-        requestMeta();
+        //requestMeta();
     }
         break;
 
@@ -371,8 +380,8 @@ Pipeliner::onTimeout(const ptr_lib::shared_ptr<const Interest> &interest)
     {
         if( frameBuffer_->getState() == FrameBuffer::Invalid)
             return;
-        frameBuffer_->dataMissed(interest);
-        express(*(interest.get()));
+        //frameBuffer_->dataMissed(interest);
+        //express(*(interest.get()));
     }
         break;
 
@@ -425,3 +434,11 @@ Pipeliner::requestNextPkt()
     }
 }
 
+bool
+Pipeliner::request(unsigned int delay)
+{
+    Interest interest(streamName_);
+    interest.setInterestLifetimeMilliseconds(delay);
+    express(interest);
+    return true;
+}

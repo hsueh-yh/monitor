@@ -7,8 +7,7 @@
 //********************************************************************************
 #pragma mark - construction/destruction
 VideoDecoder::VideoDecoder() :
-    decodedFrameConsumer_(NULL),
-    decoder_()
+    decodedFrameConsumer_(NULL)
 {
     decoder_.reset(new Decoder());
     std::stringstream ss;

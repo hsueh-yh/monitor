@@ -17,7 +17,7 @@ public:
 };
 
 class VideoDecoder: public IEncodedFrameConsumer,
-                    public DecodedImageCallback,
+                    public FF_DecodedImageCallback,
                     public MtNdnComponent
 {
 public:

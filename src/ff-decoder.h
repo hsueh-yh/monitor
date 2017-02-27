@@ -29,7 +29,7 @@ extern "C"
 #define BYTE unsigned char
 
 
-class DecodedImageCallback
+class FF_DecodedImageCallback
 {
 public:
     virtual void onDecoded(const AVFrame &decodedFrame) = 0;
@@ -51,7 +51,7 @@ public:
     bool YV12ToBGR24_FFmpeg(unsigned char *pYUV,unsigned char *pBGR24,int width,int height);
 
     void
-    RegisterDecodeCompleteCallback(DecodedImageCallback *callback)
+    RegisterDecodeCompleteCallback(FF_DecodedImageCallback *callback)
     { callback_ = callback; }
 
 private:
@@ -116,7 +116,7 @@ private:
 	pp_context *pp_context_;
     pp_mode    *pp_mode_;
 
-    DecodedImageCallback *callback_;
+    FF_DecodedImageCallback *callback_;
 };
 
 #endif //FFDECODER_H_

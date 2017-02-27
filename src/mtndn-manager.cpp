@@ -42,6 +42,61 @@ void init();
 void reset();
 void cleanup();
 
+//******************************************************************************
+class NdnRtcLibraryInternalObserver:public IMtNdnComponentCallback,
+                                    public IMtNdnLibraryObserver
+{
+public:
+    NdnRtcLibraryInternalObserver():libObserver_(NULL){}
+    ~NdnRtcLibraryInternalObserver(){}
+
+    void
+    errorWithCode(int errCode, const char* message)
+    {
+        if (libObserver_)
+            libObserver_->onErrorOccurred(errCode, message);
+    }
+
+    void
+    setLibraryObserver(IMtNdnLibraryObserver* libObserver)
+    {
+        libObserver_ = libObserver;
+    }
+
+    // INdnRtcLibraryObserver
+    void onStateChanged(const char *state, const char *args)
+    {
+        if (libObserver_)
+            libObserver_->onStateChanged(state, args);
+    }
+
+    void onErrorOccurred(int errorCode, const char *errorMessage)
+    {
+        if (libObserver_)
+            libObserver_->onErrorOccurred(errorCode, errorMessage);
+    }
+
+    // INdnRtcObjectObserver
+    void onErrorOccurred(const char *errorMessage)
+    {
+        if (libObserver_)
+            libObserver_->onErrorOccurred(-1, errorMessage);
+    }
+
+    // INdnRtcComponentCallback
+    void onError(const char *errorMessage,
+                 const int errCode)
+    {
+        if (libObserver_)
+            libObserver_->onErrorOccurred(errCode, errorMessage);
+    }
+
+private:
+    IMtNdnLibraryObserver* libObserver_;
+};
+
+static NdnRtcLibraryInternalObserver LibraryInternalObserver;
+//******************************************************************************
 
 //********************************************************************************
 //#pragma mark module loading
@@ -59,7 +114,6 @@ static void initializer(int argc, char* *argv, char* *envp) {
 __attribute__((destructor))
 static void destructor(){
 }
-
 
 //******************************************************************************
 //#pragma mark - construction/destruction
@@ -84,14 +138,14 @@ MtNdnManager &MtNdnManager::getSharedInstance()
     return mtndnManager;
 }
 
-/*
+
 void MtNdnManager::setObserver(IMtNdnLibraryObserver *observer)
 {
     LOG(INFO) << "Set library observer " << observer << std::endl;
 
     LibraryInternalObserver.setLibraryObserver(observer);
 }
-*/
+
 
 //******************************************************************************
 static int id = 0;
@@ -137,7 +191,7 @@ MtNdnManager::addRemoteStream(std::string &remoteStreamPrefix,
             settings.streamParams_ = params;
             settings.faceProcessor_ = MtNdnUtils::getLibFace();
 
-            //remoteStreamConsumer->registerCallback(&LibraryInternalObserver);
+            remoteStreamConsumer->registerCallback(&LibraryInternalObserver);
 
             if (RESULT_FAIL(remoteStreamConsumer->init(settings, threadName)))
             {
@@ -153,7 +207,9 @@ MtNdnManager::addRemoteStream(std::string &remoteStreamPrefix,
                                                                     params.streamName_.c_str()));
                 */
                 std::string logFile = MtNdnUtils::getFullLogPath(generalParams,
-                                              MtNdnUtils::formatString("consumer-%d.log",id++));
+                                              MtNdnUtils::formatString("consumer-%d.log", id++));
+                //std::string logFile = MtNdnUtils::getFullLogPath(generalParams,
+                //                              MtNdnUtils::formatString("consumer-%d.log",id++));
                 LOG(INFO) << "logpath " << logFile << std::endl;
                 remoteStreamConsumer->setLogger(new Logger(generalParams.loggingLevel_,
                                                            logFile));
@@ -336,7 +392,7 @@ int MtNdnManager::notifyObserverWithState(const char *stateName, const char *for
 
 void MtNdnManager::notifyObserver(const char *state, const char *args) const
 {
-    //LibraryInternalObserver.onStateChanged(state, args);
+    LibraryInternalObserver.onStateChanged(state, args);
 }
 
 //******************************************************************************

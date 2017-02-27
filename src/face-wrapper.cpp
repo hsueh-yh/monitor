@@ -252,12 +252,13 @@ FaceProcessor::startProcessing(unsigned int usecInterval)
         usecInterval_ = usecInterval;
         isProcessing_ = true;
 
-#ifndef US_TS_FACE
+#ifndef USE_TS_FACE
 
         scheduleJob (usecInterval, [this]()->bool{
             try
             {
                 faceWrapper_->processEvents();
+                LOG(INFO) << "faceProcessor" << std::endl;
             }
             catch (std::exception &exception)
             {

@@ -2,7 +2,7 @@
 #include "mtndn-manager.h"
 
 
-IMMNdnLibrary& MMNdnLibrary::getSharedInstance()
+IMtNdnLibrary& MtNdnLibrary::getSharedInstance()
 {
     return MtNdnManager::getSharedInstance();
 }

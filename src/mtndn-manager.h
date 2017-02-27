@@ -4,13 +4,13 @@
 #include "mtndn-library.h"
 
 
-class MtNdnManager : public IMMNdnLibrary
+class MtNdnManager : public IMtNdnLibrary
 {
 public:
     static MtNdnManager &getSharedInstance();
 
-//    void
-//    setObserver(IMtNdnLibraryObserver *observer);
+    void
+    setObserver(IMtNdnLibraryObserver *observer);
 
     std::string
     addRemoteStream(std::string &remoteStreamPrefix,

@@ -15,17 +15,17 @@
   *No upper boundary exists for the number of simultaneously fetched
   *streams. Library is configured using ParamsStruct structure.
  */
-class MMNdnLibrary {
+class MtNdnLibrary {
 public:
     /**
       *Returns a reference to the singleton instance of MtNdnLirary class
      */
-    static IMMNdnLibrary &getSharedInstance();
+    static IMtNdnLibrary &getSharedInstance();
 
 private:
-    MMNdnLibrary();
-    MMNdnLibrary(MMNdnLibrary const&) = delete;
-    void operator=(MMNdnLibrary const&) = delete;
+    MtNdnLibrary();
+    MtNdnLibrary(MtNdnLibrary const&) = delete;
+    void operator=(MtNdnLibrary const&) = delete;
 };
 
 

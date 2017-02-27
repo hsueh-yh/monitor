@@ -46,7 +46,7 @@ private:
     Simulator *simulator;
     MyTimer *mytimer_;
 
-    IMMNdnLibrary *manager_;
+    IMtNdnLibrary *manager_;
     //vector<RendererInternal*> renderer_;
     typedef map<std::string, RendererInternal*> mapRenderer;
     mapRenderer map_str_renderer_;

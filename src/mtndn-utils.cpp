@@ -840,7 +840,7 @@ std::string MtNdnUtils::getFullLogPath(const /*new_api::*/GeneralParams &general
 {
     static char logPath[PATH_MAX];
     return ((generalParams.logPath_ == "")  ? std::string(getwd(logPath))
-                                            : generalParams.logPath_) + "/" + fileName;
+                                            : generalParams.logPath_) + "/logs/" + fileName;
 }
 
 

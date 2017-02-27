@@ -14,7 +14,8 @@
 #define WIDTH 640
 #define HEIGHT 480
 
-#define HOST "10.103.246.164"
+//#define HOST "localhost"
+#define HOST "10.103.244.163"
 #define PORT 6363
 
 #define _FRAME_RATE_ 30*1000    //30ms
@@ -57,7 +58,7 @@ MainWindow::closeEvent(QCloseEvent *event)
 void
 MainWindow::on_start_btn_clicked()
 {
-    manager_ = &(MMNdnLibrary::getSharedInstance());
+    manager_ = &(MtNdnLibrary::getSharedInstance());
     std::string remoteStreamPrefix = name[nameidx];//"/com/monitor/location1/stream0/video";
     std::string threadName = name[nameidx];//"/com/monitor/location1/stream0/video";
     MediaStreamParams params;
@@ -68,8 +69,8 @@ MainWindow::on_start_btn_clicked()
     generalParams.loggingLevel_ = ndnlog::NdnLoggerDetailLevelAll;
     generalParams.logPath_ = "";
     generalParams.prefix_ = remoteStreamPrefix;
-    generalParams.host_ = "10.103.246.164";
-    generalParams.portNum_ = 6363;
+    generalParams.host_ = HOST;
+    generalParams.portNum_ = PORT;
 
     GeneralConsumerParams consumerParams;
     consumerParams.interestLifetime_ = 30;

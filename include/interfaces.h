@@ -42,19 +42,49 @@ public:
 
 
 /**
+     * This abstract class declares interface for the library's observer - an
+     * instance which can receive status updates from the library.
+     */
+class IMtNdnLibraryObserver {
+public:
+    /**
+     * This method is called whenever library encouteres errors or state
+     * transistions (for instance, fetching has started). Arguments provided
+     * work only as a source of additional information about what has
+     * happened inside the library.
+     * @param state Indicates which state library has encountered (i.e.
+     * "error" or "info"). Can be used by observer for filtering important
+     * events. Currently, following states are provided:
+     *      "error"
+     *      "info"
+     * @param args Any additional info that accompany new state (human-
+     * readable text information).
+     */
+    virtual void onStateChanged(const char *state, const char *args) = 0;
+
+    /**
+     * Called when errors occur.
+     * @param errorCode Error code (@see error-codes.h)
+     * @param message Error message
+     */
+    virtual void onErrorOccurred(int errorCode, const char* message) = 0;
+};
+
+
+/**
       *Interface for remote stream observer. Gets updates for notable events
       *occuring while remote stream is fetched.
      */
-    typedef enum _ConsumerStatus {
-        ConsumerStatusStopped,
-        ConsumerStatusNoData,   // consumer has started but no data received yet
-        ConsumerStatusAdjusting,  // consumer re-adjusts interests' window
-        ConsumerStatusBuffering,    // consumer has finished chasing and is
-                                    // buffering frames unless buffer reaches
-                                    // target size
-        ConsumerStatusFetching, // consumer has finished buffering and switched
-        // to normal operating fetching mode
-    } ConsumerStatus;
+typedef enum _ConsumerStatus {
+    ConsumerStatusStopped,
+    ConsumerStatusNoData,   // consumer has started but no data received yet
+    ConsumerStatusAdjusting,  // consumer re-adjusts interests' window
+    ConsumerStatusBuffering,    // consumer has finished chasing and is
+                                // buffering frames unless buffer reaches
+                                // target size
+    ConsumerStatusFetching, // consumer has finished buffering and switched
+    // to normal operating fetching mode
+} ConsumerStatus;
 
 
 /**
@@ -110,7 +140,7 @@ public:
 /******************************************************************************
   *This is an interface for the NDN-RTC library
  ******************************************************************************/
-class IMMNdnLibrary
+class IMtNdnLibrary
 {
 public:
     /**

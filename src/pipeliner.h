@@ -111,7 +111,8 @@ public:
     void
     express(const Interest &interest);
 
-    bool requestFrame(PacketNumber frameNo);
+    bool
+    requestFrame(PacketNumber frameNo, bool isExpressInterest=true);
 
     void
     registerCallback(IPipelinerCallback* callback)
@@ -173,7 +174,11 @@ protected:
     void
     requestNextPkt();
 
-    std::string state2string( State state )
+    bool
+    request(unsigned int delay = 5*1000);
+
+    std::string
+    state2string( State state )
     {
         std::string str = "";
         switch(state)

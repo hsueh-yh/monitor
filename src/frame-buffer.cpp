@@ -87,6 +87,7 @@ FrameBuffer::Slot::dataArrived ()
 ////////////////////////////////////////////////////////////////
 ///     FrameBuffer::PlaybackQueue
 ////////////////////////////////////////////////////////////////
+
 /*
 FrameBuffer::PlaybackQueue::PlaybackQueue(double playbackRate):
     playbackRate_(playbackRate),
@@ -332,8 +333,23 @@ FrameBuffer::recvData(const ndn::ptr_lib::shared_ptr<Data> &data)
 
     if ( iter == activeSlots_.end() )
     {
-        VLOG(LOG_INFO) << "arrived data hava skiped " << data->getName() << endl;
-        return;
+        Interest interest(data->getName());
+        if( !interestIssued(interest))
+        {
+            //usleep(10*1000);
+            //cout << ".";
+
+            LOG(ERROR) << "FrameBuffer::interestIssued false " << std::endl;
+        }
+        else
+        {
+            iter = activeSlots_.find(frameNo);
+            if( iter == activeSlots_.end() )
+            {
+                VLOG(LOG_INFO) << "arrived data hava skiped " << data->getName() << endl;
+                return;
+            }
+        }
     }
 
     readySlots_count_++;
