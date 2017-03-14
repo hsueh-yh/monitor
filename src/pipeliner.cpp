@@ -130,7 +130,7 @@ Pipeliner::Pipeliner(const Consumer *consumer):
     frameBuffer_(consumer_->getFrameBuffer().get()),
     face_(consumer_->getFace()),
     //streamName_(consumer_->getPrefix()),
-    count_(0),
+    request_count_(0),
     reqCurPktNo_(0),
     state_(StateInactive),
     isRetransmission(false),
@@ -170,8 +170,9 @@ Pipeliner::start()
 {
     //requestMeta();
     switchToState(StateFetching);
-    unsigned int delay = 5*1000;
-    scheduleJob(delay,boost::bind(&Pipeliner::request,this,delay));
+    unsigned int delayMs = 5*1000;
+    request(delayMs);
+    scheduleJob((delayMs-1)*1000,boost::bind(&Pipeliner::request,this,delayMs));
     //request();
     VLOG(LOG_INFO) << "[Pipeliner] Started" << endl;
 
@@ -437,6 +438,8 @@ Pipeliner::requestNextPkt()
 bool
 Pipeliner::request(unsigned int delay)
 {
+    request_count_++;
+    cout << "Request: " << request_count_ << endl;
     Interest interest(streamName_);
     interest.setInterestLifetimeMilliseconds(delay);
     express(interest);

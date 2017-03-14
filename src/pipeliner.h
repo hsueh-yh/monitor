@@ -134,7 +134,7 @@ protected:
     Statistics *statistic;
     bool isRetransmission;
 
-    int count_;
+    int request_count_;
     unsigned int reqCurPktNo_, reqLastNo_;
 
 
