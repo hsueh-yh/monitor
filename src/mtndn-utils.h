@@ -20,7 +20,7 @@
 
 #include <sstream>
 
-#include "include/params.h"
+#include "params.h"
 
 #define STR(exp) (#exp)
 

@@ -11,12 +11,11 @@
 
 #include "addstreamdialog.h"
 
-//#include "consumer.h"
 #include "simulator.h"
 #include "myTimer.h"
-
-#include "mtndn-library.h"
 #include "renderer.h"
+
+#include <mtndn-library.h>
 
 using namespace std;
 
@@ -30,8 +29,23 @@ class MainWindow :  public QMainWindow
     Q_OBJECT
 
 public:
-    explicit MainWindow(QWidget *parent = 0);
+    explicit MainWindow(QWidget *parent = 0 );
     ~MainWindow();
+
+    inline void setHost( string &host )
+    {
+        _host = host;
+    }
+
+    inline void setPort( unsigned int port )
+    {
+        _port = port;
+    }
+
+    void setTransType( std::string type )
+    {
+        transType = type;
+    }
 
 private:
 
@@ -55,6 +69,12 @@ private:
                  label_height;
 
     int space_;
+
+    /////////////////////////////
+    //connection
+    std::string transType = "byFrame";
+    std::string _host;
+    unsigned int _port;
 
 //    struct timeval t_1, t_2;
 //    long lt_1,lt_2;

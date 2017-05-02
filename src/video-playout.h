@@ -1,7 +1,6 @@
 #ifndef VIDEOPLAYOUT_H
 #define VIDEOPLAYOUT_H
 
-#include <QLabel>
 #include "playout.h"
 #include "video-consumer.h"
 

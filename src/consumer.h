@@ -14,7 +14,8 @@
 #include "mtndn-object.h"
 #include "face-wrapper.h"
 #include "frame-buffer.h"
-#include "pipeliner.h"
+#include "pipeliner-frame.h"
+#include "pipeliner-stream.h"
 #include "playout.h"
 #include "statistics.h"
 #include "params.h"
@@ -31,6 +32,7 @@ using namespace ndn::func_lib;
 
 class ConsumerSettings {
 public:
+    std::string transType_;
     std::string streamPrefix_;
     MediaStreamParams streamParams_;
     ptr_lib::shared_ptr<FaceProcessor> faceProcessor_;

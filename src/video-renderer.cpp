@@ -1,7 +1,7 @@
 
 #include "video-renderer.h"
 #include "mtndn-utils.h"
-#include "include/mtndn-defines.h"
+#include "mtndn-defines.h"
 
 
 ExternalVideoRendererAdaptor::ExternalVideoRendererAdaptor

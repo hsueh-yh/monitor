@@ -2,10 +2,10 @@
 #include "ui_mainwindow.h"
 #include "simulator.h"
 #include "myTimer.h"
-#include "glogger.h"
+#include <glogger.h>
 #include "renderer.h"
 
-#include <thread>
+//#include <thread>
 #include <math.h>
 #include <time.h>
 
@@ -14,9 +14,6 @@
 #define WIDTH 640
 #define HEIGHT 480
 
-//#define HOST "localhost"
-#define HOST "10.103.244.163"
-#define PORT 6363
 
 #define _FRAME_RATE_ 30*1000    //30ms
 
@@ -66,11 +63,12 @@ MainWindow::on_start_btn_clicked()
     params.streamName_ = remoteStreamPrefix;
 
     GeneralParams generalParams;
+    generalParams.transType_ = transType;
     generalParams.loggingLevel_ = ndnlog::NdnLoggerDetailLevelAll;
     generalParams.logPath_ = "";
     generalParams.prefix_ = remoteStreamPrefix;
-    generalParams.host_ = HOST;
-    generalParams.portNum_ = PORT;
+    generalParams.host_ = _host.c_str();
+    generalParams.portNum_ = _port;
 
     GeneralConsumerParams consumerParams;
     consumerParams.interestLifetime_ = 30;
@@ -81,6 +79,8 @@ MainWindow::on_start_btn_clicked()
     RendererInternal *renderer = new RendererInternal(this);
     map_str_renderer_[remoteStreamPrefix] = renderer;
     refreshRenderer();
+
+    LOG(INFO) << "host " << generalParams.host_ << " port " << generalParams.portNum_ << endl;
 
     manager_->addRemoteStream(remoteStreamPrefix,
                              threadName,

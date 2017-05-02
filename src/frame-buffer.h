@@ -24,7 +24,7 @@
 #include "frame-data.h"
 #include "statistics.h"
 #include "simple-log.h"
-
+#include <boost/thread/shared_mutex.hpp>
 using namespace std;
 using namespace ndn;
 

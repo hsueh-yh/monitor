@@ -96,25 +96,22 @@ public:
 
     //******************************************************************************
 
-    int
+    virtual int
     init();
 
-    int
+    virtual int
     start();
 
-    int
+    virtual int
     stop();
 
-    void
+    virtual void
     express(const Name &name);
 
-    void
+    virtual void
     express(const Interest &interest);
 
-    bool
-    requestFrame(PacketNumber frameNo, bool isExpressInterest=true);
-
-    void
+    virtual void
     registerCallback(IPipelinerCallback* callback)
     { callback_ = callback; }
 
@@ -160,23 +157,6 @@ protected:
     ptr_lib::shared_ptr<Interest>
     getDefaultInterest(const Name &prefix);
 
-
-    //******************************************************************************
-    void
-    onData(const ptr_lib::shared_ptr<const Interest> &interest, const ptr_lib::shared_ptr<Data> &data);
-
-    void
-    onTimeout(const ptr_lib::shared_ptr<const Interest> &interest);
-
-    void
-    requestMeta();
-
-    void
-    requestNextPkt();
-
-    bool
-    request(unsigned int delay = 5*1000);
-
     std::string
     state2string( State state )
     {
@@ -201,6 +181,24 @@ protected:
         return str;
     }
 
+
+    //******************************************************************************
+    virtual void
+    onData(const ptr_lib::shared_ptr<const Interest> &interest, const ptr_lib::shared_ptr<Data> &data);
+
+    virtual void
+    onTimeout(const ptr_lib::shared_ptr<const Interest> &interest);
+
+    /*
+    void
+    requestMeta();
+
+    void
+    requestNextPkt();
+
+    bool
+    request(unsigned int delay = 5*1000);
+*/
 };
 
 

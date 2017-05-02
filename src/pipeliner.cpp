@@ -161,21 +161,14 @@ Pipeliner::init()
     streamName_ = tmpname;
     window_.init(30/*,frameBuffer_*/);
     switchToState(StateInactive);
-    return RESULT_OK;
     VLOG(LOG_TRACE) << "Pipeliner initialized: " << streamName_.to_uri() << std::endl;
+    return RESULT_OK;
 }
 
 int
 Pipeliner::start()
 {
-    //requestMeta();
-    switchToState(StateFetching);
-    unsigned int delayMs = 5*1000;
-    request(delayMs);
-    scheduleJob((delayMs-1)*1000,boost::bind(&Pipeliner::request,this,delayMs));
-    //request();
     VLOG(LOG_INFO) << "[Pipeliner] Started" << endl;
-
     return RESULT_OK;
 }
 
@@ -230,69 +223,14 @@ Pipeliner::express(const Name &name/*, int64_t priority*/)
 #endif
 }
 
-bool
-Pipeliner::requestFrame(PacketNumber frameNo, bool isExpressInterest)
-{
-    if( !window_.canAskForData(frameNo) )
-    {
-        //cout << "Windown: " << window_.getCurrentWindowSize() << endl;
-        //usleep(10*1000);
-        //std::cout << "request frame1 " << window_.getCurrentWindowSize() << std::endl;
-        return false;
-    }
-    //LOG(INFO) << "Request " << frameNo << endl;
-    Name packetPrefix(streamName_);
-    packetPrefix.append(MtNdnUtils::componentFromInt(frameNo));
-    //packetPrefix.appendTimestamp(MtNdnUtils::microsecondTimestamp());
-    //ptr_lib::shared_ptr<Interest> frameInterest = getDefaultInterest(packetPrefix);
-
-//    ptr_lib::shared_ptr<FrameBuffer::Slot> slot;
-
-//    slot.reset(new FrameBuffer::Slot());
-//    slot->lock();
-//    slot->setPrefix(packetPrefix);
-//    slot->setNumber(frameNo);
-//    slot->interestIssued();
-
-    //frameBuffer_->lock();
-    ndn::Interest interest(packetPrefix);
-    interest.setInterestLifetimeMilliseconds(2*10*1000);
-
-    if( !frameBuffer_->interestIssued(interest))
-    {
-        //usleep(10*1000);
-        //cout << ".";
-
-        LOG(ERROR) << "FrameBuffer::interestIssued false " << std::endl;
-    }
-
-    //frameBuffer_->activeSlots_.insert(std::pair<int,ptr_lib::shared_ptr<FrameBuffer::Slot>>(frameNo,slot));
-    //frameBuffer_->unlock();
-
-    //slot->unlock();
-
-    //express(frameInterest);
-    if(isExpressInterest)
-        express(interest);
-    return true;
-}
-
-ptr_lib::shared_ptr<Interest>
-Pipeliner::getDefaultInterest(const ndn::Name &prefix)
-{
-    ptr_lib::shared_ptr<Interest> interest(new Interest(prefix));
-    interest->setMustBeFresh(true);
-
-    return interest;
-}
-
-
 //******************************************************************************
 
 void
 Pipeliner::onData(const ptr_lib::shared_ptr<const Interest> &interest,
         const ptr_lib::shared_ptr<Data> &data)
 {
+    LogTraceC << "Recieve Data " << data->getName().to_uri() << std::endl;
+    /*
     //LOG(INFO) << "Recieve Data " << data->getName().to_uri() << endl;
     LogTraceC << "Recieve Data " << data->getName().to_uri() << std::endl;
 
@@ -354,11 +292,15 @@ Pipeliner::onData(const ptr_lib::shared_ptr<const Interest> &interest,
     }
         break;
     }//switch
+    */
 }
 
 void
 Pipeliner::onTimeout(const ptr_lib::shared_ptr<const Interest> &interest)
 {
+    LogTraceC << "Timeout " << interest->getName().to_uri()
+              << " ( Loss Rate = " << statistic->getLostRate() << " )"<< endl;
+    /*
     statistic->markMiss();
     VLOG(LOG_INFO) << "Timeout " << interest->getName().to_uri()
                  << " ( Loss Rate = " << statistic->getLostRate() << " )"<< endl;
@@ -392,9 +334,10 @@ Pipeliner::onTimeout(const ptr_lib::shared_ptr<const Interest> &interest)
     }
         break;
     }//switch
-
+    */
 }
 
+/*
 void
 Pipeliner::requestMeta()
 {
@@ -445,3 +388,4 @@ Pipeliner::request(unsigned int delay)
     express(interest);
     return true;
 }
+*/

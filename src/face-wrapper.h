@@ -22,7 +22,7 @@
 
 #include "mtndn-object.h"
 #include "mtndn-utils.h"
-#include "include/mtndn-defines.h"
+#include "mtndn-defines.h"
 
 //namespace mtndn {
 

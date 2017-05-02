@@ -26,7 +26,7 @@
 #include "video-consumer.h"
 #include "frame-data.h"
 #include "mtndn-utils.h"
-#include "include/mtndn-defines.h"
+#include "mtndn-defines.h"
 #include "simple-log.h"
 
 using namespace ndnlog::new_api;
@@ -187,6 +187,7 @@ MtNdnManager::addRemoteStream(std::string &remoteStreamPrefix,
                 it->second = remoteStreamConsumer;
 
             ConsumerSettings settings;
+            settings.transType_ = generalParams.transType_;
             settings.streamPrefix_ = remoteStreamPrefix;
             settings.streamParams_ = params;
             settings.faceProcessor_ = MtNdnUtils::getLibFace();

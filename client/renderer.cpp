@@ -1,7 +1,7 @@
 #include <stdlib.h>
 
-#include "simple-log.h"
-#include "glogger.h"
+#include <simple-log.h>
+#include <glogger.h>
 #include "renderer.h"
 
 

@@ -9,7 +9,7 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 
-#include "include/glogger.h"
+#include <glogger.h>
 
 
 std::string createLogDir( const char *root )
@@ -67,8 +67,17 @@ int main(int argc, char *argv[])
     GLogger glog( argv[0], logfile.c_str() );
     std::cout << "Log to path: " << logfile << std::endl;
 
-
+    std::string transtype = "byFrame";
+    std::string host = "10.103.246.164";
+    unsigned int port = 6363;
+    if( argc > 1 )
+        host = argv[1];
+    if( argc > 2 )
+        port = stoi(argv[2]);
     MainWindow w;
+    w.setTransType(transtype);
+    w.setHost(host);
+    w.setPort(port);
     w.show();
 
     return a.exec();

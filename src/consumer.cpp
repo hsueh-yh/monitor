@@ -41,7 +41,11 @@ Consumer::init(const ConsumerSettings &settings,
                                                        getDescription().c_str()));
     frameBuffer_->init();
 
-    pipeliner_.reset(new Pipeliner(this));
+    if( settings.transType_ == "byFrame" )
+        pipeliner_.reset(new PipelinerFrame(this));
+    else
+        pipeliner_.reset(new PipelinerStream(this));
+
     pipeliner_->setLogger(logger_);
     pipeliner_->setDescription(MtNdnUtils::formatString("%s-Pipeliner",
                                                      getDescription().c_str()));
