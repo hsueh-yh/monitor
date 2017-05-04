@@ -102,10 +102,10 @@ protected:
 
     // update playout time if previous was inffered
     void
-    updatePlaybackAdjustment(int64_t ts);
+    updatePlaybackAdjustment(int64_t capTsMs);
 
     int
-    playbackDelayAdjustment(int playbackDelay);
+    playbackDelayAdjustment(int playbackDelay, int cachesize);
 
 /*
     int

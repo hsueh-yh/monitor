@@ -48,6 +48,7 @@ PipelinerStream::init()
     streamName_ = tmpname;
     window_.init(30/*,frameBuffer_*/);
     switchToState(StateInactive);
+    interestLifeTimeMS = 5 * 1000;
     return RESULT_OK;
 }
 
@@ -56,9 +57,8 @@ PipelinerStream::start()
 {
     //requestMeta();
     switchToState(StateFetching);
-    unsigned int delayMs = 5*1000;
     request();
-    scheduleJob((delayMs-1)*1000,boost::bind(&PipelinerStream::request,this));
+    scheduleJob(interestLifeTimeMS * 1000 - 100,boost::bind(&PipelinerStream::request,this));
     //request();
     VLOG(LOG_INFO) << "[PipelinerStream] Started" << endl;
 

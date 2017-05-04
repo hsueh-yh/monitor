@@ -19,7 +19,7 @@
 
 using namespace std;
 
-const int Playout::BufferCheckInterval = 2000;
+const int Playout::BufferCheckInterval = 1000;
 std::string PLAYOUT_LOG = "playout.log";
 //boost::asio::io_service ioservice;
 
@@ -167,9 +167,9 @@ Playout::processPlayout()
             //LogTraceC << "acquire frame" << endl;
             //vector<uint8_t> vdata_;
             vec_data_ = new vector<uint8_t>();
-            int64_t playbackTimeStampMs;
+            int64_t captureTimeStampMs = -1;
             frameBuffer_->acquireFrame( *vec_data_,
-                                        playbackTimeStampMs,
+                                        captureTimeStampMs,
                                         playbackPacketNo,
                                         sequencePacketNo,
                                         pairedPacketNo,
@@ -206,13 +206,14 @@ Playout::processPlayout()
 
             if (data_)
             {
-                updatePlaybackAdjustment(playbackTimeStampMs);
+                updatePlaybackAdjustment(captureTimeStampMs);
                 //LogTraceC << getDescription() << " latest" << std::endl;
-                lastPacketTs_ = (playbackTimeStampMs != -1 ? playbackTimeStampMs : 0);
+                lastPacketTs_ = (captureTimeStampMs != -1 ? captureTimeStampMs : 0);
             }
             
             //******************************************************************
             // get playout time (delay) for the rendered frame
+            int cachesize = 0;
             int playbackDelay = frameBuffer_->releaseAcquiredFrame(isInferredPlayback_);
             LogTraceC << getDescription() << " nextPlaybackDelay " << playbackDelay
                       << (isInferredPlayback_ ? ", inferred" : ", NOT inferred")
@@ -221,7 +222,7 @@ Playout::processPlayout()
                       << (isInferredPlayback_ ? ", inferred" : ", NOT inferred")
                       << std::endl<< std::endl;
 
-            int adjustment = playbackDelayAdjustment(playbackDelay);
+            int adjustment = playbackDelayAdjustment(playbackDelay, cachesize);
             
             if (playbackDelay < 0)
             {
@@ -231,6 +232,8 @@ Playout::processPlayout()
             }
 
             playbackDelay += adjustment;
+            if( playbackDelay  < 0 )
+                playbackDelay = 0;
             assert(playbackDelay >= 0);
 
             playoutMutex_.unlock();
@@ -250,13 +253,13 @@ Playout::processPlayout()
 }
 
 void
-Playout::updatePlaybackAdjustment(int64_t ts)
+Playout::updatePlaybackAdjustment(int64_t capTsMs)
 {
     // check if previous frame playout time was inferred
     // if so - calculate adjustment
     if (lastPacketTs_ > 0 && isInferredPlayback_)
     {
-        int realPlayback = ts-lastPacketTs_;
+        int realPlayback = capTsMs-lastPacketTs_;
         playbackAdjustment_ += (realPlayback-inferredDelay_);
         //playbackAdjustment_ += 0;
         inferredDelay_ = 0;
@@ -264,7 +267,7 @@ Playout::updatePlaybackAdjustment(int64_t ts)
 }
 
 int
-Playout::playbackDelayAdjustment(int playbackDelay)
+Playout::playbackDelayAdjustment(int playbackDelay, int cachesize )
 {
     int adjustment = 0;
     
@@ -324,7 +327,7 @@ Playout::checkBuffer()
         
         // keeping buffer level at the target size
         //unsigned int targetBufferSize = consumer_->getBufferEstimator()->getTargetSize();
-        int targetBufferSize = 150; //about 5 frames
+        int targetBufferSize = 90; //about 5 frames
         int playableDuration = consumer_->getFrameBuffer()->getPlayableBufferDuration();
         int adjustment = targetBufferSize - playableDuration;
         
@@ -333,7 +336,7 @@ Playout::checkBuffer()
         if (abs(adjustment) > 30 && adjustment < 0)
         {
             LogTraceC << getDescription() << " bf adj. "
-            << abs(adjustment) << " ms excess" << std::endl;
+            << abs(adjustment) << "ms excess" << std::endl;
             
             playbackAdjustment_ += adjustment;
         }

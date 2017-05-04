@@ -165,8 +165,8 @@ PipelinerFrame::onTimeout(const ptr_lib::shared_ptr<const Interest> &interest)
         if( frameBuffer_->getState() == FrameBuffer::Invalid)
             return;
         frameBuffer_->dataMissed(interest);
-        VLOG(LOG_TRACE) << "RE-Express " << interest->getName().to_uri() << endl;
-        express(*(interest.get()));
+        //VLOG(LOG_TRACE) << "RE-Express " << interest->getName().to_uri() << endl;
+        //express(*(interest.get()));
     }
         break;
 

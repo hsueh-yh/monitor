@@ -83,7 +83,7 @@ int main(int argc, char *argv[])
     if( argc > 2 )
         port = stoi(argv[2]);
     MainWindow w;
-    w.setTransType("byFrame");
+    w.setTransType("byStream");
     w.setHost(host);
     w.setPort(port);
     w.show();
