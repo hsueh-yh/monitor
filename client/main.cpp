@@ -61,13 +61,21 @@ std::string createLogDir( const char *root )
 
 int main(int argc, char *argv[])
 {
+	int num = 1;
+    string transType; // frame or stream
+    for( int i = 1; i < argc; ++i )
+    {
+        if( strcmp(argv[i], "-n" ) == 0 )
+                num = argv[i+1][0] - '0';
+        if( strcmp(argv[i], "-t") == 0 )
+            transType = argv[i+1];
+    }
     QApplication a(argc, argv);
 
     std::string logfile = createLogDir("./logs");
     GLogger glog( argv[0], logfile.c_str() );
     std::cout << "Log to path: " << logfile << std::endl;
 
-    std::string transtype = "byFrame";
     std::string host = "10.103.246.164";
     unsigned int port = 6363;
     if( argc > 1 )
@@ -75,7 +83,7 @@ int main(int argc, char *argv[])
     if( argc > 2 )
         port = stoi(argv[2]);
     MainWindow w;
-    w.setTransType(transtype);
+    w.setTransType("byFrame");
     w.setHost(host);
     w.setPort(port);
     w.show();

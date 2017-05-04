@@ -93,7 +93,7 @@ Playout::stop()
         isRunning_ = false;
         jitterTiming_->stop();
         
-        VLOG(LOG_INFO) << getDescription() << " stopped" << endl;
+        LogTraceC << getDescription() << " stopped" << endl;
     }
     else
         return -1;
@@ -126,6 +126,7 @@ Playout::setDescription(const std::string &desc)
     jitterTiming_->setDescription(MtNdnUtils::formatString("%sTiming",
                                                        getDescription().c_str()));
 }
+
 //******************************************************************************
 //private
 bool
@@ -163,7 +164,7 @@ Playout::processPlayout()
             
             //frameBuffer_->acquireSlot(&data_, packetNo, sequencePacketNo,
             //                          pairedPacketNo, isKey, assembledLevel);
-            //VLOG(LOG_TRACE) << "acquire frame" << endl;
+            //LogTraceC << "acquire frame" << endl;
             //vector<uint8_t> vdata_;
             vec_data_ = new vector<uint8_t>();
             int64_t playbackTimeStampMs;
@@ -179,7 +180,7 @@ Playout::processPlayout()
             unsigned int dataSize = vec_data_->size();
 
             /*
-             * VLOG(LOG_TRACE)
+             * LogTraceC
             << "Gotframe size: "
             << dataLength << " "
             << hex << (void*)data_ << dec << " "
@@ -206,19 +207,19 @@ Playout::processPlayout()
             if (data_)
             {
                 updatePlaybackAdjustment(playbackTimeStampMs);
-                //VLOG(LOG_TRACE) << getDescription() << " latest" << std::endl;
+                //LogTraceC << getDescription() << " latest" << std::endl;
                 lastPacketTs_ = (playbackTimeStampMs != -1 ? playbackTimeStampMs : 0);
             }
             
             //******************************************************************
             // get playout time (delay) for the rendered frame
             int playbackDelay = frameBuffer_->releaseAcquiredFrame(isInferredPlayback_);
-            VLOG(LOG_TRACE) << getDescription() << " nextPlaybackDelay " << playbackDelay
+            LogTraceC << getDescription() << " nextPlaybackDelay " << playbackDelay
                       << (isInferredPlayback_ ? ", inferred" : ", NOT inferred")
                       << std::endl;
             LogTraceC << "NextPlayback Delay " << playbackDelay
-                      << (isInferredPlayback_ ? ", inferred" : ", NOT inferred");
-                      //<< std::endl;
+                      << (isInferredPlayback_ ? ", inferred" : ", NOT inferred")
+                      << std::endl<< std::endl;
 
             int adjustment = playbackDelayAdjustment(playbackDelay);
             
@@ -315,7 +316,7 @@ Playout::avSyncAdjustment(int64_t nowTimestamp, int playbackDelay)
 void
 Playout::checkBuffer()
 {
-    //VLOG(LOG_TRACE) << "[Playout] checkBuffer " << std::endl;
+    //LogTraceC << "[Playout] checkBuffer " << std::endl;
     int64_t timestamp = MtNdnUtils::millisecondTimestamp();
     if (timestamp - bufferCheckTs_ > BufferCheckInterval)
     {
@@ -327,11 +328,11 @@ Playout::checkBuffer()
         int playableDuration = consumer_->getFrameBuffer()->getPlayableBufferDuration();
         int adjustment = targetBufferSize - playableDuration;
         
-        VLOG(LOG_TRACE) << getDescription() << " buffer size " << playableDuration << std::endl;
+        LogTraceC << getDescription() << " buffer size " << playableDuration << std::endl;
         
         if (abs(adjustment) > 30 && adjustment < 0)
         {
-            VLOG(LOG_TRACE) << getDescription() << " bf adj. "
+            LogTraceC << getDescription() << " bf adj. "
             << abs(adjustment) << " ms excess" << std::endl;
             
             playbackAdjustment_ += adjustment;

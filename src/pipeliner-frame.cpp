@@ -74,7 +74,7 @@ PipelinerFrame::getDefaultInterest(PacketNumber frameNo)
     Name packetPrefix(streamName_);
     packetPrefix.append(MtNdnUtils::componentFromInt(frameNo));
     ptr_lib::shared_ptr<Interest> interest(new Interest(packetPrefix));
-    interest->setInterestLifetimeMilliseconds(3*1000);
+    interest->setInterestLifetimeMilliseconds(1*1000);
     interest->setMustBeFresh(true);
 
     return interest;
@@ -88,12 +88,7 @@ PipelinerFrame::onData(const ptr_lib::shared_ptr<const Interest> &interest,
         const ptr_lib::shared_ptr<Data> &data)
 {
     //LOG(INFO) << "Recieve Data " << data->getName().to_uri() << endl;
-    LogTraceC << "Recieve Data " << data->getName().to_uri() << std::endl;
-
-#ifdef __SHOW_CONSOLE_
-    cout << "Got Data: "<< data->getName().toUri()
-         << " size: " << data->getContent ().size () << endl;
-#endif
+    //LogTraceC << "Recieve Data " << data->getName().to_uri() << std::endl;
 
     switch(state_)
     {
@@ -108,7 +103,7 @@ PipelinerFrame::onData(const ptr_lib::shared_ptr<const Interest> &interest,
         {
             reqCurPktNo_ = MtNdnUtils::frameNumber(data->getName().get(p+2));
             //cout << reqCurPktNo_ << "**********************"<<endl;
-            reqLastNo_ = reqCurPktNo_;
+            lastFrmNo_ = reqCurPktNo_;
             switchToState(StateFetching);
             requestNextPkt();
         }
@@ -123,7 +118,7 @@ PipelinerFrame::onData(const ptr_lib::shared_ptr<const Interest> &interest,
     case StateBootstrap:
     case StateFetching:
     {
-        reqLastNo_ = MtNdnUtils::frameNumber(data->getName().get(-1));
+        lastFrmNo_ = MtNdnUtils::frameNumber(data->getName().get(-1));
         unsigned int pktNo;
         Namespacer::getFrameNumber(data->getName(),pktNo);
 
@@ -148,7 +143,6 @@ PipelinerFrame::onData(const ptr_lib::shared_ptr<const Interest> &interest,
 void
 PipelinerFrame::onTimeout(const ptr_lib::shared_ptr<const Interest> &interest)
 {
-    statistic->markMiss();
     VLOG(LOG_INFO) << "Timeout " << interest->getName().to_uri()
                  << " ( Loss Rate = " << statistic->getLostRate() << " )"<< endl;
 
@@ -171,6 +165,7 @@ PipelinerFrame::onTimeout(const ptr_lib::shared_ptr<const Interest> &interest)
         if( frameBuffer_->getState() == FrameBuffer::Invalid)
             return;
         frameBuffer_->dataMissed(interest);
+        VLOG(LOG_TRACE) << "RE-Express " << interest->getName().to_uri() << endl;
         express(*(interest.get()));
     }
         break;
@@ -181,7 +176,6 @@ PipelinerFrame::onTimeout(const ptr_lib::shared_ptr<const Interest> &interest)
     }
         break;
     }//switch
-
 }
 
 //******************************************************************************
@@ -202,9 +196,10 @@ PipelinerFrame::requestMeta()
 void
 PipelinerFrame::requestNextPkt()
 {
-    if( reqCurPktNo_ == reqLastNo_+1 )
+    if( reqCurPktNo_ >= lastFrmNo_ )
     {
         //usleep(30*1000);
+        cout << "sleep 30 ms " << endl << endl;
         scheduleJob(30*1000, [this]()->bool{
             bool res = requestFrame(reqCurPktNo_++);
             return (!res); // if not requeste, do it again
@@ -215,11 +210,11 @@ PipelinerFrame::requestNextPkt()
     }
     else
     {
-        while( reqCurPktNo_ <= reqLastNo_ )
+        while( reqCurPktNo_ <= lastFrmNo_ )
             requestFrame(reqCurPktNo_++);
     }
 
-    if( state_ >= StateFetching && frameBuffer_->getPlayableBufferSize() >= 10 )
+    if( state_ >= StateFetching && frameBuffer_->getPlayableBufferSize() >= 3 )
     {
         if( callback_)
             callback_->onBufferingEnded();

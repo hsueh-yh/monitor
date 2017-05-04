@@ -35,8 +35,6 @@ public:
     int
     stop();
 
-    bool requestFrame(PacketNumber frameNo);
-
     void
     registerCallback(IPipelinerCallback* callback)
     { callback_ = callback; }
@@ -44,33 +42,7 @@ public:
 
 protected:
 
-    //FILE *pipelinerFIle_;
-    Statistics *statistic;
-    bool isRetransmission;
-
-    int count_;
-    unsigned int reqCurPktNo_, reqLastNo_;
-
-
     //******************************************************************************
-    void
-    switchToState(Pipeliner::State newState)
-    {
-        State oldState = state_;
-        if( oldState != newState )
-        {
-            state_ = newState;
-            LOG(INFO) << "[Pipeliner] change state " <<  state2string(state_)
-                      << " to " << state2string(newState) << endl;
-        }
-        if (callback_)
-            callback_->onStateChanged(oldState, state_);
-    }
-
-    Pipeliner::State
-    getState()
-    { return state_;  }
-
     ptr_lib::shared_ptr<Interest>
     getDefaultInterest(PacketNumber frameNo);
 
@@ -88,28 +60,8 @@ protected:
     void
     requestNextPkt();
 
-    std::string state2string( State state )
-    {
-        std::string str = "";
-        switch(state)
-        {
-        case StateInactive:
-            str = "Inactive";
-            break;
-        case StateWaitInitial:
-            str = "StateWaitInitial";
-            break;
-        case StateBootstrap:
-            str = "StateBootstrap";
-            break;
-        case StateFetching:
-            str = "StateFetching";
-            break;
-        default:
-            break;
-        }
-        return str;
-    }
+    bool
+    requestFrame(PacketNumber frameNo);
 
 };
 

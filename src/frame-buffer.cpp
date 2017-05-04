@@ -57,6 +57,7 @@ FrameBuffer::Slot::interestIssued()
     if (requestTimeUsec_ <= 0)
         requestTimeUsec_ = MtNdnUtils::microsecondTimestamp();
 
+    statistic->addRequest();
     //reqCounter_++;
 }
 
@@ -64,6 +65,7 @@ void
 FrameBuffer::Slot::markMissed()
 {
     sstate_ = StateMissing;
+    statistic->markMiss();
 }
 
 void
@@ -79,7 +81,8 @@ FrameBuffer::Slot::dataArrived ()
               << " addr:" << hex << (void*)getDataPtr()
               << " size:" << hex << (void*)getPayloadSize()
               <<  " Delay " << dec << delay/1000
-              << "ms ( average: " << statistic->getDelay()/1000 << "ms )" << endl;
+              << "ms ( average: " << statistic->getDelay()/1000 << "ms )"
+              << " dataInterval: " <<  statistic->getDataInterval(arrivalTimeUsec_)/1000 << "ms" << endl;
 }
 
 
@@ -314,9 +317,10 @@ FrameBuffer::interestIssued( ndn::Interest &interest )
                  << " ( Total:" << activeSlots_.size()
                  << " Ready: " <<readySlots_count_ << " )"<< endl;
 
-    LogTraceC << "ISSUE " << slot->getPrefix().to_uri()
+    /*LogTraceC << "ISSUE " << slot->getPrefix().to_uri()
               << " ( Total:" << activeSlots_.size()
               << " Ready: " <<readySlots_count_ << " )"<< endl;
+              */
     return true;
 }
 
@@ -374,7 +378,7 @@ FrameBuffer::recvData(const ndn::ptr_lib::shared_ptr<Data> &data)
 //    NdnUtils::printMem("set Slot", slot->getDataPtr(),20);
 
     //setSlot(data, iter->second);
-    LogTraceC << "RCVE " << data->getName().to_uri() << std::endl;
+    //LogTraceC << "RCVE " << data->getName().to_uri() << std::endl;
 }
 
 void
@@ -398,9 +402,10 @@ FrameBuffer::dataMissed(const ptr_lib::shared_ptr<const Interest> &interest )
     VLOG(LOG_INFO) << "miss " << interest->getName().to_uri()
               << " ( Total:" << activeSlots_.size()
               << " Ready: " <<readySlots_count_ << " )"<< endl;
-    LogTraceC << "miss " << interest->getName().to_uri()
+    /*LogTraceC << "miss " << interest->getName().to_uri()
               << " ( Total:" << activeSlots_.size()
               << " Ready: " <<readySlots_count_ << " )"<< endl;
+              */
 }
 
 void
@@ -463,12 +468,13 @@ FrameBuffer::acquireFrame( vector<uint8_t> &dest_,
             isKey = true;
 
             //NdnUtils::printMem("pop", slotbuf, 20);
-            LogTraceC << "POP " << nalCounter
+            /*LogTraceC << "POP " << nalCounter
                       << " " << slot->getPrefix()
                       << " addr:" << hex << (void*)slot->getDataPtr()
                       << " size:" << dec << (void*)slot->getPayloadSize()
                       << " ( Total:" << dec<< activeSlots_.size()
                       << " Ready: " <<readySlots_count_ << " )"<< endl;
+                      */
 
             VLOG(LOG_INFO)
                 << "POP " << nalCounter

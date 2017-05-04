@@ -1,21 +1,29 @@
 #include "statistics.h"
 
-Statistics  *Statistics::instance_=NULL;
+Statistics  *Statistics::instance_=new Statistics();
 
 Statistics *Statistics::getInstance()
 {
+    /*
     if( instance_ == NULL )
     {
-        instance_ = new Statistics();
+        std::lock_guard<std::mutex> lockguard(mutex_);
+        if( instance_ == NULL )
+            instance_ = new Statistics();
     }
+    */
     return instance_;
 }
 
 void Statistics::addRequest()
-{ ++requestCounter_; }
+{
+    std::lock_guard<std::mutex> lockguard(mutex_);
+    ++requestCounter_;
+}
 
 void Statistics::addData(int64_t delay)
 {
+    std::lock_guard<std::mutex> lockguard(mutex_);
     ++receiveCounter_;
     if( avgDelay_ == 0)
     {
@@ -38,17 +46,23 @@ void Statistics::addData(int64_t delay)
         */
     }
     else
-        LOG(WARNING) << "[Statistics] Delay=" << delay << std::endl;
+        LOG(WARNING) << "[Statistics] Delay = " << delay/1000 << "ms" << std::endl;
 }
 
 void Statistics::markMiss()
 {
+    std::lock_guard<std::mutex> lockguard(mutex_);
     ++lostCounter_;
+    if( requestCounter_ == 0 )
+        ++requestCounter_;
     lostRate_ = (double)lostCounter_ / (double)requestCounter_;
 }
 
 void Statistics::retransmission()
-{ ++retransmissionCounter_; }
+{
+    std::lock_guard<std::mutex> lockguard(mutex_);
+    ++retransmissionCounter_;
+}
 
 double Statistics::getLostRate()
 { return lostRate_; }
@@ -64,7 +78,8 @@ Statistics::Statistics():
     lostRate_(0.0),
     alpha_(1.0/2.0),
     counterStepSize_(5),
-    avgDelay_(0)
+    avgDelay_(0),
+    lastRecvDataTS_(0)
 {
     for( int i = 0; i < 100; ++i )
         delayCounter[i] = 0;

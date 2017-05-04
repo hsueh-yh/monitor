@@ -108,7 +108,7 @@ PipelinerStream::onData(const ptr_lib::shared_ptr<const Interest> &interest,
         {
             reqCurPktNo_ = MtNdnUtils::frameNumber(data->getName().get(p+2));
             //cout << reqCurPktNo_ << "**********************"<<endl;
-            reqLastNo_ = reqCurPktNo_;
+            lastFrmNo_ = reqCurPktNo_;
             switchToState(StateFetching);
             Interest interest(streamName_);
             interest.setInterestLifetimeMilliseconds(6*10*1000);
@@ -126,7 +126,7 @@ PipelinerStream::onData(const ptr_lib::shared_ptr<const Interest> &interest,
     case StateBootstrap:
     case StateFetching:
     {
-        reqLastNo_ = MtNdnUtils::frameNumber(data->getName().get(-1));
+        lastFrmNo_ = MtNdnUtils::frameNumber(data->getName().get(-1));
         unsigned int pktNo;
         Namespacer::getFrameNumber(data->getName(),pktNo);
 

@@ -191,8 +191,7 @@ Pipeliner::express(const Interest &interest/*, int64_t priority*/)
             //bind2nd(bind(&Pipeliner::onData, this, func_lib::_1, func_lib::_2),
             //bind(&Pipeliner::onTimeout, this, func_lib::_1));
 
-    statistic->addRequest();
-    LogTraceC << "Express " << interest.getName().to_uri() << std::endl;
+    //LogTraceC << "Express " << interest.getName().to_uri() << std::endl;
     //VLOG(LOG_TRACE) << "Express Interest " << interest.getName().to_uri() << endl;
 
 #ifdef __SHOW_CONSOLE_
@@ -209,8 +208,8 @@ Pipeliner::express(const Name &name/*, int64_t priority*/)
             func_lib::bind(&Pipeliner::onTimeout, this, func_lib::_1) );
             //bind(&Pipeliner::onData, this, std::placeholders::_1, std::placeholders::_2),
             //bind(&Pipeliner::onTimeout, this, std::placeholders::_1));
-    statistic->addRequest();
-    LogTraceC << "Express " << name.to_uri() << std::endl;
+
+    //LogTraceC << "Express " << name.to_uri() << std::endl;
     //VLOG(LOG_TRACE) << "Express Interest " << name.to_uri() << endl;
 
 #ifdef __SHOW_CONSOLE_
@@ -301,7 +300,6 @@ Pipeliner::onTimeout(const ptr_lib::shared_ptr<const Interest> &interest)
     LogTraceC << "Timeout " << interest->getName().to_uri()
               << " ( Loss Rate = " << statistic->getLostRate() << " )"<< endl;
     /*
-    statistic->markMiss();
     VLOG(LOG_INFO) << "Timeout " << interest->getName().to_uri()
                  << " ( Loss Rate = " << statistic->getLostRate() << " )"<< endl;
 

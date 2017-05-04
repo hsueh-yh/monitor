@@ -132,7 +132,7 @@ protected:
     bool isRetransmission;
 
     int request_count_;
-    unsigned int reqCurPktNo_, reqLastNo_;
+    unsigned int reqCurPktNo_, lastFrmNo_;
 
 
     //******************************************************************************
