@@ -50,8 +50,11 @@ public:
     void
     reset();
 
-    void
+    bool
     dataArrived(PacketNumber packetNo);
+
+    double
+    dataMissed(PacketNumber packetNo);
 
     bool
     canAskForData(PacketNumber packetNo);
@@ -76,6 +79,7 @@ private:
     PacketNumber lastAddedToPool_;
     std::mutex mutex_;
     std::set<PacketNumber> framePool_;
+    std::set<PacketNumber> missedPool_;
     const FrameBuffer *frameBuffer_;
 };
 
@@ -105,6 +109,9 @@ public:
     virtual int
     stop();
 
+    virtual int
+    restart();
+
     virtual void
     express(const Name &name);
 
@@ -115,10 +122,30 @@ public:
     registerCallback(IPipelinerCallback* callback)
     { callback_ = callback; }
 
+    virtual void
+    setDescription(const std::string& desc)
+    { description_ = desc; }
+
+    virtual std::string
+    getDescription() const
+    {
+        if (description_ == "")
+        {
+            std::stringstream ss;
+            ss << "MtNdnObject"
+               /*<< std::hex << this*/;
+            return ss.str();
+        }
+
+        return description_;
+    }
+
 
 protected:
 
     State state_;
+    mutable boost::shared_mutex state_mutex_;
+
     Name streamName_;
 
     Consumer *consumer_;
@@ -139,12 +166,21 @@ protected:
     void
     switchToState(Pipeliner::State newState)
     {
-        State oldState = state_;
-        if( oldState != newState )
+        if( newState == getState() )
+            return ;
+
+        State oldState = getState();
         {
-            state_ = newState;
-            LOG(INFO) << "[Pipeliner] change state " <<  state2string(state_)
-                      << " to " << state2string(newState) << endl;
+            boost::lock_guard<boost::shared_mutex> lock(state_mutex_);
+            if( newState == state_ )
+                return ;
+            oldState = state_;
+            if( oldState != newState )
+            {
+                state_ = newState;
+                LOG(INFO) << "[Pipeliner] change state " <<  state2string(state_)
+                          << " to " << state2string(newState) << endl;
+            }
         }
         if (callback_)
             callback_->onStateChanged(oldState, state_);
@@ -152,7 +188,10 @@ protected:
 
     Pipeliner::State
     getState()
-    { return state_;  }
+    {
+        boost::shared_lock<boost::shared_mutex> lock(state_mutex_);
+        return state_;
+    }
 
     ptr_lib::shared_ptr<Interest>
     getDefaultInterest(const Name &prefix);
@@ -181,6 +220,8 @@ protected:
         return str;
     }
 
+    virtual void
+    reset();
 
     //******************************************************************************
     virtual void

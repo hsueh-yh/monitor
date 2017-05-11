@@ -53,7 +53,7 @@ PipelinerWindow::reset()
     isInitialized_ = false;
 }
 
-void
+bool
 PipelinerWindow::dataArrived(PacketNumber packetNo)
 {
     std::lock_guard<std::mutex> scopedLock(mutex_);
@@ -63,7 +63,22 @@ PipelinerWindow::dataArrived(PacketNumber packetNo)
     {
         w_++;
         framePool_.erase(it);
+        return true;
     }
+    return false;
+}
+
+double
+PipelinerWindow::dataMissed(PacketNumber packetNo)
+{
+    dataArrived( packetNo );
+    std::lock_guard<std::mutex> scopedLock(mutex_);
+    missedPool_.insert(packetNo);
+    while( missedPool_.size() > 5 )
+        missedPool_.erase(missedPool_.begin());
+    if( missedPool_.size() <= 1 )
+        return 0;
+    return ( missedPool_.size() / (*missedPool_.rbegin() - *missedPool_.begin()) );
 }
 
 bool
@@ -181,6 +196,15 @@ Pipeliner::stop()
     return RESULT_OK;
 }
 
+int
+Pipeliner::restart()
+{
+    reset();
+    start();
+}
+
+
+//******************************************************************************
 void
 Pipeliner::express(const Interest &interest/*, int64_t priority*/)
 {
@@ -221,8 +245,6 @@ Pipeliner::express(const Name &name/*, int64_t priority*/)
          << " " << name.toUri() << endl;
 #endif
 }
-
-//******************************************************************************
 
 void
 Pipeliner::onData(const ptr_lib::shared_ptr<const Interest> &interest,
@@ -387,3 +409,15 @@ Pipeliner::request(unsigned int delay)
     return true;
 }
 */
+
+
+//******************************************************************************
+void
+Pipeliner::reset()
+{
+    switchToState(StateInactive);
+    window_.init(30/*,frameBuffer_*/);
+    reqCurPktNo_ = 0;
+    lastFrmNo_ = 0;
+    VLOG(LOG_TRACE) << "Pipeliner reseted: " << streamName_.to_uri() << std::endl;
+}

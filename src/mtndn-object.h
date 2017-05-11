@@ -59,8 +59,23 @@ public:
     //////////////////////////////////////////////////////////////////////
     // ILoggingObject
 
+    virtual void
+    setDescription(const std::string& desc)
+    { description_ = desc; }
+
     virtual std::string
-    getDescription() const;
+    getDescription() const
+    {
+        if (description_ == "")
+        {
+            std::stringstream ss;
+            ss << "MtNdnObject"
+               /*<< std::hex << this*/;
+            return ss.str();
+        }
+
+        return description_;
+    }
 
     virtual bool
     isLoggingEnabled() const
@@ -84,7 +99,8 @@ protected:
 
     void
     scheduleJob(const unsigned int usecInterval,
-                boost::function<bool()> jobCallback);
+                boost::function<bool()> jobCallback,
+                const unsigned int gain = 0);
     void
     stopJob();
 

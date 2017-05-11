@@ -5,6 +5,9 @@
 #include <sstream>
 
 #include <QLabel>
+
+#include <mutex>
+
 static int logIdx = 0;
 
 class RendererInternal : public IExternalRenderer{
@@ -85,6 +88,8 @@ private:
     QPixmap pixmap;
 
     std::string logFile_;
+
+    std::mutex mutex_;
 
     bool
     YV12ToBGR24_Native(const uint8_t *pYUV,uint8_t *pBGR24,int width,int height)

@@ -120,8 +120,9 @@ MtNdnUtils::getIoService()
 void
 MtNdnUtils::startBackgroundThread()
 {
-    VLOG(LOG_DEBUG) << "startBackgroundThread "
-                 << boost::this_thread::get_id() << std::endl;
+    VLOG(LOG_DEBUG) << std::setw(20) << std::setfill(' ') << std::right
+                    << "[MtNdnUtils]\t" << "startBackgroundThread "
+                    << boost::this_thread::get_id() << std::endl;
     if (!MtNdnIoService)
         return;
 
@@ -137,8 +138,9 @@ MtNdnUtils::startBackgroundThread()
 int
 MtNdnUtils::addBackgroundThread()
 {
-    VLOG(LOG_DEBUG) << "addBackgroundThread "
-                 << boost::this_thread::get_id() << std::endl;
+    VLOG(LOG_DEBUG) << std::setw(20) << std::setfill(' ') << std::right
+                    << "[MtNdnUtils]\t" << "addBackgroundThread "
+                    << boost::this_thread::get_id() << std::endl;
     if (!MtNdnIoService)
         return -1;
 
@@ -162,8 +164,9 @@ MtNdnUtils::stopBackgroundThread()
 
         if (!isBackgroundThread())
             backgroundThread.try_join_for(boost::chrono::milliseconds(500));
-        VLOG(LOG_DEBUG) << "stopBackgroundThread "
-                     << boost::this_thread::get_id() << std::endl;
+        VLOG(LOG_DEBUG) << std::setw(20) << std::setfill(' ') << std::right
+                        << "[MtNdnUtils]\t" << "stopBackgroundThread "
+                        << boost::this_thread::get_id() << std::endl;
     }
 }
 
@@ -180,10 +183,12 @@ MtNdnUtils::dispatchOnBackgroundThread(boost::function<void(void)> dispatchBlock
     if (backgroundWork.get())
     {
         (*MtNdnIoService).dispatch([=]{
-            VLOG(LOG_TRACE) << "dispatchOnBackgroundThread "
-                         << boost::this_thread::get_id() << std::endl;
+            VLOG(LOG_TRACE) << std::setw(20) << std::setfill(' ') << std::right
+                            << "[MtNdnUtils]\t" << "dispatchOnBackgroundThread "
+                            << boost::this_thread::get_id() << std::endl;
             dispatchBlock();
-            VLOG(LOG_TRACE) << "dispatchOnBackgroundThread done "
+            VLOG(LOG_TRACE) << std::setw(20) << std::setfill(' ') << std::right
+                            << "[MtNdnUtils]\t" << "dispatchOnBackgroundThread done "
                          << boost::this_thread::get_id() << std::endl;
             if (onCompletion)
                 onCompletion();
@@ -203,11 +208,13 @@ MtNdnUtils::performOnBackgroundThread(boost::function<void(void)> dispatchBlock,
     {
         if (boost::this_thread::get_id() == backgroundThread.get_id())
         {
-            VLOG(LOG_DEBUG) << "performOnBackgroundThread dispatch "
-                         << boost::this_thread::get_id() << std::endl;
+            VLOG(LOG_DEBUG) << std::setw(20) << std::setfill(' ') << std::right
+                            << "[MtNdnUtils]\t" << "performOnBackgroundThread dispatch "
+                            << boost::this_thread::get_id() << std::endl;
             dispatchBlock();
-            VLOG(LOG_DEBUG) << "performOnBackgroundThread dispatch done "
-                         << boost::this_thread::get_id() << std::endl;
+            VLOG(LOG_DEBUG) << std::setw(20) << std::setfill(' ') << std::right
+                            << "[MtNdnUtils]\t" << "performOnBackgroundThread dispatch done "
+                            << boost::this_thread::get_id() << std::endl;
             if (onCompletion)
                 onCompletion();
         }
@@ -218,12 +225,14 @@ MtNdnUtils::performOnBackgroundThread(boost::function<void(void)> dispatchBlock,
             boost::condition_variable isDone;
 
             (*MtNdnIoService).post([dispatchBlock, onCompletion, &isDone]{
-                VLOG(LOG_DEBUG) << "performOnBackgroundThread post "
-                             << boost::this_thread::get_id() << std::endl;
+                VLOG(LOG_DEBUG) << std::setw(20) << std::setfill(' ') << std::right
+                                << "[MtNdnUtils]\t" << "performOnBackgroundThread post "
+                                << boost::this_thread::get_id() << std::endl;
                 dispatchBlock();
 
-                VLOG(LOG_DEBUG) << "performOnBackgroundThread post done "
-                             << boost::this_thread::get_id() << std::endl;
+                VLOG(LOG_DEBUG) << std::setw(20) << std::setfill(' ') << std::right
+                                << "[MtNdnUtils]\t" << "performOnBackgroundThread post done "
+                                << boost::this_thread::get_id() << std::endl;
                 if (onCompletion)
                     onCompletion();
                 isDone.notify_one();
@@ -878,12 +887,14 @@ void resetThread()
             {
                 ThreadRecovery = false;
             }
-            VLOG(LOG_DEBUG) << "resetThread0 "
-                         << boost::this_thread::get_id() << std::endl;
+            VLOG(LOG_DEBUG) << std::setw(20) << std::setfill(' ') << std::right
+                            << "[MtNdnUtils]\t" << "resetThread0 "
+                            << boost::this_thread::get_id() << std::endl;
 
             MtNdnIoService->run();
-            VLOG(LOG_DEBUG) << "resetThread0 ioservice.run OVER "
-                         << boost::this_thread::get_id() << std::endl;
+            VLOG(LOG_DEBUG) << std::setw(20) << std::setfill(' ') << std::right
+                            << "[MtNdnUtils]\t" << "resetThread0 ioservice.run OVER "
+                            << boost::this_thread::get_id() << std::endl;
         }
         catch (std::exception &e) // fatal
         {
@@ -905,11 +916,13 @@ void resetThread1()
             {
                 ThreadRecovery = false;
             }
-            VLOG(LOG_DEBUG) << "resetThread1 "
+            VLOG(LOG_DEBUG) << std::setw(20) << std::setfill(' ') << std::right
+                            << "[MtNdnUtils]\t" << "resetThread1 "
                          << boost::this_thread::get_id() << std::endl;
 
             MtNdnIoService->run();
-            VLOG(LOG_DEBUG) << "resetThread1 ioservice.run OVER "
+            VLOG(LOG_DEBUG) << std::setw(20) << std::setfill(' ') << std::right
+                            << "[MtNdnUtils]\t" << "resetThread1 ioservice.run OVER "
                          << boost::this_thread::get_id() << std::endl;
         }
         catch (std::exception &e) // fatal
@@ -932,11 +945,13 @@ void startNewThread()
             {
                 ThreadRecovery = false;
             }
-            VLOG(LOG_DEBUG) << "startNewThread "
+            VLOG(LOG_DEBUG) << std::setw(20) << std::setfill(' ') << std::right
+                            << "[MtNdnUtils]\t" << "startNewThread "
                          << boost::this_thread::get_id() << std::endl;
 
             MtNdnIoService->run();
-            VLOG(LOG_DEBUG) << "startNewThread ioservice.run OVER "
+            VLOG(LOG_DEBUG) << std::setw(20) << std::setfill(' ') << std::right
+                            << "[MtNdnUtils]\t" << "startNewThread ioservice.run OVER "
                          << boost::this_thread::get_id() << std::endl;
         }
         catch (std::exception &e) // fatal

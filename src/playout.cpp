@@ -33,8 +33,8 @@ Playout::Playout(Consumer *consumer):
     //consumerId_(consumer_->getId()),
     vec_data_(nullptr)
 {
-    setDescription(MtNdnUtils::formatString("%s-Playout",
-                                            getDescription().c_str()));
+    setDescription(MtNdnUtils::formatString("Playout"
+                                            /*, getDescription().c_str()*/));
     jitterTiming_->flush();
     
     if (consumer_)
@@ -62,18 +62,7 @@ Playout::init(void *frameConsumer)
 int
 Playout::start(int initialAdjustment)
 {
-    {
-        ptr_lib::lock_guard<ptr_lib::mutex> scopeLock(playoutMutex_);
-        
-        jitterTiming_->flush(); 
-        
-        isRunning_ = true;
-        isInferredPlayback_ = false;
-        lastPacketTs_ = 0;
-        inferredDelay_ = 0;
-        playbackAdjustment_ = initialAdjustment;
-        bufferCheckTs_ = MtNdnUtils::millisecondTimestamp();
-    }
+    reset(initialAdjustment);
     
     MtNdnUtils::dispatchOnBackgroundThread([this](){
         processPlayout();
@@ -123,8 +112,7 @@ void
 Playout::setDescription(const std::string &desc)
 {
     ILoggingObject::setDescription(desc);
-    jitterTiming_->setDescription(MtNdnUtils::formatString("%sTiming",
-                                                       getDescription().c_str()));
+    jitterTiming_->setDescription(MtNdnUtils::formatString("JitterTiming"/*, getDescription().c_str()*/));
 }
 
 //******************************************************************************
@@ -214,11 +202,12 @@ Playout::processPlayout()
             //******************************************************************
             // get playout time (delay) for the rendered frame
             int cachesize = 0;
+
+
             int playbackDelay = frameBuffer_->releaseAcquiredFrame(isInferredPlayback_);
+
+
             LogTraceC << getDescription() << " nextPlaybackDelay " << playbackDelay
-                      << (isInferredPlayback_ ? ", inferred" : ", NOT inferred")
-                      << std::endl;
-            LogTraceC << "NextPlayback Delay " << playbackDelay
                       << (isInferredPlayback_ ? ", inferred" : ", NOT inferred")
                       << std::endl<< std::endl;
 
@@ -238,6 +227,8 @@ Playout::processPlayout()
 
             playoutMutex_.unlock();
             
+            if( noData )
+                playbackDelay = 30;
             if (isRunning_)
             {
                 // setup and run playout timer for calculated playout interval

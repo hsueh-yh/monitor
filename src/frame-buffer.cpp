@@ -19,8 +19,7 @@
 ///     FrameBuffer::Slot
 ////////////////////////////////////////////////////////////////
 
-FrameBuffer::Slot::Slot():
-    statistic(Statistics::getInstance())
+FrameBuffer::Slot::Slot()
 {
     resetData();
 }
@@ -57,7 +56,6 @@ FrameBuffer::Slot::interestIssued()
     if (requestTimeUsec_ <= 0)
         requestTimeUsec_ = MtNdnUtils::microsecondTimestamp();
 
-    statistic->addRequest();
     //reqCounter_++;
 }
 
@@ -65,24 +63,16 @@ void
 FrameBuffer::Slot::markMissed()
 {
     sstate_ = StateMissing;
-    statistic->markMiss();
 }
 
-void
+bool
 FrameBuffer::Slot::dataArrived ()
 {
+    if( sstate_ == StateLocked )
+        return false;
     sstate_ = StateFetched;
     arrivalTimeUsec_ = MtNdnUtils::microsecondTimestamp();
-    uint64_t delay = arrivalTimeUsec_-requestTimeUsec_;
-    statistic->addData(delay);
-
-    VLOG(LOG_INFO) << "RCVE " << prefix_.to_uri()
-              << " State: " << (int)(getState())
-              << " addr:" << hex << (void*)getDataPtr()
-              << " size:" << hex << (void*)getPayloadSize()
-              <<  " Delay " << dec << delay/1000
-              << "ms ( average: " << statistic->getDelay()/1000 << "ms )"
-              << " dataInterval: " <<  statistic->getDataInterval(arrivalTimeUsec_)/1000 << "ms" << endl;
+    return true;
 }
 
 
@@ -310,17 +300,16 @@ FrameBuffer::interestIssued( ndn::Interest &interest )
 //        return false;
 //    }
     //playbackQueue_.push(slot);
+    if( activeSlots_.find(pktNo) != activeSlots_.end() )
+        return false;
     activeSlots_[pktNo] = slot;
-    //readySlots_count_++;
 
-    VLOG(LOG_TRACE) << "ISSUE " << slot->getPrefix().to_uri()
-                 << " ( Total:" << activeSlots_.size()
-                 << " Ready: " <<readySlots_count_ << " )"<< endl;
+    statistic_->addRequest();
 
-    /*LogTraceC << "ISSUE " << slot->getPrefix().to_uri()
-              << " ( Total:" << activeSlots_.size()
-              << " Ready: " <<readySlots_count_ << " )"<< endl;
-              */
+    VLOG(LOG_TRACE) << setw(20) << setfill(' ') << std::right << getDescription()
+                    << "ALOC " << slot->getPrefix().to_uri()
+                    << " (Tot:" << activeSlots_.size()
+                    << " Rdy: " <<readySlots_count_ << ")"<< endl;
     return true;
 }
 
@@ -337,26 +326,13 @@ FrameBuffer::recvData(const ndn::ptr_lib::shared_ptr<Data> &data)
 
     if ( iter == activeSlots_.end() )
     {
-        Interest interest(data->getName());
-        if( !interestIssued(interest))
+        if( iter == activeSlots_.end() )
         {
-            //usleep(10*1000);
-            //cout << ".";
-
-            LOG(ERROR) << "FrameBuffer::interestIssued false " << std::endl;
-        }
-        else
-        {
-            iter = activeSlots_.find(frameNo);
-            if( iter == activeSlots_.end() )
-            {
-                VLOG(LOG_INFO) << "arrived data hava skiped " << data->getName() << endl;
-                return;
-            }
+            VLOG(LOG_WARN) << setw(20) << setfill(' ') << std::right << getDescription()
+                           << "Arrived Data has been skiped " << data->getName() << endl;
+            return;
         }
     }
-
-    readySlots_count_++;
 
     // set slot
     ptr_lib::shared_ptr<FrameBuffer::Slot> slot = iter->second;
@@ -369,7 +345,30 @@ FrameBuffer::recvData(const ndn::ptr_lib::shared_ptr<Data> &data)
     slot->setNumber(frameNo);
     slot->setCapTimestamp(ts);
     slot->setPayloadSize(data->getContent().size());
-    slot->dataArrived();
+    if( slot->dataArrived() )
+        ++readySlots_count_;
+    else
+    {
+        VLOG(LOG_WARN) << setw(20) << setfill(' ') << std::right << getDescription()
+                       << "Arrived Data has been skiped " << data->getName() << endl;
+        return;
+    }
+
+
+    uint64_t delay = slot->getArrivalTimeUsec()-slot->getRequestTimeUsec();
+    uint64_t interval = statistic_->getDataInterval(slot->getArrivalTimeUsec())/1000;
+    statistic_->addData(delay);
+
+    VLOG(LOG_INFO) << setw(20) << setfill(' ') << std::right << getDescription()
+            << "FILL " << data->getName().toUri()
+            //<< " State: " << (int)(slot->getState())
+            //<< " addr:" << hex << (void*)slot->getDataPtr()
+            //<< " size:" << dec << (void*)slot->getPayloadSize()
+            << "(Dly:" << dec << delay/1000
+            << "ms Avg:" << statistic_->getDelay()/1000 << "ms"
+            << " Invl:" <<  interval << "ms)"
+            << " (Tot: " << activeSlots_.size()
+            << " Rdy: " <<readySlots_count_ << ")" << endl;
 
 //    cout << "set Slot: No=" << slot->getFrameNo()
 //         << " name=" << slot->getPrefix().toUri()
@@ -381,31 +380,36 @@ FrameBuffer::recvData(const ndn::ptr_lib::shared_ptr<Data> &data)
     //LogTraceC << "RCVE " << data->getName().to_uri() << std::endl;
 }
 
-void
+bool
 FrameBuffer::dataMissed(const ptr_lib::shared_ptr<const Interest> &interest )
 {
     ptr_lib::lock_guard<ptr_lib::recursive_mutex> scopedLock(syncMutex_);
 
     int componentCount = interest->getName().getComponentCount();
     FrameNumber frameNo = std::atoi(interest->getName().get(componentCount-1).toEscapedString().c_str());
+    if( frameNo-1 == lastMissNo_ )
+        ++miss_count_;
     map<unsigned int, ptr_lib::shared_ptr<Slot> >::iterator iter;
     iter = activeSlots_.find(frameNo);
 
     if ( iter == activeSlots_.end() )
     {
         cout << "FrameBuffer::dataMissed Error " << endl;
-        return;
+        return false;
     }
     ptr_lib::shared_ptr<Slot> slot = iter->second;
     slot->markMissed();
 
-    VLOG(LOG_INFO) << "miss " << interest->getName().to_uri()
-              << " ( Total:" << activeSlots_.size()
-              << " Ready: " <<readySlots_count_ << " )"<< endl;
+    statistic_->markMiss();
+    VLOG(LOG_INFO) << setw(20) << setfill(' ') << std::right << getDescription()
+                << "miss " << interest->getName().to_uri()
+                << " (Tot:" << activeSlots_.size()
+                << " Rdy: " <<readySlots_count_ << ")"<< endl;
     /*LogTraceC << "miss " << interest->getName().to_uri()
-              << " ( Total:" << activeSlots_.size()
-              << " Ready: " <<readySlots_count_ << " )"<< endl;
+              << " ( Tot:" << activeSlots_.size()
+              << " Rdy: " <<readySlots_count_ << " )"<< endl;
               */
+    return true;
 }
 
 void
@@ -418,7 +422,7 @@ FrameBuffer::acquireFrame( vector<uint8_t> &dest_,
 {
     ptr_lib::lock_guard<ptr_lib::recursive_mutex> scopedLock(syncMutex_);
 
-    if( readySlots_count_ <= 3 )
+    if( readySlots_count_ <= 0 )
         return;
 
     ptr_lib::shared_ptr<Slot> slot;
@@ -438,15 +442,16 @@ FrameBuffer::acquireFrame( vector<uint8_t> &dest_,
         if( isNaluStart(slot) )
         {
             //LOG(INFO) << "got nalu start " << std::endl;
-            ts = slot->getCapTimestamp();
             ++nalCounter;
             if(nalCounter > 1) break;
+            ts = slot->getCapTimestamp();
         }
 
         // lock and suspend for decode,
         // unlock at FrameBuffer::releaseAcquiredFrame
         slot->lock();
         suspendSlot(slot);
+
         /*
         LOG(INFO) << "suspendSlot "
                   << slot->getState() << " "
@@ -472,30 +477,31 @@ FrameBuffer::acquireFrame( vector<uint8_t> &dest_,
                       << " " << slot->getPrefix()
                       << " addr:" << hex << (void*)slot->getDataPtr()
                       << " size:" << dec << (void*)slot->getPayloadSize()
-                      << " ( Total:" << dec<< activeSlots_.size()
-                      << " Ready: " <<readySlots_count_ << " )"<< endl;
+                      << " ( Tot:" << dec<< activeSlots_.size()
+                      << " Rdy: " <<readySlots_count_ << " )"<< endl;
                       */
 
-            VLOG(LOG_INFO)
-                << "POP " << nalCounter
+            VLOG(LOG_INFO) << setw(20) << setfill(' ') << std::right << getDescription()
+                << "USIN " << nalCounter
                 << " " << slot->getPrefix()
                 << " addr:" << hex << (void*)slot->getDataPtr()
                 << " size:" << dec << (void*)slot->getPayloadSize()
-                << " ( Total:" << dec<< activeSlots_.size()
-                << " Ready: " <<readySlots_count_ << " )"<< endl;
+                << " (Tot:" << dec<< activeSlots_.size()
+                << " Rdy: " <<readySlots_count_ << ")"<< endl;
         }
         else
         {
             assembledLevel = 0;
         }
 
+        // append next slot to this NALU
         ++iter;
         if( iter != activeSlots_.end() )
             slot = iter->second;
         else
             break;
-    }
-    //LOG(INFO) << "Total: " << dest_.size() << std::endl;
+    }//while
+    //LOG(INFO) << "Tot: " << dest_.size() << std::endl;
 }
 
 int
@@ -503,32 +509,31 @@ FrameBuffer::releaseAcquiredFrame(bool& isInferredPlayback)
 {
     ptr_lib::lock_guard<ptr_lib::recursive_mutex> scopedLock(syncMutex_);
 
+    int64_t lastPlaybackCapTime = 0;
+    if( playbackSlot_ != nullptr )
+            lastPlaybackCapTime = playbackSlot_->getCapTimestamp();
+    int n = recoverSuspendedSlot(true);
+    /*VLOG(LOG_INFO) << setw(20) << setfill(' ') << std::right << getDescription()
+        << "RLSE " << n
+        << " (Tot: " << dec<< activeSlots_.size()
+        << " Rdy: " <<readySlots_count_ << ")"<< endl;*/
+
     int duration = -1;
-    if( readySlots_count_ <= 0 || !(playbackSlot_.get()) )
+
+    map_int_slotPtr::iterator it = activeSlots_.begin();
+    //if( readySlots_count_ <= 0 )
+    if( it == activeSlots_.end() || it->second->getState() < Slot::StateFetched )
     {
         duration = 30;
         isInferredPlayback = true;
     }
     else
     {
-        SlotPtr slot;
-        map_int_slotPtr::iterator it = activeSlots_.begin();
-        while( it != activeSlots_.end() )
-        {
-            slot = it->second;
-            if( slot->getState() == Slot::StateFetched)
-                break;
-            ++it;
-        }
-
-        if( it!=activeSlots_.end())
-        {
-            duration = slot->getCapTimestamp()-playbackSlot_->getCapTimestamp();
-            isInferredPlayback = false;
-        }
+        SlotPtr slot = it->second;
+        duration = slot->getCapTimestamp()-lastPlaybackCapTime;
+        isInferredPlayback = false;
     }
 
-    recoverSuspendedSlot(true);
     return duration;
 }
 

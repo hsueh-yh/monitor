@@ -13,17 +13,19 @@ VideoDecoder::VideoDecoder() :
     std::stringstream ss;
     ss << componentId_;
     setDescription(ss.str());
-    setDescription("VideoDecoder");
-    LOG(INFO) << getDescription() << std::endl;
+    setDescription("[VideoDecoder]");
+    LogInfoC << getDescription() << std::endl;
 }
 
 //********************************************************************************
 #pragma mark - public
-int VideoDecoder::init(/*const VideoCoderParams &settings*/)
+int VideoDecoder::init(ndnlog::new_api::Logger *logger)
 {
     //settings_ = settings;
     if (RESULT_GOOD(resetDecoder()))
         return RESULT_OK;
+
+    setLogger(logger);
 
     return RESULT_ERR;
 }
@@ -32,10 +34,10 @@ void VideoDecoder::reset()
 {
     if (frameCount_ > 0)
     {
-        VLOG(LOG_TRACE) << "resetting decoder..." << std::endl;
+        LogTraceC << "resetting decoder..." << std::endl;
         //int res = decoder_->Release();
         resetDecoder();
-        VLOG(LOG_TRACE) << "decoder reset" << std::endl;
+        LogTraceC << "decoder reset" << std::endl;
     }
 }
 
@@ -44,7 +46,7 @@ void VideoDecoder::reset()
 void VideoDecoder::onDecoded(const AVFrame &decodedImage)
 {
     /*
-    VLOG(LOG_TRACE) << "decode Frame "
+    LogTraceC << "decode Frame "
               << decodedImage.width
               << "*"
               << decodedImage.height
@@ -64,7 +66,7 @@ void VideoDecoder::onEncodedFrameDelivered(AVPacket &encodedImage,
 {
     //if (frameCount_ == 0)
     {
-        VLOG(LOG_TRACE)
+        LogTraceC
         << getDescription()
         << " start decode "
         << frameCount_ << " "
@@ -82,8 +84,10 @@ void VideoDecoder::onEncodedFrameDelivered(AVPacket &encodedImage,
     //VLOG(LOG_TRACE) << "decoding ... " << std::endl;
     int ret = decoder_->decode(encodedImage);
 
-    VLOG_IF(LOG_WARN, ret < 0) << "decode ERROR errcode=" << ret << std::endl;
-    VLOG_IF(LOG_WARN, ret == 0) << "no decoded frame ret=" << ret << std::endl;
+    if( ret < 0 )
+    LogWarnC << "decode ERROR errcode=" << ret << std::endl;
+    if( ret == 0 )
+        LogWarnC << "no decoded frame ret=" << ret << std::endl;
 }
 
 int VideoDecoder::resetDecoder()

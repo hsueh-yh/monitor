@@ -37,8 +37,7 @@ Consumer::init(const ConsumerSettings &settings,
     //LOG(INFO) << "streamPrefix_: " << streamPrefix_ << std::endl;
     frameBuffer_.reset(new FrameBuffer());
     frameBuffer_->setLogger(logger_);
-    frameBuffer_->setDescription(MtNdnUtils::formatString("%s-Buffer",
-                                                       getDescription().c_str()));
+    //frameBuffer_->setDescription(MtNdnUtils::formatString("[FrameBuffer]"));
     frameBuffer_->init();
 
     if( settings.transType_ == "byFrame" )
@@ -47,8 +46,8 @@ Consumer::init(const ConsumerSettings &settings,
         pipeliner_.reset(new PipelinerStream(this));
 
     pipeliner_->setLogger(logger_);
-    pipeliner_->setDescription(MtNdnUtils::formatString("%s-Pipeliner",
-                                                     getDescription().c_str()));
+    //pipeliner_->setDescription(MtNdnUtils::formatString("%s-Pipeliner",
+    //                                                 getDescription().c_str()));
     pipeliner_->registerCallback(this);
 
     renderer_->init();
@@ -134,36 +133,49 @@ Consumer::stop( int tmp )
 void
 Consumer::onStateChanged(const int &oldState, const int &newState)
 {
-    if (observer_)
-    {
-        ptr_lib::lock_guard<ptr_lib::mutex> scopedLock(observerMutex_);
-        ConsumerStatus status;
+    ptr_lib::lock_guard<ptr_lib::mutex> scopedLock(observerMutex_);
+    ConsumerStatus status;
 
-        switch (newState) {
-            case Pipeliner::StateWaitInitial:
-                status = ConsumerStatusNoData;
-                break;
-            /*
-            case Pipeliner::StateAdjust:
-                status = ConsumerStatusAdjusting;
-                break;
+    switch (newState) {
 
-            case Pipeliner::StateBuffering:
-                status = ConsumerStatusBuffering;
-                break;
-            */
-            case Pipeliner::StateFetching:
-                status = ConsumerStatusFetching;
-                break;
+        case Pipeliner::StateInactive:
+            status = ConsumerStatusStopped;
+            if( oldState == Pipeliner::StateFetching )
+            {
+                playout_->stop();
+                frameBuffer_->init();
+            }
+            break;
 
-            case Pipeliner::StateInactive:
-            default:
-                status = ConsumerStatusStopped;
-                break;
-        }
+        case Pipeliner::StateWaitInitial:
+            status = ConsumerStatusNoData;
+            // pipeliner restart
+            if( oldState == Pipeliner::StateFetching )
+            {
+                playout_->stop();
+                frameBuffer_->init();
+            }
+            break;
+        /*
+        case Pipeliner::StateAdjust:
+            status = ConsumerStatusAdjusting;
+            break;
 
-        observer_->onStatusChanged(status);
+        case Pipeliner::StateBuffering:
+            status = ConsumerStatusBuffering;
+            break;
+        */
+        case Pipeliner::StateFetching:
+            status = ConsumerStatusFetching;
+            break;
+
+        default:
+            status = ConsumerStatusStopped;
+            break;
     }
+
+    if (observer_)
+        observer_->onStatusChanged(status);
 }
 
 void

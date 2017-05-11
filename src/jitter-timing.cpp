@@ -31,18 +31,18 @@ JitterTiming::~JitterTiming()
 void JitterTiming::flush()
 {
     resetData();
-    LogTraceC << "flushed" << std::endl;
+    LogTraceC << getDescription() << "flushed" << std::endl;
 }
 void JitterTiming::stop()
 {
     stopJob();
-    LogTraceC << "stopped" << std::endl;
+    LogTraceC << getDescription() << "stopped" << std::endl;
 }
 
 int64_t JitterTiming::startFramePlayout()
 {
     int64_t processingStart = MtNdnUtils::microsecondTimestamp();
-    LogTraceC << "proc start " << processingStart;// << std::endl;
+    LogTraceC << getDescription() << "proc start " << processingStart;// << std::endl;
     
     if (prevPlayoutTsUsec_ == 0)
     {

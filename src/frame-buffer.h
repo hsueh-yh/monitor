@@ -22,6 +22,7 @@
 #include <ndn-cpp/data.hpp>
 
 #include "frame-data.h"
+#include "mtndn-object.h"
 #include "statistics.h"
 #include "simple-log.h"
 #include <boost/thread/shared_mutex.hpp>
@@ -29,7 +30,7 @@ using namespace std;
 using namespace ndn;
 
 
-class FrameBuffer : public ndnlog::new_api::ILoggingObject
+class FrameBuffer : public MtNdnComponent//ndnlog::new_api::ILoggingObject
 {
 public:
 
@@ -107,7 +108,7 @@ public:
           *- dataName
           *- arrivalTimeUsec
          */
-        void
+        bool
         dataArrived();
 
         void
@@ -212,7 +213,6 @@ public:
                 arrivalTimeUsec_; // local timestamp when data for this
                                   // frame has arrived
         //std::recursive_mutex syncMutex_;
-        Statistics *statistic;
 
         void resetData();
 
@@ -222,8 +222,11 @@ public:
     FrameBuffer():
         count_(0),
         readySlots_count_(0),
-        fstate_(Invalid)
-    {}
+        fstate_(Invalid),
+        statistic_(Statistics::getInstance())
+    {
+        setDescription("[FrameBuffer]\t");
+    }
 
 
     ~FrameBuffer()
@@ -235,6 +238,7 @@ public:
     void
     init()
     {
+        reset();
         setState(Valid);
     }
 
@@ -267,7 +271,7 @@ public:
     void
     recvData(const ndn::ptr_lib::shared_ptr<Data> &data);
 
-    void
+    bool
     dataMissed(const ptr_lib::shared_ptr<const Interest> &interest );
 
     /**
@@ -301,7 +305,8 @@ public:
      * calculated using timestamp difference).
      * @return Playback duration
      */
-    int releaseAcquiredFrame(bool& isInferredPlayback);
+    int
+    releaseAcquiredFrame(bool& isInferredPlayback);
 
     unsigned int
     getPlayableBufferSize()
@@ -339,7 +344,23 @@ public:
         return ceil(1000./playbackRate_);
     }
 
+    int
+    getActiveSlots()
+    {
+        return activeSlots_.size();
+    }
 
+    int
+    getReadySlots()
+    {
+        return readySlots_count_;
+    }
+
+    int
+    getSuccessiveMiss()
+    {
+        return miss_count_;
+    }
 
 private:
 
@@ -421,8 +442,12 @@ private:
     SlotPtr playbackSlot_;
 
     int readySlots_count_ = 0;
+    int miss_count_ = 0;
+    FrameNumber lastMissNo_ = 0;
 
     double playbackRate_ = 30.0; // 30 frames per second (fps)
+
+    Statistics *statistic_;
 
     //vector<uint8_t> *dest_; // use to transmit data in acquireFrame
 
@@ -438,6 +463,7 @@ private:
     void
     reset()
     {
+        ptr_lib::lock_guard<ptr_lib::recursive_mutex> scopedLock(syncMutex_);
         playbackSlot_ = nullptr;
         readySlots_count_ = 0;
         playbackRate_ = 30.0;
@@ -465,26 +491,33 @@ private:
     void
     suspendSlot( ptr_lib::shared_ptr<Slot> slot )
     {
+        ptr_lib::lock_guard<ptr_lib::recursive_mutex> scopedLock(syncMutex_);
         suspendSlots_.push_back(slot);
         playbackSlot_ = slot;
     }
 
-    void
+    int
     recoverSuspendedSlot(bool isRemove)
     {
+        ptr_lib::lock_guard<ptr_lib::recursive_mutex> scopedLock(syncMutex_);
         ptr_lib::shared_ptr<Slot> slot;
         std::list<ptr_lib::shared_ptr<Slot> >::iterator it,tmpit;
         playbackSlot_.reset();
         it = suspendSlots_.begin();
+        int n = suspendSlots_.size();
         while( it != suspendSlots_.end() )
         {
             slot = *it;
-            slot->unlock();
+            //slot->unlock();
             // remove from activeSlots
             if( isRemove )
             {
-                if( slot->getState() == Slot::StateFetched )
-                    readySlots_count_--;
+                if( slot->getState() == Slot::StateLocked )
+                    --readySlots_count_;
+                VLOG(LOG_INFO) << setw(20) << setfill(' ') << std::right << getDescription()
+                    << "RLSE " << slot->getPrefix()
+                    << " (Tot: " << dec<< activeSlots_.size()
+                    << " Rdy: " <<readySlots_count_ << ")"<< endl;
                 activeSlots_.erase(slot->getFrameNo());
             }
             tmpit = it++;
@@ -499,8 +532,14 @@ private:
             slot.reset();
         }
         suspendSlots_.clear();
+        return n;
     }
 
+    /**
+     * @brief isNaluStart
+     * @param slot
+     * @return true if this slot is the start of a NALU or =NULL
+     */
     bool
     isNaluStart(ptr_lib::shared_ptr<Slot> slot)
     {
@@ -510,6 +549,8 @@ private:
         if( slot->getState() == Slot::StateFetched )
         {
             slotbuf = slot->getDataPtr();
+            if( slotbuf == NULL )
+                return true;
 
             if( (0 == slotbuf[0] && 0 == slotbuf[1] && 0 == slotbuf[2] && 1 == slotbuf[3])
                                || ( 0 == slotbuf[0] && 0 == slotbuf[1] && 1 == slotbuf[2]) )
@@ -517,6 +558,8 @@ private:
                 isStart = true;
             }
         }
+        else
+            return true;
         return isStart;
     }
 };

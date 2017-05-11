@@ -27,7 +27,7 @@ public:
     void setFrameConsumer(IRawFrameConsumer *frameConsumer)
     { decodedFrameConsumer_ = frameConsumer; }
 
-    int init();
+    int init(ndnlog::new_api::Logger *logger);
     void reset();
 
     /**

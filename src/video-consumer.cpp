@@ -25,7 +25,7 @@ VideoConsumer::init(const ConsumerSettings &settings,
     {
         pipeliner_->init();
 
-        decoder_->init();
+        decoder_->init(logger_);
         //decoder_->init(((VideoThreadParams*)getCurrentThreadParameters())->coderParams_);
 
         playout_.reset(new VideoPlayout(this));

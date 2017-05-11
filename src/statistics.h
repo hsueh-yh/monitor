@@ -29,6 +29,7 @@ public:
     {
         return lastRecvDataTS_;
     }
+
     int64_t getDataInterval( int64_t newDataTs )
     {
         int64_t diff = (lastRecvDataTS_ == 0 ? 0 : newDataTs - lastRecvDataTS_);

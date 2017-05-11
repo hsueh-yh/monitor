@@ -22,7 +22,9 @@ using namespace ndn::func_lib;
 PipelinerFrame::PipelinerFrame(const Consumer *consumer):
     Pipeliner(consumer)
 {
-    VLOG(LOG_TRACE) << "[PipelinerFrame] ctor" << endl;
+    setDescription("[PipelinerFrame]\t");
+    VLOG(LOG_TRACE) << setw(20) << setfill(' ') << std::right << getDescription()
+                    << " ctor" << endl;
 //	PipelinerFrameFIle_ = fopen ( "PipelinerFrameFIle_.264", "wb+" );
 //	if ( PipelinerFrameFIle_ == NULL )
 //	{
@@ -36,7 +38,8 @@ PipelinerFrame::~PipelinerFrame()
 {
 //    frameBuffer_.reset();
 //    faceWrapper_.reset();
-    VLOG(LOG_TRACE) << "[PipelinerFrame] dtor" << endl;
+    VLOG(LOG_TRACE) << setw(20) << setfill(' ') << std::right << getDescription()
+                    << " dtor" << endl;
     //fclose(PipelinerFrameFIle_);
 }
 
@@ -57,7 +60,7 @@ PipelinerFrame::start()
     requestMeta();
     switchToState(StateWaitInitial);
 
-    VLOG(LOG_INFO) << "[PipelinerFrame] Started" << endl;
+    VLOG(LOG_INFO) << "\t[PipelinerFrame]\t Started" << endl;
 
     return RESULT_OK;
 }
@@ -74,7 +77,7 @@ PipelinerFrame::getDefaultInterest(PacketNumber frameNo)
     Name packetPrefix(streamName_);
     packetPrefix.append(MtNdnUtils::componentFromInt(frameNo));
     ptr_lib::shared_ptr<Interest> interest(new Interest(packetPrefix));
-    interest->setInterestLifetimeMilliseconds(1*1000);
+    interest->setInterestLifetimeMilliseconds(1000);
     interest->setMustBeFresh(true);
 
     return interest;
@@ -98,9 +101,12 @@ PipelinerFrame::onData(const ptr_lib::shared_ptr<const Interest> &interest,
     //Receive MetaData
     case StateWaitInitial:
     {
-        int p = Namespacer::findComponent(data->getName(), NameComponents::NameComponentStreamMetainfo );
+        int p = Namespacer::findComponent(data->getName(),
+                                          NameComponents::NameComponentStreamMetainfo );
         if( -1 != p )
         {
+            VLOG(LOG_INFO) << setw(20) << setfill(' ') << std::right << getDescription()
+                           << "RCV Meta: " << data->getName().toUri() << endl;
             reqCurPktNo_ = MtNdnUtils::frameNumber(data->getName().get(p+2));
             //cout << reqCurPktNo_ << "**********************"<<endl;
             lastFrmNo_ = reqCurPktNo_;
@@ -109,7 +115,9 @@ PipelinerFrame::onData(const ptr_lib::shared_ptr<const Interest> &interest,
         }
         else
         {
-            LOG(WARNING) << "[PipelinerFrame] meta packet error: " << data->getName() << endl;
+            LOG(WARNING) << setw(20) << setfill(' ') << std::right << getDescription()
+                         << " meta packet error: "
+                         << data->getName() << endl;
             requestMeta();
         }
     }
@@ -118,15 +126,30 @@ PipelinerFrame::onData(const ptr_lib::shared_ptr<const Interest> &interest,
     case StateBootstrap:
     case StateFetching:
     {
+        int p = Namespacer::findComponent(data->getName(),
+                                          NameComponents::NameComponentStreamMetainfo );
+        // rcv meta pkt
+        if( -1 != p )
+        {
+            VLOG(LOG_INFO) << setw(20) << setfill(' ') << std::right << getDescription()
+                           << " discard antiquated meta pkt" << endl;
+        }
         lastFrmNo_ = MtNdnUtils::frameNumber(data->getName().get(-1));
         unsigned int pktNo;
         Namespacer::getFrameNumber(data->getName(),pktNo);
 
-        window_.dataArrived(pktNo);
+        if( !window_.dataArrived(pktNo) )
+        {
+            VLOG(LOG_INFO) << setw(20) << setfill(' ') << std::right << getDescription()
+                           << " Obsolete Meta" << endl;
+            return;
+        }
 
         if( frameBuffer_->getState() == FrameBuffer::Invalid)
             return;
-        //LOG(INFO) << "[PipelinerFrame] Received Data " << data->getName().to_uri() << " " << reqCurPktNo_ << " " << reqLastNo_ << std::endl;
+        LOG(INFO) << setw(20) << setfill(' ') << std::right << getDescription()
+                  << "RCV " << data->getName().to_uri() << " c=" << reqCurPktNo_
+                  << " l=" << lastFrmNo_ << std::endl;
         frameBuffer_->recvData(data);
         requestNextPkt();
     }
@@ -134,7 +157,8 @@ PipelinerFrame::onData(const ptr_lib::shared_ptr<const Interest> &interest,
 
     default:
     {
-        VLOG(LOG_ERROR) << "[PipelinerFrame] State error" << endl;
+        VLOG(LOG_ERROR) << setw(20) << setfill(' ') << std::right << getDescription()
+                        << "\tState error" << endl;
     }
         break;
     }//switch
@@ -143,19 +167,32 @@ PipelinerFrame::onData(const ptr_lib::shared_ptr<const Interest> &interest,
 void
 PipelinerFrame::onTimeout(const ptr_lib::shared_ptr<const Interest> &interest)
 {
-    VLOG(LOG_INFO) << "Timeout " << interest->getName().to_uri()
+    VLOG(LOG_INFO) << setw(20) << setfill(' ') << std::right << getDescription()
+                   << "Timeout " << interest->getName().to_uri()
                  << " ( Loss Rate = " << statistic->getLostRate() << " )"<< endl;
 
     PacketNumber pktNo;
     Namespacer::getFrameNumber(interest->getName(), pktNo);
-    window_.dataArrived(pktNo);
+    double missrate = window_.dataMissed(pktNo);
+    if( missrate > 0.2 && getState() >= StateFetching )
+    {
+        VLOG(LOG_WARN) << setw(20) << setfill(' ') << std::right << getDescription()
+                       << " Restart... (missRate:" << missrate << ")" << endl;
+        switchToState(StateInactive); // call back consumer to stop playout and framebuffer
+        start();
+    }
 
     switch(state_)
     {
     case StateInactive:
     case StateWaitInitial:
     {
-        requestMeta();
+        int p = Namespacer::findComponent(interest->getName(),
+                                          NameComponents::NameComponentStreamMetainfo );
+        if( -1 != p )
+        {
+            requestMeta();
+        }
     }
         break;
 
@@ -164,15 +201,31 @@ PipelinerFrame::onTimeout(const ptr_lib::shared_ptr<const Interest> &interest)
     {
         if( frameBuffer_->getState() == FrameBuffer::Invalid)
             return;
-        frameBuffer_->dataMissed(interest);
-        //VLOG(LOG_TRACE) << "RE-Express " << interest->getName().to_uri() << endl;
-        //express(*(interest.get()));
+        if( false == frameBuffer_->dataMissed(interest) )
+            return;
+        else if( 0 )//re-fetch
+        {
+            VLOG(LOG_TRACE) << setw(20) << setfill(' ') << std::right << getDescription()
+                            << "RE-Express " << interest->getName().to_uri() << endl;
+            //express(*(interest.get()));
+        }
+
+        int reqs = frameBuffer_->getActiveSlots(), ready = frameBuffer_->getReadySlots();
+        if( (reqs - ready > 30 || reqs - ready <= 0) && getState() >= StateFetching )
+        {
+            VLOG(LOG_WARN) << setw(20) << setfill(' ') << std::right << getDescription()
+                           << " Restart..." << endl;
+            switchToState(StateInactive); // call back consumer to stop playout and framebuffer
+            start();
+        }
+
     }
         break;
 
     default:
     {
-        VLOG(LOG_ERROR) << "[PipelinerFrame] State error" << endl;
+        VLOG(LOG_ERROR) << setw(20) << setfill(' ') << std::right << getDescription()
+                        << " State error" << endl;
     }
         break;
     }//switch
@@ -191,19 +244,30 @@ PipelinerFrame::requestMeta()
     metaInterest.setMustBeFresh(true);
 
     express(metaInterest);
+    VLOG(LOG_INFO) << setw(20) << setfill(' ') << std::right << getDescription()
+                   << "Request Meta: "
+                   << metaInterest.getName().toUri() << endl;
 }
 
 void
 PipelinerFrame::requestNextPkt()
 {
-    if( reqCurPktNo_ >= lastFrmNo_ )
+    if( reqCurPktNo_ > lastFrmNo_ )
     {
         //usleep(30*1000);
-        cout << "sleep 30 ms " << endl << endl;
-        scheduleJob(30*1000, [this]()->bool{
+        VLOG(LOG_INFO) << setw(20) << setfill(' ') << std::right << getDescription()
+                       << "Forecast Next Frame c=" << reqCurPktNo_ << " l=" << lastFrmNo_ << endl;
+        scheduleJob(40*1000, [this]()->bool{
             bool res = requestFrame(reqCurPktNo_++);
+            if( reqCurPktNo_ > lastFrmNo_ )
+            {
+                VLOG(LOG_WARN) << setw(20) << setfill(' ') << std::right << getDescription()
+                            << "Request Forecast Interest"
+                            << reqCurPktNo_ << " " << lastFrmNo_ << endl;
+                return true;
+            }
             return (!res); // if not requeste, do it again
-        });
+        }, 1000);
         //scheduleJob(30*1000, bind(&PipelinerFrame::requestFrame, this, reqCurPktNo_));
         //++reqCurPktNo_;
         //requestFrame(reqCurPktNo_++);
@@ -229,15 +293,20 @@ PipelinerFrame::requestFrame(PacketNumber frameNo)
         //cout << "Windown: " << window_.getCurrentWindowSize() << endl;
         //usleep(10*1000);
         //std::cout << "request frame1 " << window_.getCurrentWindowSize() << std::endl;
+        VLOG(LOG_WARN) << setw(20) << setfill(' ') << std::right << getDescription()
+                       << " Window is exceeded " << window_.getCurrentWindowSize() << endl;
         return false;
     }
-    //LOG(INFO) << "Request " << frameNo << endl;
 
     ptr_lib::shared_ptr<Interest> interest = getDefaultInterest( frameNo );
+    VLOG(LOG_INFO) << setw(20) << setfill(' ') << std::right << getDescription()
+                    << "REQ " << interest->getName().toUri() << endl;
 
     if( !frameBuffer_->interestIssued(*interest.get()))
     {
-        LOG(ERROR) << "FrameBuffer::interestIssued false " << std::endl;
+        VLOG(LOG_ERROR) << setw(20) << setfill(' ') << std::right << getDescription()
+                        << "RE-REQ Interest " << interest->getName().toUri() << std::endl;
+        return false;
     }
 
     express(*interest.get());

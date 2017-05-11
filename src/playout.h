@@ -89,6 +89,22 @@ protected:
       *packet: number of fetched segments divided by total number of
       *segments for this packet
      */
+
+    virtual void
+    reset(int initialAdjustment = 0)
+    {
+        ptr_lib::lock_guard<ptr_lib::mutex> scopeLock(playoutMutex_);
+
+        jitterTiming_->flush();
+
+        isRunning_ = true;
+        isInferredPlayback_ = false;
+        lastPacketTs_ = 0;
+        inferredDelay_ = 0;
+        playbackAdjustment_ = initialAdjustment;
+        bufferCheckTs_ = MtNdnUtils::millisecondTimestamp();
+    }
+
     virtual bool
     playbackPacket( int64_t packetTsLocal,
                     vector<uint8_t> &data,
