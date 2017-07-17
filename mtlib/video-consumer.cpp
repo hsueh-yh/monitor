@@ -4,11 +4,12 @@
 
 
 VideoConsumer::VideoConsumer(const GeneralParams &generalParams,
-                             const GeneralConsumerParams &consumerParams,
+                             const ConsumerParams &consumerParams,
                              IExternalRenderer *const externalRenderer):
     Consumer(generalParams,consumerParams),
     decoder_(new VideoDecoder())
 {
+    setDescription("[VideoConsumer]\t");
     renderer_.reset(new ExternalVideoRendererAdaptor(externalRenderer));
     decoder_->setFrameConsumer(getRenderer().get());
 }
@@ -18,10 +19,9 @@ VideoConsumer::~VideoConsumer()
 
 
 int
-VideoConsumer::init(const ConsumerSettings &settings,
-     const std::string &threadName)
+VideoConsumer::init(const ConsumerSettings &settings)
 {
-    if (RESULT_GOOD(Consumer::init(settings, threadName)))
+    if (RESULT_GOOD(Consumer::init(settings)))
     {
         pipeliner_->init();
 
@@ -33,7 +33,8 @@ VideoConsumer::init(const ConsumerSettings &settings,
         playout_->init(decoder_.get());
         //((VideoPlayout*)playout_.get())->onFrameSkipped_ = boost::bind(&VideoConsumer::onFrameSkipped, this, _1, _2, _3, _4, _5);
 
-        LOG(INFO) << "VideoConsumer initialized" << std::endl;
+        VLOG(LOG_INFO) << setw(20) << setfill(' ') << std::right << getDescription()
+                  << "initialized" << std::endl;
 
         return RESULT_OK;
     }
@@ -45,7 +46,8 @@ int
 VideoConsumer::start()
 {
    if( RESULT_GOOD(Consumer::start()) )
-       LOG(INFO) << "Started" << std::endl;
+       VLOG(LOG_INFO) << setw(20) << setfill(' ') << std::right << getDescription()
+                 << "started" << std::endl;
    else
        return RESULT_ERR;
 
@@ -56,7 +58,8 @@ int
 VideoConsumer::stop()
 {
     if (RESULT_GOOD(Consumer::stop()))
-        LOG(INFO) << "Stopped" << std::endl;
+        VLOG(LOG_INFO) << setw(20) << setfill(' ') << std::right << getDescription()
+                  << "stopped" << std::endl;
     else
         return RESULT_ERR;
 

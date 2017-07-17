@@ -166,8 +166,8 @@ VideoPlayout::playbackPacket(int64_t packetTsLocal,
         }
 */
 
-        //LogTraceC
-        VLOG(LOG_INFO)
+        LogTraceC
+        //VLOG(LOG_INFO)
         << setw(20) << setfill(' ') << std::right << getDescription()
         << "PlayBackPacket "
         << consumer_->getPrefix()

@@ -226,13 +226,15 @@ public:
         statistic_(Statistics::getInstance())
     {
         setDescription("[FrameBuffer]\t");
+        VLOG(LOG_INFO) << setw(20) << setfill(' ') << std::right << getDescription()
+                       << "ctor" << std::endl;
     }
 
 
     ~FrameBuffer()
     {
-        LOG(INFO) << "[FrameBuffer] dtor" << endl;
-        LOG(WARNING) << "[FrameBuffer] dtor" << endl;
+        VLOG(LOG_INFO) << setw(20) << setfill(' ') << std::right << getDescription()
+                       << "dtor" << std::endl;
     }
 
     void
@@ -246,7 +248,8 @@ public:
     stop()
     {
         setState(Invalid);
-        LOG(INFO) << "[FrameBuffer] Stoping" << endl;
+        LOG(INFO) << setw(20) << setfill(' ') << std::right << getDescription()
+                  << "stoped" << endl;
     }
 
     State
@@ -525,6 +528,7 @@ private:
 
             if( slot.use_count() > 1 )
                 LOG(ERROR)
+                << setw(20) << setfill(' ') << std::right << getDescription()
                 << slot.use_count()
                 << " slot not properly released"
                 << std::endl;

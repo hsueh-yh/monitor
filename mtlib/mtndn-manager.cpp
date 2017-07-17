@@ -141,7 +141,8 @@ MtNdnManager &MtNdnManager::getSharedInstance()
 
 void MtNdnManager::setObserver(IMtNdnLibraryObserver *observer)
 {
-    LOG(INFO) << "Set library observer " << observer << std::endl;
+    LOG(INFO) << setw(20) << setfill(' ') << std::right << "[MtNdnManager]\t"
+              << "Set library observer " << observer << std::endl;
 
     LibraryInternalObserver.setLibraryObserver(observer);
 }
@@ -150,19 +151,25 @@ void MtNdnManager::setObserver(IMtNdnLibraryObserver *observer)
 //******************************************************************************
 static int id = 0;
 std::string
-MtNdnManager::addRemoteStream(std::string &remoteStreamPrefix,
-                              const std::string &threadName,
-                              const MediaStreamParams &params,
-                              const GeneralParams &generalParams,
-                              const GeneralConsumerParams &consumerParams,
+MtNdnManager::addRemoteStream(const GeneralParams &generalParams,
+                              const ConsumerParams &consumerParams,
+                              const MediaStreamParams &mediaStreamParams,
                               IExternalRenderer *const renderer)
 {
-    VLOG(LOG_INFO) << "MMNdnManager::addRemoteStream " << remoteStreamPrefix << std::endl;
-    MtNdnUtils::performOnBackgroundThread([=, &remoteStreamPrefix]()->void{
+    std::string remoteStreamPrefix = mediaStreamParams.streamName_;
+
+    VLOG(LOG_INFO) << setw(20) << setfill(' ') << std::right << "[MtNdnManager]\t"
+                   << "addRemoteStream " << remoteStreamPrefix << std::endl;
+
+    MtNdnUtils::performOnBackgroundThread([&]()->void{
+
         //Logger::getLogger(INFO).flush();
         //INFO = NdnUtils::getFullLogPath(generalParams, generalParams.logFile_);
+
         int threadNum = MtNdnUtils::addBackgroundThread();
-        VLOG(LOG_INFO) << "bkg Thread " << threadNum << std::endl;
+        VLOG(LOG_INFO) << setw(20) << setfill(' ') << std::right << "[MtNdnManager]\t"
+                       << "backgroud thread " << threadNum << std::endl;
+
         MtNdnUtils::createLibFace(generalParams);
 
         ptr_lib::shared_ptr<Consumer> remoteStreamConsumer;
@@ -170,13 +177,14 @@ MtNdnManager::addRemoteStream(std::string &remoteStreamPrefix,
 
         if (it != ActiveStreamConsumers.end() && it->second->getIsConsuming())
         {
-            VLOG(LOG_INFO) << "Stream was already added" << std::endl;
+            VLOG(LOG_INFO) << setw(20) << setfill(' ') << std::right << "[MtNdnManager]\t"
+                           << "Stream was already added" << std::endl;
 
             remoteStreamPrefix = "";
         }
         else
         {
-            if (params.type_ == MediaStreamParams::MediaStreamTypeAudio)
+            if (mediaStreamParams.type_ == MediaStreamParams::MediaStreamTypeAudio)
             {
                 //remoteStreamConsumer.reset(new AudioConsumer(generalParams, consumerParams));
             }
@@ -189,14 +197,15 @@ MtNdnManager::addRemoteStream(std::string &remoteStreamPrefix,
             ConsumerSettings settings;
             settings.transType_ = generalParams.transType_;
             settings.streamPrefix_ = remoteStreamPrefix;
-            settings.streamParams_ = params;
+            settings.streamParams_ = mediaStreamParams;
             settings.faceProcessor_ = MtNdnUtils::getLibFace();
 
             remoteStreamConsumer->registerCallback(&LibraryInternalObserver);
 
-            if (RESULT_FAIL(remoteStreamConsumer->init(settings, threadName)))
+            if (RESULT_FAIL(remoteStreamConsumer->init(settings)))
             {
-                VLOG(LOG_INFO) << "Failed to initialize fetching from stream" << std::endl;
+                VLOG(LOG_INFO) << setw(20) << setfill(' ') << std::right << "[MtNdnManager]\t"
+                               << "Failed to initialize fetching from stream" << std::endl;
                 remoteStreamPrefix = "";
             }
             else
@@ -211,7 +220,8 @@ MtNdnManager::addRemoteStream(std::string &remoteStreamPrefix,
                                               MtNdnUtils::formatString("consumer-%d.log", id++));
                 //std::string logFile = MtNdnUtils::getFullLogPath(generalParams,
                 //                              MtNdnUtils::formatString("consumer-%d.log",id++));
-                LOG(INFO) << "logpath " << logFile << std::endl;
+                LOG(INFO) << setw(20) << setfill(' ') << std::right << "[MtNdnManager]\t"
+                          << "logpath " << logFile << std::endl;
                 remoteStreamConsumer->setLogger(new Logger(generalParams.loggingLevel_,
                                                            logFile));
 
@@ -235,13 +245,15 @@ MtNdnManager::removeRemoteStream(const std::string &streamPrefix)
 {
     std::string logFileName = "";
 
-    LOG(INFO) << "Removing stream " << streamPrefix << "..." << std::endl;
+    LOG(INFO) << setw(20) << setfill(' ') << std::right << "[MtNdnManager]\t"
+              << "Removing stream " << streamPrefix << "..." << std::endl;
 
     ConsumerStreamMap::iterator it = ActiveStreamConsumers.find(streamPrefix);
 
     if (it == ActiveStreamConsumers.end())
     {
-        LOG(INFO) << "Stream was not added previously" << std::endl;
+        LOG(INFO) << setw(20) << setfill(' ') << std::right << "[MtNdnManager]\t"
+                  << "Stream was not added previously" << std::endl;
     }
     else
     {
@@ -253,9 +265,11 @@ MtNdnManager::removeRemoteStream(const std::string &streamPrefix)
             });
         }
 
-        LOG(INFO) << "Stream removed successfully" << std::endl;
+        LOG(INFO) << setw(20) << setfill(' ') << std::right << "[MtNdnManager]\t"
+                  << "Stream removed successfully" << std::endl;
     }
-    LOG(INFO) << "Remove Remote Stream SUCCESS " << streamPrefix
+    LOG(INFO) << setw(20) << setfill(' ') << std::right << "[MtNdnManager]\t"
+              << "Remove Remote Stream SUCCESS " << streamPrefix
               << std::endl;
 
     return logFileName;
@@ -268,20 +282,23 @@ MtNdnManager::setStreamObserver(const std::string &streamPrefix,
     int res = RESULT_ERR;
 
     MtNdnUtils::performOnBackgroundThread([=, &res]()->void{
-        LOG(INFO) << "Setting stream observer " << observer
-        << " for stream " << streamPrefix << "..." << std::endl;
+        LOG(INFO) << setw(20) << setfill(' ') << std::right << "[MtNdnManager]\t"
+                  << "Setting stream observer " << observer
+                  << " for stream " << streamPrefix << "..." << std::endl;
 
         ConsumerStreamMap::iterator it = ActiveStreamConsumers.find(streamPrefix);
 
         if (it == ActiveStreamConsumers.end())
         {
-            LOG(INFO) << "Stream was not added previously" << std::endl;
+            LOG(INFO) << setw(20) << setfill(' ') << std::right << "[MtNdnManager]\t"
+                      << "Stream was not added previously" << std::endl;
         }
         else
         {
             res = RESULT_OK;
             it->second->registerObserver(observer);
-            LOG(INFO) << "Added observer successfully" << std::endl;
+            LOG(INFO) << setw(20) << setfill(' ') << std::right << "[MtNdnManager]\t"
+                      << "Added observer successfully" << std::endl;
         }
     });
 
@@ -294,20 +311,23 @@ MtNdnManager::removeStreamObserver(const std::string &streamPrefix)
     int res = RESULT_ERR;
 
     MtNdnUtils::performOnBackgroundThread([=, &res]()->void{
-        LOG(INFO) << "Removing stream observer for prefix " << streamPrefix
-        << "..." << std::endl;
+        LOG(INFO) << setw(20) << setfill(' ') << std::right << "[MtNdnManager]\t"
+                  << "Removing stream observer for prefix " << streamPrefix
+                  << "..." << std::endl;
 
         ConsumerStreamMap::iterator it = ActiveStreamConsumers.find(streamPrefix);
 
         if (it == ActiveStreamConsumers.end())
         {
-            LOG(INFO) << "Couldn't find requested stream" << std::endl;
+            LOG(INFO) << setw(20) << setfill(' ') << std::right << "[MtNdnManager]\t"
+                      << "Couldn't find requested stream" << std::endl;
         }
         else
         {
             res = RESULT_OK;
             it->second->unregisterObserver();
-            LOG(INFO) << "Stream observer was removed successfully" << std::endl;
+            LOG(INFO) << setw(20) << setfill(' ') << std::right << "[MtNdnManager]\t"
+                      << "Stream observer was removed successfully" << std::endl;
         }
     });
 
@@ -401,7 +421,8 @@ void init()
 {
     Logger::initAsyncLogging();
     //GLogger log("MtNdnLibrary","/home/xyh/workspace/MTNDN/logs");
-    LOG(INFO) << "MTNDN initializing" << std::endl;
+    LOG(INFO) << setw(20) << setfill(' ') << std::right << "[MtNdnManager]\t"
+              << "MTNDN initializing" << std::endl;
     reset();
 
     //reset();
@@ -414,13 +435,15 @@ void reset()
 
 void cleanup()
 {
-    LOG(INFO) << "Stopping active consumers..." << std::endl;
+    LOG(INFO) << setw(20) << setfill(' ') << std::right << "[MtNdnManager]\t"
+              << "Stopping active consumers..." << std::endl;
     {
         for (auto consumerIt:ActiveStreamConsumers)
             consumerIt.second->stop();
         ActiveStreamConsumers.clear();
     }
-    LOG(INFO) << "Active consumers cleared" << std::endl;
+    LOG(INFO) << setw(20) << setfill(' ') << std::right << "[MtNdnManager]\t"
+              << "Active consumers cleared" << std::endl;
 
     MtNdnUtils::destroyLibFace();
 

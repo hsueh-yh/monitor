@@ -129,7 +129,7 @@ private:
 };
 
 // general consumer parameters
-class GeneralConsumerParams : public Params {
+class ConsumerParams : public Params {
 public:
     unsigned int interestLifetime_ = 0;
     unsigned int bufferSlotsNum_ = 0, slotSize_ = 0;
@@ -164,7 +164,7 @@ public:
             skipIncomplete_ = false;
 
     // network
-    std::string prefix_ = "", host_ = "";
+    std::string host_ = "";
     unsigned int portNum_ = 0;
 
     void write(std::ostream &os) const
@@ -179,7 +179,7 @@ public:
         << "; Video: " << (useVideo_?"ON":"OFF")
         << "; A/V Sync: " << (useAvSync_?"ON":"OFF")
         << "; Skipping incomplete frames: " << (skipIncomplete_?"ON":"OFF")
-        << "; Prefix: " << prefix_
+        //<< "; Prefix: " << prefix_
         << "; Host: " << host_
         << "; Port #: " << portNum_;
     }

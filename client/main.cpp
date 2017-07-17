@@ -10,6 +10,7 @@
 #include <sys/types.h>
 
 #include <glogger.h>
+#include <params.h>
 
 
 std::string createLogDir( const char *root )
@@ -59,33 +60,56 @@ std::string createLogDir( const char *root )
     return logfile;
 }
 
-int main(int argc, char *argv[])
+
+int interpretParam( int argc, char *argv[], GeneralParams &param )
 {
-	int num = 1;
-    string transType; // frame or stream
+    int streamNum = 1;
     for( int i = 1; i < argc; ++i )
     {
+        // stream number
         if( strcmp(argv[i], "-n" ) == 0 )
-                num = argv[i+1][0] - '0';
-        if( strcmp(argv[i], "-t") == 0 )
-            transType = argv[i+1];
+                streamNum = argv[i+1][0] - '0';
+        // stream type
+        else if( strcmp(argv[i], "-t") == 0 )
+            param.transType_.copy(argv[i+1], strlen(argv[i+1]), 0);
+        // next hop host IP
+        else if( strcmp(argv[i], "-h") == 0 )
+            param.host_.copy(argv[i+1], strlen(argv[i+1]), 0);
+        // next hop host port
+        else if( strcmp(argv[i], "-h") == 0 )
+            param.portNum_ = atoi(argv[i+1]);
+        // help
+        else if( strcmp(argv[i], "-help") == 0 || strcmp(argv[i], "--help")  == 0 )
+        {
+            cout << "\t-k\tvalue  \tdesc [default]" << endl
+                 << "\t-n\t[num]  \tnumber of streams you want to add. [1]" << endl
+                 << "\t-s\t[str]  \tstream name. ['/com/monitor/location1/stream0/video']" << endl
+                 << "\t-t\t[str]  \tstream type:'byFrame'or'byStream'. ['byFrame']" << endl
+                 << "\t-h\t[str]  \thost of a NFD. ['10.103.242.127']" << endl
+                 << "\t-p\t[num]  \tport in the host. [6363]" << endl
+                 << "\t--help\t[] \tthis message" << endl;
+            return 0;
+        }
     }
+
+    return streamNum;
+}
+
+
+int main(int argc, char *argv[])
+{
+    GeneralParams param;
+    int streamNum = interpretParam( argc, argv, param );
+
+
     QApplication a(argc, argv);
 
     std::string logfile = createLogDir("./logs");
     GLogger glog( argv[0], logfile.c_str() );
-    std::cout << "Log to path: " << logfile << std::endl;
 
-    std::string host = /*"localhost";*/"10.103.243.127";
-    unsigned int port = 6363;
-    if( argc > 1 )
-        host = argv[1];
-    if( argc > 2 )
-        port = stoi(argv[2]);
     MainWindow w;
-    w.setTransType("byFrame");
-    w.setHost(host);
-    w.setPort(port);
+
+    w.setconfigpath("default.conf");
     w.show();
 
     return a.exec();

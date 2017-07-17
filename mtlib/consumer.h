@@ -53,7 +53,7 @@ public:
     Consumer (int id, string uri, ptr_lib::shared_ptr<FaceWrapper> faceWrapper);
 
     Consumer (const GeneralParams &generalParams,
-              const GeneralConsumerParams &consumerParams);
+              const ConsumerParams &consumerParams);
     virtual ~Consumer ();
 
 
@@ -64,7 +64,7 @@ public:
       *@return
      */
     virtual int
-    init(const ConsumerSettings &settings, const string &threadName);
+    init(const ConsumerSettings &settings);
 
     virtual int
     start();
@@ -148,7 +148,7 @@ protected:
 
     bool isConsuming_;
     GeneralParams generalParams_;
-    GeneralConsumerParams consumerParams_;
+    ConsumerParams consumerParams_;
     ConsumerSettings settings_;
 
     //Name *name;

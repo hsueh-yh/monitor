@@ -178,8 +178,9 @@ protected:
             if( oldState != newState )
             {
                 state_ = newState;
-                LOG(INFO) << "[Pipeliner] change state " <<  state2string(state_)
-                          << " to " << state2string(newState) << endl;
+                VLOG(LOG_INFO) << setw(20) << setfill(' ') << std::right << getDescription()
+                          << "change state '" <<  state2string(state_)
+                          << "' -> '" << state2string(newState) <<"'"<< endl;
             }
         }
         if (callback_)

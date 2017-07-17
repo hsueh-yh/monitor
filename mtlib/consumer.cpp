@@ -11,27 +11,33 @@ Consumer::Consumer (int id, std::string uri, ptr_lib::shared_ptr<FaceWrapper> fa
 {}
 
 Consumer::Consumer (const GeneralParams &generalParams,
-                    const GeneralConsumerParams &consumerParams):
+                    const ConsumerParams &consumerParams):
                     generalParams_(generalParams),
                     consumerParams_(consumerParams),
                     isConsuming_(false),
                     observer_(NULL)
-{}
+{
+    setDescription("[Consumer]\t");
+    VLOG(LOG_INFO) << setw(20) << setfill(' ') << std::right << getDescription()
+              << "ctor" << endl;
+}
 
 Consumer::~Consumer ()
 {
     if( isConsuming_ )
         stop();
 
-    LOG(INFO) << "[Consumer] dtor" << endl;
-    LOG(WARNING) << "[Consumer] dtor" << endl;
+    VLOG(LOG_INFO) << setw(20) << setfill(' ') << std::right << getDescription()
+              << "dtor" << endl;
 }
 
 
 int
-Consumer::init(const ConsumerSettings &settings,
-               const std::string &threadName)
+Consumer::init(const ConsumerSettings &settings)
 {
+    VLOG(LOG_INFO) << setw(20) << setfill(' ') << std::right << getDescription()
+              << "init..." << endl;
+
     settings_ = settings;
     streamPrefix_ = settings_.streamPrefix_;
     //LOG(INFO) << "streamPrefix_: " << streamPrefix_ << std::endl;
@@ -95,7 +101,8 @@ Consumer::stop()
             }
     });
 
-    LOG(INFO) << "Consumer stop \n" << std::endl;
+    VLOG(LOG_INFO) << setw(20) << setfill(' ') << std::right << getDescription()
+                   << "stop" << std::endl;
 
     return RESULT_OK;
 }
@@ -108,10 +115,8 @@ Consumer::stop( int tmp )
     pipeliner_->stop();
     frameBuffer_->stop();
 
-    LOG(ERROR) << "[Consumer] Stop "
-               << " Pipeliner:" << pipeliner_.use_count()
-               << " FrameBuffer:" << frameBuffer_.use_count()
-               << endl;
+    VLOG(LOG_INFO) << setw(20) << setfill(' ') << std::right << getDescription()
+                   << "stop " << tmp << std::endl;
     //faceWrapper_->shutdown();
 
     /*

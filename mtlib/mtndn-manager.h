@@ -13,11 +13,9 @@ public:
     setObserver(IMtNdnLibraryObserver *observer);
 
     std::string
-    addRemoteStream(std::string &remoteStreamPrefix,
-                    const std::string &threadName,
-                    const MediaStreamParams &params,
-                    const GeneralParams &generalParams,
-                    const GeneralConsumerParams &consumerParams,
+    addRemoteStream(const GeneralParams &generalParams,
+                    const ConsumerParams &consumerParams,
+                    const MediaStreamParams &mediaStreamParams,
                     IExternalRenderer *const renderer);
 
     std::string

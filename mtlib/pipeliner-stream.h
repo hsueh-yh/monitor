@@ -45,6 +45,9 @@ protected:
     ptr_lib::shared_ptr<Interest>
     getDefaultInterest();
 
+    ptr_lib::shared_ptr<Interest>
+    getExitInterest();
+
 
     //******************************************************************************
     void

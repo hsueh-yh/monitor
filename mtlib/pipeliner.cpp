@@ -164,7 +164,8 @@ Pipeliner::~Pipeliner()
 {
 //    frameBuffer_.reset();
 //    faceWrapper_.reset();
-    VLOG(LOG_TRACE) << "[Pipeliner] dtor" << endl;
+    VLOG(LOG_TRACE) << setw(20) << setfill(' ') << std::right << getDescription()
+                    << "dtor" << endl;
     //fclose(pipelinerFIle_);
 }
 
@@ -176,14 +177,16 @@ Pipeliner::init()
     streamName_ = tmpname;
     window_.init(30/*,frameBuffer_*/);
     switchToState(StateInactive);
-    VLOG(LOG_TRACE) << "Pipeliner initialized: " << streamName_.to_uri() << std::endl;
+    VLOG(LOG_TRACE) << setw(20) << setfill(' ') << std::right << getDescription()
+                    << "initialized: " << streamName_.to_uri() << std::endl;
     return RESULT_OK;
 }
 
 int
 Pipeliner::start()
 {
-    VLOG(LOG_INFO) << "[Pipeliner] Started" << endl;
+    VLOG(LOG_INFO) << setw(20) << setfill(' ') << std::right << getDescription()
+                   << "Started" << endl;
     return RESULT_OK;
 }
 
@@ -192,7 +195,8 @@ Pipeliner::stop()
 {
     switchToState(StateInactive);
     window_.reset();
-    VLOG(LOG_INFO) << "[Pipeliner] Stopped" << endl;
+    VLOG(LOG_INFO) << setw(20) << setfill(' ') << std::right << getDescription()
+                   << "Stopped" << endl;
     return RESULT_OK;
 }
 
@@ -218,9 +222,6 @@ Pipeliner::express(const Interest &interest/*, int64_t priority*/)
     //LogTraceC << "Express " << interest.getName().to_uri() << std::endl;
     //VLOG(LOG_TRACE) << "Express Interest " << interest.getName().to_uri() << endl;
 
-#ifdef __SHOW_CONSOLE_
-    cout << "Express : " << interest.getName().toUri() << endl;
-#endif
 }
 
 void
@@ -250,7 +251,6 @@ void
 Pipeliner::onData(const ptr_lib::shared_ptr<const Interest> &interest,
         const ptr_lib::shared_ptr<Data> &data)
 {
-    LogTraceC << "Recieve Data " << data->getName().to_uri() << std::endl;
     /*
     //LOG(INFO) << "Recieve Data " << data->getName().to_uri() << endl;
     LogTraceC << "Recieve Data " << data->getName().to_uri() << std::endl;
@@ -319,8 +319,6 @@ Pipeliner::onData(const ptr_lib::shared_ptr<const Interest> &interest,
 void
 Pipeliner::onTimeout(const ptr_lib::shared_ptr<const Interest> &interest)
 {
-    LogTraceC << "Timeout " << interest->getName().to_uri()
-              << " ( Loss Rate = " << statistic->getLostRate() << " )"<< endl;
     /*
     VLOG(LOG_INFO) << "Timeout " << interest->getName().to_uri()
                  << " ( Loss Rate = " << statistic->getLostRate() << " )"<< endl;
@@ -419,5 +417,6 @@ Pipeliner::reset()
     window_.init(30/*,frameBuffer_*/);
     reqCurPktNo_ = 0;
     lastFrmNo_ = 0;
-    VLOG(LOG_TRACE) << "Pipeliner reseted: " << streamName_.to_uri() << std::endl;
+    VLOG(LOG_TRACE) << setw(20) << setfill(' ') << std::right << getDescription()
+                    << "reseted: " << streamName_.to_uri() << std::endl;
 }

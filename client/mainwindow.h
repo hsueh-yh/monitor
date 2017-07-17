@@ -15,6 +15,7 @@
 #include "myTimer.h"
 #include "renderer.h"
 
+#include "config.h"
 #include <mtndn-library.h>
 
 using namespace std;
@@ -32,20 +33,13 @@ public:
     explicit MainWindow(QWidget *parent = 0 );
     ~MainWindow();
 
-    inline void setHost( string &host )
+
+    void
+    setconfigpath(std::string file)
     {
-        _host = host;
+        configFile = file;
     }
 
-    inline void setPort( unsigned int port )
-    {
-        _port = port;
-    }
-
-    void setTransType( std::string type )
-    {
-        transType = type;
-    }
 
 private:
 
@@ -71,13 +65,16 @@ private:
     int space_;
 
     /////////////////////////////
-    //connection
-    std::string transType = "byFrame";
-    std::string _host;
-    unsigned int _port;
-
 //    struct timeval t_1, t_2;
 //    long lt_1,lt_2;
+
+    //mtlib params
+    vector<CParams*> vec_params_;
+    std::string configFile;
+
+
+    CParams*
+    loadDefaultParams();
 
 
     void
@@ -89,6 +86,16 @@ private:
     bool
     calLabelParam(int idx, int &x, int &y, int &width, int &height);
 
+    void
+    stop_all()
+    {
+        mapRenderer::iterator it = map_str_renderer_.begin();
+        while( it != map_str_renderer_.end() )
+        {
+            manager_->removeRemoteStream(it->first);
+        }
+        map_str_renderer_.clear();
+    }
 
 private slots:
     //  on button

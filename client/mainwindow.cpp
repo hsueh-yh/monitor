@@ -20,6 +20,29 @@
 static std::string name[4];
 static int nameidx = 0;
 
+void initGeneralParams(GeneralParams *param)
+{
+    param->host_ = "10.103.242.164";
+    param->portNum_ = 6363;
+    param->logFile_ = "./logs";
+    param->transType_ = "byStream";
+}
+
+void initGeneralConsumerParams( ConsumerParams *param )
+{
+    param->bufferSlotsNum_ = 200;
+    param->interestLifetime_ = 3000;
+    param->jitterSizeMs_ = 1000;
+    param->slotSize_ = 200;
+}
+
+void initMediaStreamParams ( MediaStreamParams *param)
+{
+    param->type_ = MediaStreamParams::MediaStreamTypeVideo;
+    param->streamName_ = "/com/monitor/location1/stream0/video";
+}
+
+
 MainWindow::MainWindow(QWidget *parent) :
     QMainWindow(parent),
     ui(new Ui::MainWindow),
@@ -29,6 +52,11 @@ MainWindow::MainWindow(QWidget *parent) :
     mytimer_(NULL)
 {
     ui->setupUi(this);
+
+    //initGeneralParams(generalParams_);
+
+    manager_ = &(MtNdnLibrary::getSharedInstance());
+
     name[0] = "/com/monitor/location1/stream0/video";
     name[1] = "/com/monitor/location1/stream1/video";
     name[2] = "/com/monitor/location1/stream2/video";
@@ -46,8 +74,9 @@ MainWindow::~MainWindow()
 void
 MainWindow::closeEvent(QCloseEvent *event)
 {
-    if( manager_ )
-        delete manager_;
+    stop_all();
+    //if( manager_ )
+     //   delete manager_;
     event->accept();
 }
 
@@ -55,51 +84,66 @@ MainWindow::closeEvent(QCloseEvent *event)
 void
 MainWindow::on_start_btn_clicked()
 {
-    manager_ = &(MtNdnLibrary::getSharedInstance());
-    std::string remoteStreamPrefix = name[nameidx];//"/com/monitor/location1/stream0/video";
-    std::string threadName = name[nameidx];//"/com/monitor/location1/stream0/video";
-    MediaStreamParams params;
-    params.type_ = MediaStreamParams::MediaStreamTypeVideo;
-    params.streamName_ = remoteStreamPrefix;
+    CParams *param = loadDefaultParams();
+    MediaStreamParams &mediaStreamParams = param->mediaStreamParams_;
+    //params.type_ = MediaStreamParams::MediaStreamTypeVideo;
+    //params.streamName_ = remoteStreamPrefix;
 
-    GeneralParams generalParams;
+    GeneralParams& generalParams = param->generalParams_;
+    /*
     generalParams.transType_ = transType;
     generalParams.loggingLevel_ = ndnlog::NdnLoggerDetailLevelAll;
     generalParams.logPath_ = "";
     generalParams.prefix_ = remoteStreamPrefix;
     generalParams.host_ = _host.c_str();
     generalParams.portNum_ = _port;
+    */
 
-    GeneralConsumerParams consumerParams;
-    consumerParams.interestLifetime_ = 30;
+    ConsumerParams& consumerParams = param->consumerParams_;
+    /*consumerParams.interestLifetime_ = 30;
     consumerParams.bufferSlotsNum_ = 20;
     consumerParams.slotSize_ = 8800;
     consumerParams.jitterSizeMs_ = 0;
+    */
 
-    RendererInternal *renderer = new RendererInternal(this);
-    map_str_renderer_[remoteStreamPrefix] = renderer;
+    RendererInternal *renderer = param->renderer;//new RendererInternal(this);
+    map_str_renderer_[mediaStreamParams.streamName_] = renderer;
     refreshRenderer();
 
-    LOG(INFO) << "host " << generalParams.host_ << " port " << generalParams.portNum_ << endl;
+    LOG(INFO) << setw(20) << setfill(' ') << std::right << "[ClientUI]\t"
+              << "loading config..."
+              << endl << endl
+              << "[GeneralParams]"
+              << endl
+              << "host: " << generalParams.host_ << endl
+              << "port: " << generalParams.portNum_ << endl
+              << "type: " << generalParams.transType_ << endl
+              << "logfile: " << generalParams.logFile_ << endl
 
-    manager_->addRemoteStream(remoteStreamPrefix,
-                             threadName,
-                             params,
-                             generalParams,
-                             consumerParams,
-                             renderer);
-    ++nameidx;
+              << endl << "[ConsumerParams]" << endl
+              << "slotNum: " << consumerParams.bufferSlotsNum_ << endl
+              << "slotSize: " << consumerParams.slotSize_<< endl
+              << "interstLifeTm: " << consumerParams.interestLifetime_ << endl
+              << "jittSizeMs: " << consumerParams.jitterSizeMs_ << endl
+
+              << endl << "[MediaStreamParams]" << endl
+              << "type: " << (mediaStreamParams.type_ ==
+                              MediaStreamParams::MediaStreamTypeVideo?
+                                "video" : "audio" )<< endl
+              << "prefix: " << mediaStreamParams.streamName_
+              << endl<< endl;
+
+    manager_->addRemoteStream(generalParams,
+                              consumerParams,
+                              mediaStreamParams,
+                              renderer);
+    //++nameidx;
 }
 
 void
 MainWindow::on_stop_btn_clicked()
 {
-    mapRenderer::iterator it = map_str_renderer_.begin();
-    while( it != map_str_renderer_.end() )
-    {
-        manager_->removeRemoteStream(it->first);
-    }
-    map_str_renderer_.clear();
+    stop_all();
 }
 
 void
@@ -274,4 +318,17 @@ MainWindow::calLabelParam( int idx, int &x, int &y, int &width, int &height )
 //                    << endl;
 
     return true;
+}
+
+
+CParams*
+MainWindow::loadDefaultParams()
+{
+    CParams *p = new CParams;
+
+    readConfiger(configFile.c_str(), p);
+    p->renderer = new RendererInternal(this);
+
+    vec_params_.push_back(p);
+    return p;
 }

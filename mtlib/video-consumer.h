@@ -9,13 +9,12 @@ class VideoConsumer : public Consumer
 {
 public:
     VideoConsumer(const GeneralParams &generalParams,
-                  const GeneralConsumerParams &consumerParams,
+                  const ConsumerParams &consumerParams,
                   IExternalRenderer *const externalRenderer);
     virtual ~VideoConsumer();
 
     int
-    init(const ConsumerSettings &settings,
-         const std::string &threadName);
+    init(const ConsumerSettings &settings);
 
     int
     start();
