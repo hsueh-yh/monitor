@@ -13,6 +13,9 @@ public:
     static const std::string NameComponentStreamFrameAudio;
     static const std::string NameComponentStreamMetainfo;
     static const std::string NameComponentNalIdx;
+
+    static const int updateSegNo;
+    //static const char dataTTL;
 //    static const std::string KeyComponent;
 //    static const std::string CertificateComponent;
 

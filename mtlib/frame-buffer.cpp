@@ -341,10 +341,10 @@ FrameBuffer::recvData(const ndn::ptr_lib::shared_ptr<Data> &data)
     ts = strtoll(data->getName().get(-2).toEscapedString().c_str(), NULL, 10);
 
     slot->setNdnDataPtr(data);
-    slot->setDataPtr(data->getContent().buf());
+    slot->setDataPtr(data->getContent().buf()+1);
     slot->setNumber(frameNo);
     slot->setCapTimestamp(ts);
-    slot->setPayloadSize(data->getContent().size());
+    slot->setPayloadSize(data->getContent().size()-1);
     if( slot->dataArrived() )
         ++readySlots_count_;
     else

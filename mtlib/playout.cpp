@@ -166,6 +166,8 @@ Playout::processPlayout()
 
             uint8_t *data_ = vec_data_->data();
             unsigned int dataSize = vec_data_->size();
+            MtNdnUtils::printMem("playout", data_, 20 );
+
 
             /*
              * LogTraceC

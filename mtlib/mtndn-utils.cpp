@@ -417,6 +417,11 @@ MtNdnUtils::millisecSinceEpoch()
 void
 MtNdnUtils::printMem( char msg[], const unsigned char *startBuf, std::size_t size )
 {
+    if( startBuf == nullptr )
+    {
+        printf("NULL");
+        return ;
+    }
     unsigned char *buf = const_cast<unsigned char*>(startBuf);
     printf("\n[%s] size = %ld   addr:[ %p ~ %p ]\n",
            msg, size, (void*)buf, (void*)buf+size);

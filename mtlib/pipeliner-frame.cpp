@@ -39,7 +39,7 @@ PipelinerFrame::~PipelinerFrame()
 //    frameBuffer_.reset();
 //    faceWrapper_.reset();
     VLOG(LOG_TRACE) << setw(20) << setfill(' ') << std::right << getDescription()
-                    << " dtor" << endl;
+                    << "dtor" << endl;
     //fclose(PipelinerFrameFIle_);
 }
 
@@ -92,6 +92,7 @@ PipelinerFrame::onData(const ptr_lib::shared_ptr<const Interest> &interest,
 {
     //LOG(INFO) << "Recieve Data " << data->getName().to_uri() << endl;
     //LogTraceC << "Recieve Data " << data->getName().to_uri() << std::endl;
+    MtNdnUtils::printMem("onData", data->getContent().buf(), 20 );
 
     switch(state_)
     {
@@ -134,7 +135,10 @@ PipelinerFrame::onData(const ptr_lib::shared_ptr<const Interest> &interest,
             VLOG(LOG_INFO) << setw(20) << setfill(' ') << std::right << getDescription()
                            << " discard antiquated meta pkt" << endl;
         }
-        lastFrmNo_ = MtNdnUtils::frameNumber(data->getName().get(-1));
+        //lastFrmNo_ = MtNdnUtils::frameNumber(data->getName().get(-1));
+        lastFrmNo_ = MtNdnUtils::frameNumber(data->getName().get(NameComponents::updateSegNo));
+        //int ttl = MtNdnUtils::frameNumber(data->getName().get(NameComponents::dataTTL));
+        int ttl = (int)(data->getContent().buf()[0]);
         unsigned int pktNo;
         Namespacer::getFrameNumber(data->getName(),pktNo);
 
@@ -147,9 +151,12 @@ PipelinerFrame::onData(const ptr_lib::shared_ptr<const Interest> &interest,
 
         if( frameBuffer_->getState() == FrameBuffer::Invalid)
             return;
+
         LOG(INFO) << setw(20) << setfill(' ') << std::right << getDescription()
                   << "RCV " << data->getName().to_uri() << " c=" << reqCurPktNo_
-                  << " l=" << lastFrmNo_ << std::endl;
+                  << " l=" << lastFrmNo_
+                  << " ttl=" << ttl << std::endl;
+
         frameBuffer_->recvData(data);
         requestNextPkt();
     }
@@ -185,6 +192,10 @@ PipelinerFrame::onTimeout(const ptr_lib::shared_ptr<const Interest> &interest)
     switch(state_)
     {
     case StateInactive:
+    {
+
+    }
+        break;
     case StateWaitInitial:
     {
         int p = Namespacer::findComponent(interest->getName(),
@@ -256,15 +267,15 @@ PipelinerFrame::requestNextPkt()
     {
         //usleep(30*1000);
         VLOG(LOG_INFO) << setw(20) << setfill(' ') << std::right << getDescription()
-                       << "Forecast Next Frame c=" << reqCurPktNo_ << " l=" << lastFrmNo_ << endl;
+                       << "Forecast Next Frame cn=" << reqCurPktNo_ << " ln=" << lastFrmNo_ << endl;
         scheduleJob(40*1000, [this]()->bool{
             bool res = requestFrame(reqCurPktNo_++);
             if( reqCurPktNo_ > lastFrmNo_ )
             {
                 VLOG(LOG_WARN) << setw(20) << setfill(' ') << std::right << getDescription()
-                            << "Request Forecast Interest"
-                            << reqCurPktNo_ << " " << lastFrmNo_ << endl;
-                return true;
+                            << "Request Forecast Interest cn="
+                            << reqCurPktNo_ << " ln=" << lastFrmNo_ << endl;
+                return getState() > StateWaitInitial;
             }
             return (!res); // if not requeste, do it again
         }, 1000);
