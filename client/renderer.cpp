@@ -47,7 +47,7 @@ RendererInternal::renderYUVFrame(int64_t timestamp, int width, int height,
     image = QImage(RGBbuf_,width,height,QImage::Format_RGB888);
     //image->loadFromData((const unsigned char*)RGBbuf_, (int)RGBbufSize_, "BMP");
     QPixmap pixmap = QPixmap(width,height);
-    pixmap = QPixmap::fromImage(image.scaled(width_, height_/*, Qt::IgnoreAspectRatio*/));
+    pixmap = QPixmap::fromImage(image.scaled(width_, height_, Qt::KeepAspectRatio));
 
 
     label_->setPixmap(pixmap);

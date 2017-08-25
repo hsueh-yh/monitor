@@ -3,6 +3,9 @@
 #include "glogger.h"
 #include "mtndn-utils.h"
 
+int H264SPSPaser::startBit = 0;
+
+
 Decoder::Decoder(void)
     : pdecoder(NULL)
 	, pdecContext(NULL)
@@ -14,6 +17,8 @@ Decoder::Decoder(void)
 	, utildll(NULL)
     , swsdll(NULL)
     , callback_(nullptr)
+    , m_width(-1)
+    , m_height(-1)
 {}
 
 Decoder::~Decoder(void)
@@ -80,7 +85,7 @@ bool Decoder::LoadDllFun()
 	return true;
 }
 
-bool Decoder::InitDeocder(int width, int height)
+bool Decoder::InitDeocder()
 {
 	if (!LoadDllFun())
 		return false;
@@ -95,8 +100,8 @@ bool Decoder::InitDeocder(int width, int height)
     //debug//cout << "av_init_packet..." << endl;
 	av_init_packet(&avpkt);
 
-    m_width = width;
-    m_height = height;
+    //m_width = width;
+    //m_height = height;
     //debug//cout << "avcodec_find_decoder..." << endl;
     pdecoder = avcodec_find_decoder(AV_CODEC_ID_H264);
 	
@@ -173,19 +178,39 @@ int Decoder::decode( AVPacket &encodedImage )
                   << pDecodedFrame->linesize[2] << " "
                   << std::endl;
         */
+        m_width= pDecodedFrame->width;
+        m_height = pDecodedFrame->height;
+
         if( callback_ != nullptr )
-        callback_->onDecoded(*pDecodedFrame);
+            callback_->onDecoded(*pDecodedFrame);
     }
 
     return ret;
 }
 
+static bool isSPS( unsigned char *buf )
+{
+    return (buf[0] == 0 && buf[1] == 0 && buf[2] == 0
+                && buf[3] == 0x01 && buf[4] == 0x67);
+}
+
 bool Decoder::decode( unsigned char * inbuf, const int  &inlen, unsigned char * outbuf, int  &outlen)
 {
+    if( m_width == -1 || m_height == -1 )
+    {
+        MtNdnUtils::printMem("SPS", inbuf, 8 );
+        if( !isSPS(inbuf) )
+            return false;
+        int width = (H264SPSPaser::ue(inbuf,34) + 1)*16;
+        int height = (H264SPSPaser::ue(inbuf,-1) + 1)*16;
+        cout << width << "  " << height << endl;
+        if( width <= 0 || height <= 0 )
+            return false;
+        m_width = width;
+        m_height = height;
+    }
     outlen = 0;
-	int got_frame;
-    BYTE* showImage[3];
-	int showheight[3], showLx[3];
+    int got_frame;
 
 	int len;
 	avpkt.size = inlen;

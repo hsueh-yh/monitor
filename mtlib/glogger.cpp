@@ -12,7 +12,7 @@ static void SignalHandle(const char *data, int size)
 }
 
 GLogger::GLogger( const char *program, const char *logdir):
-        logdir_(logdir)
+        logdir_(logdir), logging(false)
 {
     //google::InitGoogleLogging(program);
 
@@ -38,9 +38,17 @@ GLogger::GLogger( const char *program, const char *logdir):
     google::InstallFailureSignalHandler();
     //默认捕捉 SIGSEGV 信号信息输出会输出到 stderr，可以通过下面的方法自定义输出方式：
     google::InstallFailureWriter(&SignalHandle);
+    logging = true;
 
 }
+
 GLogger::~GLogger()
 {
-    google::ShutdownGoogleLogging();
+    stop();
+}
+
+void GLogger::stop()
+{
+    if( logging )
+        google::ShutdownGoogleLogging();
 }

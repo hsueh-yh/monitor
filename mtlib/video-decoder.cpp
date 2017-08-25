@@ -52,6 +52,9 @@ void VideoDecoder::onDecoded(const AVFrame &decodedImage)
               << decodedImage.height
               << std::endl;
               */
+    settings_.encodeWidth_ = decoder_->wigth();
+    settings_.encodeHeight_ = decoder_->height();
+
     if (decodedFrameConsumer_)
         decodedFrameConsumer_->onDeliverFrame(decodedImage, capturedTimestamp_);
 
@@ -99,7 +102,7 @@ int VideoDecoder::resetDecoder()
 
     decoder_->RegisterDecodeCompleteCallback(this);
 
-    if (!(decoder_->InitDeocder(640,480/*settings_.encodeWidth_,settings_.encodeHeight_*/)))
+    if (!(decoder_->InitDeocder(/*640,480,settings_.encodeWidth_,settings_.encodeHeight_*/)))
         return RESULT_ERR;
 
     return RESULT_OK;

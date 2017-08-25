@@ -61,7 +61,7 @@ ExternalVideoRendererAdaptor::onDeliverFrame(const AVFrame &rawFrame,
     if (YUVFrameBuffer)
     {
         //ConvertFromI420(frame, kBGRA, 0, rgbFrameBuffer);
-        externalRenderer_->renderYUVFrame(MtNdnUtils::millisecondTimestamp(),
+        externalRenderer_->renderYUVFrame(timestamp/*MtNdnUtils::millisecondTimestamp()*/,
                                           rawFrame.width, rawFrame.height,
                                           YUVFrameBuffer);
     }

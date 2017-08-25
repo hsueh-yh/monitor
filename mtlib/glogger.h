@@ -24,6 +24,8 @@ public:
     GLogger( const char *program, const char *logdir);
     ~GLogger();
 
+    void stop();
+
     //将信息输出到单独的文件和 LOG(ERROR)
 /*   static void SignalHandle(const char *data, int size)
     {
@@ -37,6 +39,7 @@ public:
     }
 */
     std::string logdir_;
+    bool logging;
 };
 
 
