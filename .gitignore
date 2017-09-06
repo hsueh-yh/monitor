@@ -2,7 +2,7 @@
 !.gitignore
 !README
 !Makefile
-CMakeLists.txt
+!CMakeLists.txt
 !*.h
 !*.hpp
 !*.c
@@ -14,5 +14,6 @@ CMakeLists.txt
 
 !/include/
 !/src/
+!/mtlib/
 !/client/
 !/Qshell/
