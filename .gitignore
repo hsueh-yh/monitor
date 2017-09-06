@@ -2,13 +2,17 @@
 !.gitignore
 !README
 !Makefile
+CMakeLists.txt
 !*.h
 !*.hpp
 !*.c
 !*.cpp
+!*.pro
+!*.ui
 
 !monitor.pro
 
 !/include/
 !/src/
 !/client/
+!/Qshell/
