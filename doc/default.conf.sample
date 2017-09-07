@@ -1,0 +1,39 @@
+// An example configuration file that stores information about a store.
+
+// Basic store information:
+name = "GeneralParams, ConsumerParams & MediaStreamParams";
+
+// Store inventory:
+client =
+{
+    // external environment configure
+    general =
+            (
+                {
+                    host = "10.103.246.164";//next hop ip, "localhost" for local
+                    port = 6363;            //next hop port
+                    type = "byStream";      //request type, "byStream" or "byFrame"
+                    logs = "./logs"         //log directory, log file created by client
+                }
+            );
+
+    // internal environment configure
+    consumer =
+            (
+                {
+                    slotNum = 200;			//cache size (packet num)
+                    slotSize = 800;			//size of per packet
+                    interstLifeTm = 4000;	//interval between two Interests(ms, only for general::type="byStream")
+                    jittSizeMs = 3000;		//jitter time (not used)
+                }
+            );
+
+    // stream configure
+    stream =
+            (
+                {
+                    type = "video";			//streaming type
+                    name = "/com/monitor/location1/stream0/video";	// Data/Interest prefix
+                }
+           );
+};

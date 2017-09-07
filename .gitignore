@@ -2,18 +2,19 @@
 !.gitignore
 !README
 !Makefile
-!CMakeLists.txt
 !*.h
 !*.hpp
 !*.c
 !*.cpp
 !*.pro
 !*.ui
+!*.txt
+!*.sample
 
-!monitor.pro
+!*.py
+!*.sh
 
-!/include/
-!/src/
 !/mtlib/
-!/client/
 !/Qshell/
+!/doc/
+!/statistic/
