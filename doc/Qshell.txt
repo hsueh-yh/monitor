@@ -1,0 +1,45 @@
+>>>Describe:
+
+Qshell is a video client UI implemented in QT and dependes on mtlib shared library
+
+
+>>>Required: 
+
+1. mtlib
+	mtlib.txt
+
+2. qt
+	sudo apt-get install qt4-dev-tools qt4-doc qt4-qtconfig qt4-demos qt4-designer qtcreator
+
+
+>>>Build:
+
+1. build by qtcreater
+	open Qshell.pro with qtcreater or qmake Qshell.pro
+
+or
+
+2. build by qmake
+	mkdir ../bin/Qshell
+	cd ../bin/Qshell
+	qmake ../../Qshell/Qshell.pro
+	make
+
+
+>>> Running environment
+
+1. default.conf
+	configure file, read by the executable file,  in the same directory with the executable file
+
+
+$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
+修改monitor/src目录下的代码后只需要重新执行步骤5，然后就可以运行monitor/bin/Qshell/client
+$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
+
+发送请求：
+文件：monitor/src/pipeliner-frame.cpp
+函数：PipelinerFrame::requestNextPkt()
+line 260  scheduleJob(40*1000, [this]()->bool{
+40*1000 = 40ms,距请求下一个最新包的等待时间
+
+配置文件

@@ -11,11 +11,9 @@
 
 //#define WIDTH 1080
 //#define HEIGHT 720
-#define WIDTH 640
-#define HEIGHT 480
-
-
-#define _FRAME_RATE_ 30*1000    //30ms
+//#define WIDTH 640
+//#define HEIGHT 480
+//#define _FRAME_RATE_ 30*1000    //30ms
 
 static std::string name[4];
 static int nameidx = 0;
@@ -51,6 +49,9 @@ MainWindow::MainWindow(QWidget *parent) :
     timer(new QTimer(this))*/,
     mytimer_(NULL)
 {
+    //ui->verticalLayout->setSizeConstraint(QLayout::SetFixedSize);
+    //ui->centralWidget->layout()->setSizeConstraint(QLayout::SetFixedSize);
+    //ui->horizontalLayout->setSizeConstraint(QLayout::SetFixedSize);
     ui->setupUi(this);
 
     //initGeneralParams(generalParams_);

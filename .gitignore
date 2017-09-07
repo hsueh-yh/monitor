@@ -6,9 +6,15 @@
 !*.hpp
 !*.c
 !*.cpp
+!*.pro
+!*.ui
+!*.txt
+!*.sample
 
-!monitor.pro
+!*.py
+!*.sh
 
-!/include/
-!/src/
-!/client/
+!/mtlib/
+!/Qshell/
+!/doc/
+!/statistic/
