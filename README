@@ -1,7 +1,7 @@
 directory structure:
 
 ./mtlib
-Source files of the mtlib library, a streaming data transmission development library under NDN.
+Source files of the mtlib library, a NDN-based streaming data transmission development library.
 
 ./Qshell
 Source files of the video playout shell, which dependes on the mtlib library.
