@@ -1,3 +1,5 @@
+A NDN-based streaming data transfer project.
+
 directory structure:
 
 ./mtlib
@@ -7,10 +9,10 @@ Source files of the mtlib library, a NDN-based streaming data transmission devel
 Source files of the video playout shell, which dependes on the mtlib library.
 
 ./doc
-Using documents for mtlib and Qshell
+Using documents for mtlib and Qshell.
 
 ./statistic
-Log analysis script files
+Log analysis script files.
 
 ./bin
-library and executable file directory, if exist
+library and executable file directory, if exist.
