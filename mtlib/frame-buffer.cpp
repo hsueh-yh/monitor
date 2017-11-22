@@ -355,9 +355,10 @@ FrameBuffer::recvData(const ndn::ptr_lib::shared_ptr<Data> &data)
     }
 
 
-    uint64_t delay = slot->getArrivalTimeUsec()-slot->getCapTimestamp();
+    uint64_t delay = slot->getArrivalTimeUsec()-slot->getCaptureTimeUsec();
     uint64_t interval = statistic_->getDataInterval(slot->getArrivalTimeUsec())/1000;
     statistic_->addData(delay);
+    cout << slot->getArrivalTimeUsec() << " - " << slot->getCaptureTimeUsec() << " = " << delay << endl;
 
     VLOG(LOG_INFO) << setw(20) << setfill(' ') << std::right << getDescription()
             << "FILL " << data->getName().toUri()
@@ -444,7 +445,7 @@ FrameBuffer::acquireFrame( vector<uint8_t> &dest_,
             //LOG(INFO) << "got nalu start " << std::endl;
             ++nalCounter;
             if(nalCounter > 1) break;
-            ts = slot->getCapTimestamp();
+            ts = slot->getCaptureTimeUsec();
         }
 
         // lock and suspend for decode,
@@ -511,7 +512,7 @@ FrameBuffer::releaseAcquiredFrame(bool& isInferredPlayback)
 
     int64_t lastPlaybackCapTime = 0;
     if( playbackSlot_ != nullptr )
-            lastPlaybackCapTime = playbackSlot_->getCapTimestamp();
+            lastPlaybackCapTime = playbackSlot_->getCaptureTimeUsec();
     int n = recoverSuspendedSlot(true);
     /*VLOG(LOG_INFO) << setw(20) << setfill(' ') << std::right << getDescription()
         << "RLSE " << n
@@ -530,7 +531,7 @@ FrameBuffer::releaseAcquiredFrame(bool& isInferredPlayback)
     else
     {
         SlotPtr slot = it->second;
-        duration = slot->getCapTimestamp()-lastPlaybackCapTime;
+        duration = slot->getCaptureTimeUsec()-lastPlaybackCapTime;
         isInferredPlayback = false;
     }
 

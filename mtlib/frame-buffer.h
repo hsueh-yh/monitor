@@ -150,7 +150,7 @@ public:
         { return stashedState_; }
 
         int64_t
-        getCapTimestamp()
+        getCaptureTimeUsec()
         { return capMsTimestamp_; }
 
         void
@@ -328,10 +328,10 @@ public:
                 slot = it->second;
                 if( slot->getState() >= Slot::StateFetched )
                 {
-                    if(slot->getCapTimestamp() < minTs)
-                        minTs = slot->getCapTimestamp();
-                    if(slot->getCapTimestamp() > maxTs)
-                        maxTs = slot->getCapTimestamp();
+                    if(slot->getCaptureTimeUsec() < minTs)
+                        minTs = slot->getCaptureTimeUsec();
+                    if(slot->getCaptureTimeUsec() > maxTs)
+                        maxTs = slot->getCaptureTimeUsec();
                 }
                 ++it;
             }
