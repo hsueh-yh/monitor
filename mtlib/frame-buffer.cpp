@@ -355,7 +355,7 @@ FrameBuffer::recvData(const ndn::ptr_lib::shared_ptr<Data> &data)
     }
 
 
-    uint64_t delay = slot->getArrivalTimeUsec()-slot->getRequestTimeUsec();
+    uint64_t delay = slot->getArrivalTimeUsec()-slot->getCapTimestamp();
     uint64_t interval = statistic_->getDataInterval(slot->getArrivalTimeUsec())/1000;
     statistic_->addData(delay);
 
