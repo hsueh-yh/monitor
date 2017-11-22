@@ -39,8 +39,16 @@ RendererInternal::renderYUVFrame(int64_t timestamp, int width, int height,
 {
     std::lock_guard<std::mutex> guard(mutex_);
     // do whatever we need, i.e. drop frame, render it, write to file, etc.
-    VLOG(LOG_TRACE) << std::setw(20) << std::setfill(' ') << std::right << "[Renderer]\t" << "Rendering frame (" << width << "x" << height << ") at " << timestamp << "ms" << std::endl;
-    LogTrace(logFile_) << "Rendering frame (" << width << "x" << height << ") at " << timestamp << "ms" << std::endl;
+    VLOG(LOG_TRACE) << std::setw(20) << std::setfill(' ') << std::right
+                    << "[Renderer]\t" << "Rendering frame ("
+                    << width << "*" << height
+                    << " in window " << width_ << "*" << height_
+                    << ") at " << timestamp << "ms"
+                    << std::endl;
+    LogTrace(logFile_) << "Rendering frame (" << width << "x" << height
+                       << " in window " << width_ << "*" << height_
+                       << ") at " << timestamp << "ms"
+                       << std::endl;
 
     YV12ToBGR24_Native(buffer,RGBbuf_,width,height);
 

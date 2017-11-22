@@ -31,18 +31,18 @@ JitterTiming::~JitterTiming()
 void JitterTiming::flush()
 {
     resetData();
-    LogTraceC << getDescription() << "flushed" << std::endl;
+        LogTraceC << "flushed" << std::endl;
 }
 void JitterTiming::stop()
 {
     stopJob();
-    LogTraceC << getDescription() << "stopped" << std::endl;
+    LogTraceC << "stopped" << std::endl;
 }
 
 int64_t JitterTiming::startFramePlayout()
 {
-    int64_t processingStart = MtNdnUtils::microsecondTimestamp();
-    LogTraceC << getDescription() << "proc start " << processingStart;// << std::endl;
+    int64_t processingStart = MtNdnUtils::microsecSinceEpoch();
+    LogTraceC<< "proc start " << processingStart;// << std::endl;
     
     if (prevPlayoutTsUsec_ == 0)
     {
@@ -52,7 +52,7 @@ int64_t JitterTiming::startFramePlayout()
     { // calculate processing delay from the previous iteration
         int64_t prevIterationProcTimeUsec = processingStart - prevPlayoutTsUsec_;
         
-        LogTraceC << " prev iter full time " << prevIterationProcTimeUsec;// << std::endl;
+        LogTraceC << "prev iter full time " << prevIterationProcTimeUsec;// << std::endl;
 
         // substract frame playout delay
         if (prevIterationProcTimeUsec >= framePlayoutTimeMs_*1000)
@@ -69,12 +69,12 @@ int64_t JitterTiming::startFramePlayout()
             assert(0);
         }
         
-        LogTraceC << " prev iter proc time " << prevIterationProcTimeUsec;// << std::endl;
+        LogTraceC << "prev iter proc time " << prevIterationProcTimeUsec;// << std::endl;
         
         // add this time to the average processing time
         processingTimeUsec_ += prevIterationProcTimeUsec;
 
-        LogTraceC << " total proc time " << processingTimeUsec_ << std::endl;
+        LogTraceC << "total proc time " << processingTimeUsec_ << std::endl;
         
         prevPlayoutTsUsec_ = processingStart;
     }
@@ -84,22 +84,22 @@ int64_t JitterTiming::startFramePlayout()
 
 void JitterTiming::updatePlayoutTime(int framePlayoutTime, PacketNumber packetNo)
 {
-    LogTraceC << " packet " << packetNo << " playout time " << framePlayoutTime;// << std::endl;
+    LogTraceC << "packet " << packetNo << " playout time " << framePlayoutTime;// << std::endl;
     
     int playoutTimeUsec = framePlayoutTime*1000;
     if (playoutTimeUsec < 0) playoutTimeUsec = 0;
     
     if (processingTimeUsec_ >= 1000)
     {
-        LogTraceC << " absorb proc time " << processingTimeUsec_;// << std::endl;
+        LogTraceC << "absorb proc time " << processingTimeUsec_;// << std::endl;
         
         int processingUsec = (processingTimeUsec_/1000)*1000;
         
-        LogTraceC << " proc absorb part " << processingUsec;// << std::endl;
+        LogTraceC << "proc absorb part " << processingUsec;// << std::endl;
         
         if (processingUsec > playoutTimeUsec)
         {
-            LogTraceC << " skip frame. proc " << processingUsec
+            LogTraceC << "skip frame. proc " << processingUsec
             << " playout " << playoutTimeUsec;// << std::endl;
             
             processingUsec = playoutTimeUsec;
@@ -109,7 +109,7 @@ void JitterTiming::updatePlayoutTime(int framePlayoutTime, PacketNumber packetNo
             playoutTimeUsec -= processingUsec;
         
         processingTimeUsec_ = processingTimeUsec_ - processingUsec;
-        LogTraceC << " playout usec " << playoutTimeUsec
+        LogTraceC << "playout usec " << playoutTimeUsec
                   << "us, total proc " << processingTimeUsec_ << "us" << std::endl;
     }
     
@@ -119,11 +119,11 @@ void JitterTiming::updatePlayoutTime(int framePlayoutTime, PacketNumber packetNo
 void JitterTiming::run(boost::function<void()> callback)
 {
     assert(framePlayoutTimeMs_ >= 0);
-    //int64_t now = MtNdnUtils::microsecondTimestamp();
-    LogTraceC << " timer wait " << framePlayoutTimeMs_ << "ms ... "
-              << MtNdnUtils::microsecondTimestamp() << std::endl;
+    //int64_t now = MtNdnUtils::microsecSinceEpoch();
+    LogTraceC << "timer wait " << framePlayoutTimeMs_ << "ms ... "
+              << MtNdnUtils::millisecSinceEpoch() << std::endl;
     //std::cout << "jt " << now << std::endl;
-    //LOG(WARNING) << "[JT] " << MtNdnUtils::microsecondTimestamp();
+    //LOG(WARNING) << "[JT] " << MtNdnUtils::microsecSinceEpoch();
     scheduleJob(framePlayoutTimeMs_*1000, [this, callback]()->bool{
         callback();
         return false;

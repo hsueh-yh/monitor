@@ -82,7 +82,7 @@ private:
     QWidget *parent_;
     QLabel *label_;
     QPoint point_;
-    int width_, height_;
+    int width_, height_; //lable size
 
     QImage image;
     QPixmap pixmap;

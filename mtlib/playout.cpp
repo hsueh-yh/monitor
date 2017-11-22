@@ -67,7 +67,7 @@ Playout::start(int initialAdjustment)
     MtNdnUtils::dispatchOnBackgroundThread([this](){
         processPlayout();
     });
-    LogTraceC << " started" << endl;
+    LogTraceC << "started" << endl;
 
     return 0;
 }
@@ -82,7 +82,7 @@ Playout::stop()
         isRunning_ = false;
         jitterTiming_->stop();
         
-        LogTraceC << getDescription() << " stopped" << endl;
+        LogTraceC << "stopped" << endl;
     }
     else
         return -1;
@@ -204,35 +204,35 @@ Playout::processPlayout()
             int cachesize = 0;
 
 
-            int playbackDelay = frameBuffer_->releaseAcquiredFrame(isInferredPlayback_);
+            int playbackDelayMs = frameBuffer_->releaseAcquiredFrame(isInferredPlayback_);
 
 
-            LogTraceC << getDescription() << " nextPlaybackDelay " << playbackDelay
+            LogTraceC << "NextPlaybackDelay " << playbackDelayMs
                       << (isInferredPlayback_ ? ", inferred" : ", NOT inferred")
                       << std::endl<< std::endl;
 
-            int adjustment = playbackDelayAdjustment(playbackDelay, cachesize);
+            int adjustment = playbackDelayAdjustment(playbackDelayMs, cachesize);
             
-            if (playbackDelay < 0)
+            if (playbackDelayMs < 0)
             {
                 // should never happen
-                LogWarnC << getDescription() << " playback delay below zero: " << playbackDelay << endl;
-                playbackDelay = 0;
+                LogWarnC << " playback delay below zero: " << playbackDelayMs << endl;
+                playbackDelayMs = 0;
             }
 
-            playbackDelay += adjustment;
-            if( playbackDelay  < 0 )
-                playbackDelay = 0;
-            assert(playbackDelay >= 0);
+            playbackDelayMs += adjustment;
+            if( playbackDelayMs  < 0 )
+                playbackDelayMs = 0;
+            assert(playbackDelayMs >= 0);
 
             playoutMutex_.unlock();
             
             if( noData )
-                playbackDelay = 30;
+                playbackDelayMs = 30;
             if (isRunning_)
             {
                 // setup and run playout timer for calculated playout interval
-                jitterTiming_->updatePlayoutTime(playbackDelay, sequencePacketNo);
+                jitterTiming_->updatePlayoutTime(playbackDelayMs, sequencePacketNo);
                 jitterTiming_->run(bind(&Playout::processPlayout, this));
             }
         }
@@ -278,7 +278,7 @@ Playout::playbackDelayAdjustment(int playbackDelay, int cachesize )
         playbackAdjustment_ = 0;
     }
     
-    LogTraceC << getDescription() << " updated total adj is " << playbackAdjustment_ << std::endl;
+    LogTraceC << "updated total adj is " << playbackAdjustment_ << std::endl;
     
     return adjustment;
 }
@@ -310,7 +310,7 @@ Playout::avSyncAdjustment(int64_t nowTimestamp, int playbackDelay)
 void
 Playout::checkBuffer()
 {
-    //LogTraceC << "[Playout] checkBuffer " << std::endl;
+    //LogTraceC << "CheckBuffer " << std::endl;
     int64_t timestamp = MtNdnUtils::millisecondTimestamp();
     if (timestamp - bufferCheckTs_ > BufferCheckInterval)
     {
@@ -322,11 +322,11 @@ Playout::checkBuffer()
         int playableDuration = consumer_->getFrameBuffer()->getPlayableBufferDuration();
         int adjustment = targetBufferSize - playableDuration;
         
-        LogTraceC << getDescription() << " buffer size " << playableDuration << std::endl;
+        LogTraceC << "buffer size " << playableDuration << std::endl;
         
         if (abs(adjustment) > 30 && adjustment < 0)
         {
-            LogTraceC << getDescription() << " bf adj. "
+            LogTraceC << "bf adj. "
             << abs(adjustment) << "ms excess" << std::endl;
             
             playbackAdjustment_ += adjustment;

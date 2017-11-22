@@ -44,6 +44,7 @@ public:
     static int64_t nanosecondTimestamp();
     static double unixTimestamp();
     static int64_t millisecSinceEpoch();
+    static int64_t microsecSinceEpoch();
 
     static void setIoService(boost::asio::io_service &ioService);
     static boost::asio::io_service &getIoService();

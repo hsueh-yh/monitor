@@ -149,30 +149,6 @@ public:
         getStashedState() const
         { return stashedState_; }
 
-        int64_t
-        getCaptureTimeUsec()
-        { return capMsTimestamp_; }
-
-        void
-        setCapTimestamp(int64_t capMsTimestamp)
-        { capMsTimestamp_ = capMsTimestamp; }
-
-        int64_t
-        getRequestTimeUsec()
-        { return requestTimeUsec_; }
-
-        int64_t
-        getArrivalTimeUsec()
-        { return arrivalTimeUsec_; }
-
-        int64_t
-        getRoundTripDelayUsec()
-        {
-            if (arrivalTimeUsec_ <= 0 || requestTimeUsec_ <= 0)
-                return -1;
-            return (arrivalTimeUsec_-requestTimeUsec_);
-        }
-
         void
         setPrefix(const Name &prefix)
         { prefix_ = prefix; }
@@ -195,6 +171,40 @@ public:
             //syncMutex_.unlock();
         }
 
+
+        int64_t
+        getCaptureTimestampUsec()
+        { return captureTimestampUsec_; }
+
+        void
+        setCaptureTimestampUsec(int64_t captureTimestampUsec)
+        { captureTimestampUsec_ = captureTimestampUsec; }
+
+        int64_t
+        getRequestTimestampUsec()
+        { return requestTimestampUsec_; }
+
+        void
+        setRequestTimestampUsec(int64_t requestTimestampUsec)
+        { requestTimestampUsec_ = requestTimestampUsec; }
+
+        int64_t
+        getArrivalTimestampUsec()
+        { return arrivalTimestampUsec_; }
+
+        void
+        setArrivalTimestampUsec(int64_t arrivalTimestampUsec)
+        { arrivalTimestampUsec_ = arrivalTimestampUsec; }
+
+        int64_t
+        getRoundTripDelayUsec()
+        {
+            if (arrivalTimestampUsec_ <= 0 || requestTimestampUsec_ <= 0)
+                return -1;
+            return (arrivalTimestampUsec_-requestTimestampUsec_);
+        }
+
+
     protected:
 
         FrameNumber frameNumber_;
@@ -207,10 +217,10 @@ public:
 
         State sstate_, stashedState_;
 
-        int64_t capMsTimestamp_,  // frame captured timestamp
-                requestTimeUsec_, // local timestamp when the interest
+        int64_t captureTimestampUsec_,  // frame captured timestamp
+                requestTimestampUsec_, // local timestamp when the interest
                                   // for this frame was issued
-                arrivalTimeUsec_; // local timestamp when data for this
+                arrivalTimestampUsec_; // local timestamp when data for this
                                   // frame has arrived
         //std::recursive_mutex syncMutex_;
 
@@ -292,7 +302,7 @@ public:
      *                       in this case, *packetData will be null).
      */
     void
-    acquireFrame(vector<uint8_t> &frame, int64_t &ts,
+    acquireFrame(vector<uint8_t> &frame, int64_t &captureTsUsec,
                  PacketNumber &packetNo,
                  PacketNumber &sequencePacketNo,
                  PacketNumber &pairedPacketNo,
@@ -306,7 +316,7 @@ public:
      * @param (out) isInferredPlayback Indicates, whether the value
      * returned is an inferred playback duration (as opposed to duration
      * calculated using timestamp difference).
-     * @return Playback duration
+     * @return Playback duration (ms)
      */
     int
     releaseAcquiredFrame(bool& isInferredPlayback);
@@ -328,10 +338,10 @@ public:
                 slot = it->second;
                 if( slot->getState() >= Slot::StateFetched )
                 {
-                    if(slot->getCaptureTimeUsec() < minTs)
-                        minTs = slot->getCaptureTimeUsec();
-                    if(slot->getCaptureTimeUsec() > maxTs)
-                        maxTs = slot->getCaptureTimeUsec();
+                    if(slot->getCaptureTimestampUsec() < minTs)
+                        minTs = slot->getCaptureTimestampUsec();
+                    if(slot->getCaptureTimestampUsec() > maxTs)
+                        maxTs = slot->getCaptureTimestampUsec();
                 }
                 ++it;
             }

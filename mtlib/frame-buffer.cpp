@@ -38,9 +38,9 @@ void
 FrameBuffer::Slot::resetData()
 {
     sstate_ = FrameBuffer::Slot::StateNotUsed;
-    capMsTimestamp_ = -1;
-    requestTimeUsec_ = -1;
-    arrivalTimeUsec_ = -1;
+    captureTimestampUsec_ = -1;
+    requestTimestampUsec_ = -1;
+    arrivalTimestampUsec_ = -1;
     //reqCounter_ = 0;
     frameNumber_ = -1;
     payloadSize_ = 0;
@@ -53,8 +53,8 @@ FrameBuffer::Slot::interestIssued()
 
     sstate_ = StatePending;
 
-    if (requestTimeUsec_ <= 0)
-        requestTimeUsec_ = MtNdnUtils::microsecondTimestamp();
+    if (requestTimestampUsec_ <= 0)
+        setRequestTimestampUsec(MtNdnUtils::microsecSinceEpoch());
 
     //reqCounter_++;
 }
@@ -71,7 +71,8 @@ FrameBuffer::Slot::dataArrived ()
     if( sstate_ == StateLocked )
         return false;
     sstate_ = StateFetched;
-    arrivalTimeUsec_ = MtNdnUtils::microsecondTimestamp();
+    setArrivalTimestampUsec(MtNdnUtils::microsecSinceEpoch());
+
     return true;
 }
 
@@ -343,7 +344,7 @@ FrameBuffer::recvData(const ndn::ptr_lib::shared_ptr<Data> &data)
     slot->setNdnDataPtr(data);
     slot->setDataPtr(data->getContent().buf());
     slot->setNumber(frameNo);
-    slot->setCapTimestamp(ts);
+    slot->setCaptureTimestampUsec(ts);
     slot->setPayloadSize(data->getContent().size());
     if( slot->dataArrived() )
         ++readySlots_count_;
@@ -355,10 +356,12 @@ FrameBuffer::recvData(const ndn::ptr_lib::shared_ptr<Data> &data)
     }
 
 
-    uint64_t delay = slot->getArrivalTimeUsec()-slot->getCaptureTimeUsec();
-    uint64_t interval = statistic_->getDataInterval(slot->getArrivalTimeUsec())/1000;
+    uint64_t delay = slot->getArrivalTimestampUsec()-slot->getCaptureTimestampUsec();
+    uint64_t interval = statistic_->getDataInterval(slot->getArrivalTimestampUsec())/1000;
     statistic_->addData(delay);
-    cout << slot->getArrivalTimeUsec() << " - " << slot->getCaptureTimeUsec() << " = " << delay << endl;
+    cout << slot->getArrivalTimestampUsec() << " - " << slot->getCaptureTimestampUsec() << " = " << delay << endl;
+    cout << MtNdnUtils::microsecSinceEpoch() << " " << MtNdnUtils::millisecSinceEpoch() << endl;
+    cout << MtNdnUtils::microsecondTimestamp() << " " << MtNdnUtils::millisecondTimestamp() << endl;
 
     VLOG(LOG_INFO) << setw(20) << setfill(' ') << std::right << getDescription()
             << "FILL " << data->getName().toUri()
@@ -415,7 +418,7 @@ FrameBuffer::dataMissed(const ptr_lib::shared_ptr<const Interest> &interest )
 
 void
 FrameBuffer::acquireFrame( vector<uint8_t> &dest_,
-                           int64_t &ts,
+                           int64_t &captureTsUsec,
                            PacketNumber &packetNo,
                            PacketNumber &sequencePacketNo,
                            PacketNumber &pairedPacketNo,
@@ -445,7 +448,7 @@ FrameBuffer::acquireFrame( vector<uint8_t> &dest_,
             //LOG(INFO) << "got nalu start " << std::endl;
             ++nalCounter;
             if(nalCounter > 1) break;
-            ts = slot->getCaptureTimeUsec();
+            captureTsUsec = slot->getCaptureTimestampUsec() / 1000;
         }
 
         // lock and suspend for decode,
@@ -512,7 +515,7 @@ FrameBuffer::releaseAcquiredFrame(bool& isInferredPlayback)
 
     int64_t lastPlaybackCapTime = 0;
     if( playbackSlot_ != nullptr )
-            lastPlaybackCapTime = playbackSlot_->getCaptureTimeUsec();
+            lastPlaybackCapTime = playbackSlot_->getCaptureTimestampUsec();
     int n = recoverSuspendedSlot(true);
     /*VLOG(LOG_INFO) << setw(20) << setfill(' ') << std::right << getDescription()
         << "RLSE " << n
@@ -531,7 +534,8 @@ FrameBuffer::releaseAcquiredFrame(bool& isInferredPlayback)
     else
     {
         SlotPtr slot = it->second;
-        duration = slot->getCaptureTimeUsec()-lastPlaybackCapTime;
+        duration = slot->getCaptureTimestampUsec()-lastPlaybackCapTime;
+        duration /= 1000;
         isInferredPlayback = false;
     }
 

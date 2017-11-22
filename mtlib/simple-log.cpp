@@ -137,7 +137,7 @@ new_api::Logger::log(const NdnLogType& logType,
         
         if (loggingInstance)
             currentLogRecord_
-            << "[" << std::setw(25) << loggingInstance->getDescription() << "]-"
+            << "[" << std::setw(20) << loggingInstance->getDescription() << "]-"
             << std::setw(10) << boost::this_thread::get_id()
             /*<< std::hex << std::setw(15) << loggingInstance << std::dec*/;
         

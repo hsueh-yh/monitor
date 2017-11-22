@@ -116,7 +116,7 @@ MtNdnComponent::scheduleJob(const unsigned int usecInterval,
 {
     boost::lock_guard<boost::recursive_mutex> scopedLock(this->jobMutex_);
 
-    int64_t startTs = MtNdnUtils::microsecondTimestamp();
+    int64_t startTs = MtNdnUtils::microsecSinceEpoch();
     //VLOG(LOG_WARN) << getDescription() << " start job " << startTs << std::endl;
     watchdogTimer_.expires_from_now(boost::chrono::microseconds(usecInterval));
     isJobScheduled_ = true;
@@ -130,7 +130,7 @@ MtNdnComponent::scheduleJob(const unsigned int usecInterval,
                 isJobScheduled_ = false;
                 boost::lock_guard<boost::recursive_mutex> scopedLock(this->jobMutex_);
                 bool res = jobCallback();
-                int64_t cmpltTs = MtNdnUtils::microsecondTimestamp();
+                int64_t cmpltTs = MtNdnUtils::microsecSinceEpoch();
                 //VLOG(LOG_WARN) << getDescription() << " cmplt job " << cmpltTs << " taking " << cmpltTs-startTs << std::endl;
                 if (res)
                     this->scheduleJob(usecInterval + gain, jobCallback);

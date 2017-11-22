@@ -414,6 +414,14 @@ MtNdnUtils::millisecSinceEpoch()
     return msec.count();
 }
 
+// system clock
+int64_t
+MtNdnUtils::microsecSinceEpoch()
+{
+    microseconds usec = duration_cast<microseconds>(system_clock::now().time_since_epoch());
+    return usec.count();
+}
+
 void
 MtNdnUtils::printMem( char msg[], const unsigned char *startBuf, std::size_t size )
 {
@@ -453,7 +461,7 @@ void MtNdnUtils::frequencyMeterTick(unsigned int meterId)
         return;
 
     FrequencyMeter &meter = freqMeters_[meterId];
-    int64_t now = millisecondTimestamp();
+    int64_t now = millisecSinceEpoch();
     int64_t delta = now - meter.lastCheckTime_;
 
     meter.nCyclesPerSec_++;
@@ -508,7 +516,7 @@ void MtNdnUtils::dataRateMeterMoreData(unsigned int meterId,
         return ;
 
     DataRateMeter &meter = dataMeters_[meterId];
-    int64_t now = millisecondTimestamp();
+    int64_t now = millisecSinceEpoch();
     int64_t delta = now - meter.lastCheckTime_;
 
     meter.bytesPerCycle_ += dataSize;

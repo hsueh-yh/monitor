@@ -3,7 +3,7 @@
 VideoPlayout::VideoPlayout(Consumer *consumer) :
     Playout(consumer)
 {
-    setDescription("[VideoPlayout]\t");
+    setDescription("VideoPlayout");
 }
 
 VideoPlayout::~VideoPlayout()
@@ -168,7 +168,6 @@ VideoPlayout::playbackPacket(int64_t packetTsLocal,
 
         LogTraceC
         //VLOG(LOG_INFO)
-        << setw(20) << setfill(' ') << std::right << getDescription()
         << "PlayBackPacket "
         << consumer_->getPrefix()
         << "/" << playbackPacketNo
