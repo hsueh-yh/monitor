@@ -313,49 +313,49 @@ FrameBuffer::interestIssued( ndn::Interest &interest )
     return true;
 }
 
-void
+int
 FrameBuffer::recvData(const ndn::ptr_lib::shared_ptr<Data> &data)
 {
+    int delay = 0;
     ptr_lib::lock_guard<ptr_lib::recursive_mutex> scopedLock(syncMutex_);
-
     FrameNumber frameNo;
     Namespacer::getFrameNumber(data->getName(),frameNo);
     map<unsigned int, ptr_lib::shared_ptr<Slot> >::iterator iter;
 
+    // find slot
     iter = activeSlots_.find(frameNo);
-
     if ( iter == activeSlots_.end() )
     {
         if( iter == activeSlots_.end() )
         {
             VLOG(LOG_WARN) << setw(20) << setfill(' ') << std::right << getDescription()
                            << "Arrived Data has been skiped " << data->getName() << endl;
-            return;
+            return delay;
         }
     }
 
     // set slot
     ptr_lib::shared_ptr<FrameBuffer::Slot> slot = iter->second;
-
     uint64_t ts = 0;
     ts = strtoll(data->getName().get(-2).toEscapedString().c_str(), NULL, 10);
-
     slot->setNdnDataPtr(data);
-    slot->setDataPtr(data->getContent().buf()+1);
+    slot->setDataPtr(data->getContent().buf());
     slot->setNumber(frameNo);
     slot->setCapTimestamp(ts);
-    slot->setPayloadSize(data->getContent().size()-1);
+    slot->setPayloadSize(data->getContent().size());
     if( slot->dataArrived() )
+    {
         ++readySlots_count_;
+        delay = slot->getRoundTripDelayUsec();
+    }
     else
     {
         VLOG(LOG_WARN) << setw(20) << setfill(' ') << std::right << getDescription()
                        << "Arrived Data has been skiped " << data->getName() << endl;
-        return;
+        return delay;
     }
 
-
-    uint64_t delay = slot->getArrivalTimeUsec()-slot->getRequestTimeUsec();
+    // statistic
     uint64_t interval = statistic_->getDataInterval(slot->getArrivalTimeUsec())/1000;
     statistic_->addData(delay);
 
@@ -378,6 +378,7 @@ FrameBuffer::recvData(const ndn::ptr_lib::shared_ptr<Data> &data)
 
     //setSlot(data, iter->second);
     //LogTraceC << "RCVE " << data->getName().to_uri() << std::endl;
+    return delay;
 }
 
 bool

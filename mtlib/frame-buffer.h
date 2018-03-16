@@ -113,7 +113,7 @@ public:
 
         void
         setPayloadSize(unsigned int payloadSize)
-        { payloadSize_ = payloadSize; }
+        { payloadSize_ = payloadSize-36; }
 
         unsigned int
         getPayloadSize() const { return payloadSize_; }
@@ -123,7 +123,7 @@ public:
         { dataPtr_ = const_cast<unsigned char*>(dataPtr); }
 
         unsigned char*
-        getDataPtr() const { return dataPtr_; }
+        getDataPtr() const { return dataPtr_+36; }
 
         const ndn::ptr_lib::shared_ptr<Data>
         getNdnDataPtr() const
@@ -271,7 +271,7 @@ public:
     void
     setSlot(const ndn::ptr_lib::shared_ptr<Data> &data, ptr_lib::shared_ptr<Slot> slot);
 
-    void
+    int
     recvData(const ndn::ptr_lib::shared_ptr<Data> &data);
 
     bool

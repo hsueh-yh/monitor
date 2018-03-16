@@ -94,6 +94,7 @@ PipelinerFrame::onData(const ptr_lib::shared_ptr<const Interest> &interest,
     //LogTraceC << "Recieve Data " << data->getName().to_uri() << std::endl;
     MtNdnUtils::printMem("onData", data->getContent().buf(), 20 );
 
+
     switch(state_)
     {
     case StateInactive:
@@ -157,7 +158,8 @@ PipelinerFrame::onData(const ptr_lib::shared_ptr<const Interest> &interest,
                   << " l=" << lastFrmNo_
                   << " ttl=" << ttl << std::endl;
 
-        frameBuffer_->recvData(data);
+        int delay = frameBuffer_->recvData(data);
+        cs_queue.recvData(*(data.get()), delay);
         requestNextPkt();
     }
         break;
@@ -273,7 +275,7 @@ PipelinerFrame::requestNextPkt()
             if( reqCurPktNo_ > lastFrmNo_ )
             {
                 VLOG(LOG_WARN) << setw(20) << setfill(' ') << std::right << getDescription()
-                            << "Request Forecast Interest cn="
+                  s          << "Request Forecast Interest cn="
                             << reqCurPktNo_ << " ln=" << lastFrmNo_ << endl;
                 return getState() > StateWaitInitial;
             }
@@ -286,7 +288,9 @@ PipelinerFrame::requestNextPkt()
     else
     {
         while( reqCurPktNo_ <= lastFrmNo_ )
+        {
             requestFrame(reqCurPktNo_++);
+        }
     }
 
     if( state_ >= StateFetching && frameBuffer_->getPlayableBufferSize() >= 3 )

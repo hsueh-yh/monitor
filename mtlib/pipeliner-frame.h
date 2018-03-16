@@ -14,7 +14,41 @@
 
 #include "pipeliner.h"
 
+#include <map>
+#include <string>
+#include <uuid/uuid.h>
+
 using namespace ndn;
+
+class CsTimerQueue
+{
+public:
+
+    CsTimerQueue(){}
+    ~CsTimerQueue(){}
+
+    void recvData(Data& data, const unsigned int delay)
+    {
+        const uint8_t *buf = data.getContent().buf();
+        string cs_id((const char*)buf, 36);
+        LOG(INFO) << "From CS: {" << cs_id << "}" << endl;
+        updateTimer(delay, timer_queue[cs_id]);
+    }
+
+    void sendInterest()
+    {
+        //strategy
+    }
+
+    void updateTimer(const unsigned int delay, unsigned int& timer, double alpha = 0.1)
+    {
+        timer = (1.0-alpha)*timer + alpha*delay;
+    }
+
+private:
+    //
+    std::map<std::string, unsigned int> timer_queue;
+};
 
 class PipelinerFrame : public Pipeliner
 {
@@ -45,6 +79,8 @@ protected:
     //******************************************************************************
     ptr_lib::shared_ptr<Interest>
     getDefaultInterest(PacketNumber frameNo);
+
+    CsTimerQueue    cs_queue;
 
 
     //******************************************************************************
