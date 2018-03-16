@@ -16,6 +16,7 @@
 #include <boost/asio/steady_timer.hpp>
 #include <boost/lockfree/spsc_queue.hpp>
 #include <boost/thread/recursive_mutex.hpp>
+#include <boost/atomic.hpp>
 
 #include <iostream>
 #include <string>
